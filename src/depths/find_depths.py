@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 
-""" find_depths.py
+""" 
+find_depths.py
 
-Aim: Cleaner python 3 version of my depth codes, make this nice!
+Calculates 5sigma depths. Specify the fields, filters and aperture sizes you want to run through the depth code.
 
-Created: Fri 29th Nov 2019
+Modified from original to work for Euclid data and to be be more general.
+
+Originally created: Fri 29th Nov 2019
+Modified: Wednesday 20th March 2024.
 
 """
 
 ###################### Import useful modules #########################
 import numpy as np
 from new_depth_codes import get_depths
-#from jwst_depth_codes import get_depths
 
 import os
 
 ######################### Set-up ####################################
-#fields = ['COSMOS']
+fields = ['COSMOS']
 fields = ['CDFS1', 'CDFS2', 'CDFS3']
 #fields = ['XMM1'] #, 'XMM2', 'XMM3']
 
