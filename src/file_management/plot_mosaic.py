@@ -7,7 +7,7 @@ The tiles are numbered from left to right, top to bottom, i.e. in increasing ord
 Created: Wednesday 20th March 2024.
 """
 
-from astropy.io import fits
+from astropy.io import fits, ascii
 import matplotlib.pyplot as plt
 from pathlib import Path
 import glob
@@ -109,12 +109,20 @@ for jwst_file in jwst_files:
 dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='orange', facecolor='none', lw=2.5, label='CWEB')
 ax.add_patch(dummy)
 
+#! Plot positions of REBELS galaxies
+rebels = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+rebels_ra = rebels['RA']
+rebels_dec = rebels['Dec']
+
+# Plot the REBELS galaxies
+ax.scatter(rebels_ra, rebels_dec, marker='x', color='black', s=10, label='REBELS')
+
 # Set axis limits and labels
 ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.2)
 ax.set_xlabel('RA (deg)')
 ax.set_ylabel('DEC (deg)')
-ax.legend(loc='upper left')
+ax.legend(loc='upper right')
 plt.gca().set_aspect('equal', adjustable='box')
 plt.tight_layout()
 plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic.png')
