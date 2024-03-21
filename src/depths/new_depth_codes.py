@@ -1,59 +1,101 @@
 import numpy as np
-from astropy.table import Table
 from pathlib import Path
 import os
 from astropy.io import fits
+from astropy.table import Table, hstack, join, Column
+import time
+import sep
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+from matplotlib import gridspec
+from scipy.stats import norm
+from astropy import units as u
+import matplotlib.backends.backend_pdf
+from new_catalogue_codes import return_instrips, mask_column
+from scipy.stats import norm
+from scipy.signal import find_peaks
+from astropy.wcs import WCS
+from typing import Tuple, Union, List
+import math
 
+def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), 
+                wht_name: str = 'NONE', wht_type: str = 'NONE', 
+                IRACap_diametersAS: np.ndarray = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), seg_name: str = 'NONE', 
+                output_dir: str = 'none', filter_name: str = 'NONE', 
+                num_apertures: int = 300, step: int = 200, overwrite: bool = False, 
+                input_sex: Path = Path.home().parent.parent / 'vardy' /'vardygroupshare' / 'data' / 'bertin_config' / 'video_mine.sex', 
+                strips: bool = False, bgSub: bool = True, mask: str = 'none', gridSepAS: float = 1.0) -> None:
+    """
+    Compute depths across an image.
 
-def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), whtName = 'NONE', whtType = 'NONE', 
-                IRACapDiametersAS = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), segName = 'NONE', outputDir = 'none', filterName = 'NONE', 
-                numApertures = 300, step = 200, overwrite = False, 
-                inputSex = Path.home().parent.parent / 'vardy' /'vardygroupshare' / 'data' / 'bertin_config' / 'video_mine.sex', 
-                strips = False, bgSub = True, mask = 'none', gridSepAS = 1.0):
+    Args:
+        image_name (str): Path to the input image.
+        zeropoint (float): Zeropoint for magnitude calculations.
+        ap_diametersAS (np.ndarray, optional): Array of aperture diameters in arcseconds. Defaults to [1.8, 2.0, 3.0, 4.0, 5.0].
+        wht_name (str, optional): Path to the weight file. Defaults to 'NONE'.
+        wht_type (str, optional): Type of weight file. Defaults to 'NONE'.
+        IRACap_diametersAS (np.ndarray, optional): Array of IRAC aperture diameters in arcseconds. Defaults to [2.8, 3.8, 5.8, 9.8, 11.6].
+        seg_name (str, optional): Path to the segmentation map. Defaults to 'NONE'.
+        output_dir (str, optional): Output directory path. Defaults to 'none'.
+        filter_name (str, optional): Filter name. Defaults to 'NONE'.
+        num_apertures (int, optional): Number of apertures. Defaults to 300.
+        step (int, optional): Step size. Defaults to 200.
+        overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
+        input_sex (Path, optional): Path to the sextractor configuration file. Defaults to vardygroupshare/bertin_config/video_mine.sex.
+        strips (bool, optional): Whether to use strips. Defaults to False.
+        bgSub (bool, optional): Whether to perform background subtraction. Defaults to True.
+        mask (str, optional): Path to the mask file. Defaults to 'none'.
+        gridSepAS (float, optional): Grid separation in arcseconds. Defaults to 1.0.
+
+    Returns:
+        None
+    """
 
 
     # with 300 apertures, the radius is roughly 200 due to blending etc
     # hence a step of 200 means that these don't overlap
     
 
-    os.environ['EXTRACTOR_DIR'] = '/usr/local/shared/sextractor/2.25.0/share/sextractor'
+    os.environ['EXTRACTOR_DIR'] = str(Path.home().parent.parent / 'users' / 'videouser' / 'sextractor' / 'share' / 'sextractor')
     
-    if filterName[0:2] == 'ch':
+    if filter_name[0:2] == 'ch':
         print('Using IRAC apertures.')
-        apDiametersAS = IRACapDiametersAS
+        ap_diametersAS = IRACap_diametersAS
 
     # main code where all the action happens!
     # first define the output files
-    if outputDir == 'none':
+
+    if output_dir == 'none':
         # put everything here!
         # make a new directory
-        outputDir = 'depths/'
-        if os.path.isdir(outputDir) == False:
-            os.system('mkdir ' + outputDir)
+        output_dir = 'depths/'
+        if os.path.isdir(output_dir) == False:
+            os.system('mkdir ' + output_dir)
 
+    output_dir = Path(output_dir)
     # for the seg map
-    imageDir = outputDir + 'images/'
-    if os.path.isdir(imageDir) == False:
-        os.system('mkdir ' + imageDir)
+    image_dir = output_dir / 'images'
+    if os.path.isdir(image_dir) == False:
+        os.system('mkdir ' + str(image_dir))
 
-    plotDir = outputDir + 'plots/'
+    plotDir = output_dir / 'plots'
     if os.path.isdir(plotDir) == False:
-        os.system('mkdir ' + plotDir)
+        os.system('mkdir ' + str(plotDir))
 
-    catDir = outputDir + 'catalogues/'
+    catDir = output_dir / 'catalogues'
     if os.path.isdir(catDir) == False:
-        os.system('mkdir ' + catDir)
+        os.system('mkdir ' + str(catDir))
 
-    aperDir = outputDir + 'phot/'
+    aperDir = output_dir / 'phot'
     if os.path.isdir(aperDir) == False:
-        os.system('mkdir ' + aperDir)
+        os.system('mkdir ' + str(aperDir))
 
-    resultsDir = outputDir + 'results/'
+    resultsDir = output_dir / 'results'
     if os.path.isdir(resultsDir) == False:
-        os.system('mkdir ' + resultsDir)
+        os.system('mkdir ' + str(resultsDir))
         
     # make a sub-directory here?  no but useful
-    parts = imageName.split('/')
+    parts = image_name.split('/')
     if len(parts) > 1:
         baseName = parts[-1]
 
@@ -67,70 +109,65 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
         pparts = baseName.split('.')
         baseName = pparts[0]
         print("The base name is ", baseName)
-
-    # make a directory for the output
-    #specificDir = outputDir + baseName + '/'
-    #if os.path.isdir(specificDir) == False:
-    #    os.system('mkdir ' + specificDir)
         
     # check all the necessary files exist
-    imyes = os.path.isfile(imageName)
+    imyes = os.path.isfile(image_name)
     if imyes == False:
-        print("ERROR: the image file does not exist, check the path:\n" + imageName)
+        print("ERROR: the image file does not exist, check the path:\n" + image_name)
         exit()
 
-    if whtType != "NONE":
-        whtyes = os.path.isfile(whtName)
+    if wht_type != "NONE":
+        whtyes = os.path.isfile(wht_name)
         if whtyes == False:
-            print("ERROR: the weight file does not exist, check the path:\n" + whtName)            
+            print("ERROR: the weight file does not exist, check the path:\n" + wht_name)            
             exit()
             
     ####################################################
     # Get the seg map
 
-    if filterName == 'NONE':
-        filterName = baseName
+    if filter_name == 'NONE':
+        filter_name = baseName
 
     # get the pixel scale
-    hdulist = fits.open(imageName)
+    hdulist = fits.open(image_name)
     imageHeader = hdulist[0].header
 
     if 'CD1_1' in imageHeader:
         cdone_o = -3600.0*imageHeader['CD1_1']
     else:
         cdone_o = 3600.0*np.abs(imageHeader['CDELT1'])
-    pixScale = round(cdone_o, 5)
-    print("The pixel scale is {0:.4f}".format(pixScale))
+    pix_scale = round(cdone_o, 5)
+    print("The pixel scale is {0:.4f}".format(pix_scale))
     
-    if segName == 'NONE':
+    if seg_name == 'NONE':
         
         # run source extractor
         ## define aperture sizes
-        apStringPix = str(apDiametersAS[0]/pixScale) 
-        for ai in range(1, apDiametersAS.size):
-            apStringPix = apStringPix + ',' + str(apDiametersAS[ai]/pixScale)
+        apStringPix = str(ap_diametersAS[0]/pix_scale) 
+        for ai in range(1, ap_diametersAS.size):
+            apStringPix = apStringPix + ',' + str(ap_diametersAS[ai]/pix_scale)
             
         # now run sex
-        segName = imageDir + filterName + '_seg.fits'
-        bgSubName = imageDir  + filterName + '_bgsub.fits'
-        outputCatalogue = catDir + 'd' + filterName + '.fits'
+        seg_name = image_dir / str(filter_name + '_seg.fits')
+        bgSubName = image_dir  / str(filter_name + '_bgsub.fits')
+        outputCatalogue = catDir / str('d' + filter_name + '.fits')
 
         keywordsbase = ' -CATALOG_TYPE FITS_1.0 -CATALOG_NAME ' + \
-                       outputCatalogue + \
+                       str(outputCatalogue) + \
                        ' -MAG_ZEROPOINT '+ str(zeropoint) + \
-                       ' -WEIGHT_TYPE ' + whtType + \
-                       ' -WEIGHT_IMAGE ' + whtName
+                       ' -WEIGHT_TYPE ' + wht_type + \
+                       ' -WEIGHT_IMAGE ' + str(wht_name)
         
         keywords = keywordsbase + \
                    ' -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" '\
                    +'-CHECKIMAGE_NAME "' + \
-                   bgSubName + ',' + segName + '" -PHOT_APERTURES ' \
+                   str(bgSubName) + ',' + str(seg_name) + '" -PHOT_APERTURES ' \
                    + apStringPix
     
-        command = '/usr/local/shared/sextractor/2.25.0/bin/sex '+ imageName +' -c ' + inputSex + keywords
+        command = '/mnt/users/videouser/sextractor/bin/sex '+ str(image_name) +' -c ' + str(input_sex) + keywords
         print(command)
         
-        if os.path.isfile(bgSubName) == False or os.path.isfile(segName) == False or overwrite:
+        if os.path.isfile(bgSubName) == False or os.path.isfile(seg_name) == False or overwrite:
             print("The SEG and BG subtracted map do not exist.  Running...")
             os.system(command)
         else:
@@ -138,27 +175,27 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
 
     #######################################################################
     # Next step is to place apertures down
-    aperPhotFile = aperDir + filterName + '_aperPhot.fits'
+    aperPhotFile = aperDir / str(filter_name + '_aperPhot.fits')
     #overwrite = True
     if os.path.isfile(aperPhotFile) == False or overwrite == True:
 
         # define the grid separation
-        gridSepPixels = np.ceil(gridSepAS/pixScale) # 5'' separation
+        gridSepPixels = np.ceil(gridSepAS/pix_scale) # 5'' separation
 #        gridSepPixels = 10.0
         
         # make this tunable...
         if bgSub == False:
-            bgSubName = imageName
+            bgSubName = image_name
             print("Not using bg subtracted image.")
         print("Measuring the aperture photometry.")
 
-        ii = segName.rfind('NIRSPEC')
+        ii = str(seg_name).rfind('NIRSPEC')
         if ii > 0:
             field = 'NIRSPEC'
         else:
             field = 'NONE'
             
-        aperture_photometry_blank(bgSubName, segName, whtName, apDiametersAS, gridSeparation = gridSepPixels, clean = True, outputFitsName = aperPhotFile, imageDir = imageDir, field = field, overwrite = overwrite)
+        aperture_photometry_blank(bgSubName, seg_name, wht_name, ap_diametersAS, grid_separation = gridSepPixels, clean = True, output_fits_name = aperPhotFile, image_dir = image_dir, field = field, overwrite = overwrite)
 
     
     #######################################################################
@@ -167,19 +204,19 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
     recalculate = True
 
     # mask
-    regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, apDiametersAS, zeropoint, recalculate = recalculate, numApertures = numApertures, step = step, plotDir = plotDir, strips = strips, maskreg = mask, refimage = bgSubName) #, plot = True)
-#    regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, apDiametersAS, zeropoint, recalculate = recalculate, numApertures = numApertures, step = step, plotDir = plotDir, strips = strips, maskreg = 'none', refimage = bgSubName) #, plot = True)
+    regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, ap_diametersAS, zeropoint, recalculate = recalculate, num_apertures = num_apertures, step = step, plotDir = str(plotDir), strips = strips, maskreg = mask, refimage = bgSubName) #, plot = True)
+#    regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, ap_diametersAS, zeropoint, recalculate = recalculate, num_apertures = num_apertures, step = step, plotDir = plotDir, strips = strips, maskreg = 'none', refimage = bgSubName) #, plot = True)
     
     ######################################################################
     # make a nice file with the output
-    depthFile = resultsDir + '{0}_{1}.txt'.format(filterName, numApertures)
+    depthFile = resultsDir + '{0}_{1}.txt'.format(filter_name, num_apertures)
     f = open(depthFile, 'w')
     
     apString = ''
-    for i in range(apDiametersAS.size):
-#        apString = apString + '{0:.1f}as\t'.format(apDiametersAS[i])
+    for i in range(ap_diametersAS.size):
+#        apString = apString + '{0:.1f}as\t'.format(ap_diametersAS[i])
 
-        apString = apString + '{0:.2f}as\t'.format(apDiametersAS[i]) # Change to 2sf for jwst apertures.
+        apString = apString + '{0:.2f}as\t'.format(ap_diametersAS[i]) # Change to 2sf for jwst apertures.
 
 
     print('######## AP STRING ' + apString + '################')
@@ -192,7 +229,7 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
         for r, reg in enumerate(regions):
             
             apResultString = ''
-            for i in range(apDiametersAS.size):
+            for i in range(ap_diametersAS.size):
                 if deptht == 'median':
                     apResultString = apResultString + '{0:.2f}\t'.format(meddepths[r, i])
                 elif deptht == 'global':
@@ -210,18 +247,38 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
 
 
 
-def get_depths(fieldName, queue = 'none', reqFilters= ['all'], apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), dataDir = Path.home() / 'euclid', outputDir = 'none', overwrite = False):
+def get_depths(field_name: str, req_filters: list, queue: str = 'none',
+               ap_diametersAS: np.ndarray = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), 
+               data_dir: Path = Path.home() / 'euclid', output_dir: str = 'none', 
+               overwrite: bool = False) -> None:
+    """
+    Runs the depth code on the glamdring queue.
 
+    Args:
+        field_name (str): Name of the field.
+        queue (str, optional): Queue name for running in parallel. Defaults to 'none'.
+        req_filters (list, optional): List of required filters.
+        ap_diametersAS (np.ndarray, optional): Array of aperture diameters in arcseconds. Defaults to [1.8, 2.0, 3.0, 4.0, 5.0].
+        data_dir (Path, optional): Directory containing data. Defaults to Path.home() / 'euclid'.
+        output_dir (str, optional): Output directory path. Defaults to 'none'.
+        overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
+
+    Returns:
+        None
+    """
+
+    # Default 
+    gridSepAS = 3.0
 
     strips=False # Placeholder - old code has this for UVISTA strips
 
     # loop through each filter
     # for the queue run, run each as a separate file...
 
-    for fi, filterName in enumerate(reqFilters):
+    for fi, filter_name in enumerate(req_filters):
 
         # Read in the images file
-        dirHere = dataDir / filterName / fieldName
+        dirHere = data_dir / filter_name / field_name
         imagedata = read_image_lis(dirHere)
         availableFilters = np.array(imagedata['Name'])
         print("The available filters are ", availableFilters)
@@ -229,40 +286,40 @@ def get_depths(fieldName, queue = 'none', reqFilters= ['all'], apDiametersAS = n
         #! Loop through each Euclid tile
         for j, tile_name in enumerate(availableFilters):
             # define the images etc to send through
-            imageName = imagedata['Image'][j]
-            whtName = imagedata['Weight'][j]
-            whtType = imagedata['Wht_type'][j]
+            image_name = imagedata['Image'][j]
+            wht_name = imagedata['Weight'][j]
+            wht_type = imagedata['wht_type'][j]
             zeropoint = imagedata['zeropoint'][j]
-            imageDir = imagedata['directory'][j]
-            maskName = '../../data/masks/{0}/{1}'.format(fieldName, imagedata['mask'][j])
+            image_dir = imagedata['directory'][j]
+            maskName = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'masks' / field_name / imagedata['mask'][j]
             print(maskName)
             
-            if imageDir == 'here':
-                imageDir = dataDir + fieldName + '/'
+            if image_dir == 'here':
+                image_dir = data_dir / filter_name / field_name
             
             # Now spawn the depths!
             if queue == 'none':
                 print("Running here ")
                         
-                image_depth(imageDir + imageName, zeropoint, whtName = imageDir + whtName, whtType = whtType, outputDir = outputDir, strips = strips, filterName = filterName, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, apDiametersAS = apDiametersAS)
+                image_depth(image_dir + image_name, zeropoint, wht_name = image_dir + wht_name, wht_type = wht_type, output_dir = output_dir, strips = strips, filter_name = tile_name, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, ap_diametersAS = ap_diametersAS)
 
             else:
 
                 # make an ap diameters string
-                apDiametersAS = np.array(apDiametersAS)
-                apDiametersASstring = '{0:.2f}'.format(apDiametersAS[0])
-                for i in range(apDiametersAS.size-1):
+                ap_diametersAS = np.array(ap_diametersAS)
+                ap_diametersASstring = '{0:.2f}'.format(ap_diametersAS[0])
+                for i in range(ap_diametersAS.size-1):
 
-                    apDiametersASstring = apDiametersASstring + ',{0:.2f}'.format(apDiametersAS[i+1])
+                    ap_diametersASstring = ap_diametersASstring + ',{0:.2f}'.format(ap_diametersAS[i+1])
                 
 
-                print(apDiametersASstring)
+                print(ap_diametersASstring)
                 print("Spawning in the queue...", queue)
                 # make shell script
-                tmpName = "tmp_{1}_{0}.sh".format(filterName, fieldName)
+                tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(imageDir + imageName, imageDir +  whtName, whtType, zeropoint, outputDir, strips, filterName, overwrite, maskName, gridSepAS, apDiametersASstring))
+                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(image_dir / image_name, image_dir / wht_name, wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
                 f.close()
                 
                 # now execute this
@@ -273,20 +330,36 @@ def get_depths(fieldName, queue = 'none', reqFilters= ['all'], apDiametersAS = n
         
     return
     
-def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation = 100, pixScale = -99.0, next = 0, clean = False, outputFitsName = 'none', imageDir = '', verbose =False, field = 'NORMAL', overwrite = False):
-    
-    #from photutils import CircularAperture
-    #from photutils import aperture_photometry
-    from astropy.io import fits
-    from astropy.table import Table, hstack, join
-    import time
-    #import sep # aperture photometry from SExtractor!
-    
+def aperture_photometry_blank(image_name: str, seg_map: str, wht_map: str, ap_size: np.ndarray,
+                               grid_separation: float = 100, pix_scale: float = -99.0, next: int = 0,
+                               clean: bool = False, output_fits_name: str = 'none', image_dir: str = '',
+                               verbose: bool = False, field: str = 'NORMAL', overwrite: bool = False) -> None:
+    """
+    Place apertures on blank regions of the image, chunked into a grid.
+
+    Args:
+        image_name (str): Name of the image.
+        seg_map (str): Segmentation map.
+        wht_map (str): Weight map.
+        ap_size (np.ndarray): Array of aperture diameters.
+        grid_separation (float, optional): Grid separation. Defaults to 100.
+        pix_scale (float, optional): Pixel scale. Defaults to -99.0.
+        next (int, optional): Index of HDU to use from FITS file. Defaults to 0.
+        clean (bool, optional): Whether to clean at the aperture phot level. Defaults to False.
+        output_fits_name (str, optional): Output FITS file name. Defaults to 'none'.
+        image_dir (str, optional): Directory containing images. Defaults to ''.
+        verbose (bool, optional): Verbosity. Defaults to False.
+        field (str, optional): Field type. Defaults to 'NORMAL'.
+        overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
+
+    Returns:
+        None
+    """
     
     # first check if output exists
-    if os.path.isfile(outputFitsName) and (overwrite == False):
+    if os.path.isfile(output_fits_name) and (overwrite == False):
 
-        origTable = Table.read(outputFitsName)
+        origTable = Table.read(output_fits_name)
         cols = np.array(origTable.colnames)
         
         # check if all the columns are there
@@ -294,7 +367,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
         
         # modify the column names
         for tt, typ in enumerate(['IMAGE', 'SEG', 'WHT']):
-            for	ai, apD	in enumerate(apSize):
+            for	ai, apD	in enumerate(ap_size):
                 
                 oldcolname = '{0}_flux_{1}'.format(typ, ai)
                 newcolname = '{0}_flux_{1:.1f}as'.format(typ, apD)
@@ -307,18 +380,18 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
         # overwrite the file
         if change > 0:
             print(origTable.colnames)
-            origTable.write(outputFitsName, overwrite = True)
-            print('aperture phot file updated ', outputFitsName)
+            origTable.write(output_fits_name, overwrite = True)
+            print('aperture phot file updated ', output_fits_name)
 
             
     # check if the column I want exists yet or not
-    if os.path.isfile(outputFitsName) and (overwrite == False):
+    if os.path.isfile(output_fits_name) and (overwrite == False):
         
-        origTable = Table.read(outputFitsName)
+        origTable = Table.read(output_fits_name)
         cols = np.array(origTable.colnames)
-        missingAps = np.ones(apSize.size, dtype = bool)
+        missingAps = np.ones(ap_size.size, dtype = bool)
         
-        for ai, apD in enumerate(apSize):
+        for ai, apD in enumerate(ap_size):
             reqCol = '{0}_flux_{1:.1f}as'.format('IMAGE', apD)
             kk = np.any(cols == reqCol)
             if kk:
@@ -326,47 +399,45 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
                 
         print('Checking the apertures ', missingAps)
         if np.any(missingAps):
-            print('I need to re-run adding this aperture', apSize[missingAps])
+            print('I need to re-run adding this aperture', ap_size[missingAps])
         else:
             print('All required aps are present, do not need to run again')
             return
 
         append = True
-        apSize = apSize[missingAps]
+        ap_size = ap_size[missingAps]
         
     else:
         append = False
         
     ## Get the pixel scale
     if verbose:
-        print(imageName)
+        print(image_name)
     
-    hdulist = fits.open(imageName)
+    hdulist = fits.open(image_name)
     header = hdulist[next].header
     imageData = hdulist[next].data
     
-    if pixScale < 0.0:
+    if pix_scale < 0.0:
         # read from header
         if 'CD1_1' in header:
             cdone_o = -3600.0*header['CD1_1']
         else:
             cdone_o = 3600.0*np.abs(header['CDELT1'])
-        pixScale = round(cdone_o, 5)
+        pix_scale = round(cdone_o, 5)
         
     
     ## Get the apertures size, in pixels
-    apSizePix = apSize/pixScale
+    ap_sizePix = ap_size/pix_scale
     
     ## First just try a simple grid
     ## grab the dimensions
     naxis1 = header['NAXIS1']
     naxis2 = header['NAXIS2']
     
-    #gridSeparation = 20 ## pixels
-    
     ## create arrays of the central coordinates
-    numberX = int((naxis1-gridSeparation)/gridSeparation)
-    numberY = int((naxis2-gridSeparation)/gridSeparation)
+    numberX = int((naxis1-grid_separation)/grid_separation)
+    numberY = int((naxis2-grid_separation)/grid_separation)
     numberApertures = numberX*numberY
     print('The number of apertures is ', numberApertures)
     
@@ -374,20 +445,19 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
     #apertureArray = np.zeros([numberApertures, 2])
     xArray = np.zeros(numberApertures)
     yArray = np.zeros(numberApertures)
-    halfGrid = gridSeparation/2
+    halfGrid = grid_separation/2
         
     numberHere = 0
     for xi in range(numberX):
         for yi in range(numberY):
-            #apertureArray[numberHere, :] = [halfGrid+xi*gridSeparation, halfGrid+yi*gridSeparation]
-            # print "the coords are ", apertureArray[:, numberHere]
-            xArray[numberHere] = halfGrid+xi*gridSeparation
-            yArray[numberHere] = halfGrid+yi*gridSeparation
+
+            xArray[numberHere] = halfGrid+xi*grid_separation
+            yArray[numberHere] = halfGrid+yi*grid_separation
             numberHere = numberHere + 1
 
     ## now do aperture photometry on both
     ## setup the apertures
-    radii = apSizePix/2.0
+    radii = ap_sizePix/2.0
     if verbose:
         print("Here")
 
@@ -401,7 +471,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
 
     ## 2) the seg
     ## I don't care about interpolation here
-    hdulist = fits.open(segMap)
+    hdulist = fits.open(seg_map)
     segData = hdulist[next].data
     phot_seg = aperture_phot_fast(segData, xArray, yArray, np.array(radii), subpix = 1)    
     hdulist.close()
@@ -410,7 +480,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
     
     ## 3) the wht
     ## to exclude pixels off the edge
-    if whtMap[-4:].lower() == 'none':
+    if wht_map[-4:].lower() == 'none':
         print("No weight data. ")
         ## Just use the image instead.
         phot_wht = Table(phot_image, copy = True)
@@ -421,7 +491,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
             phot_wht[name] = np.abs(phot_wht[name])
         
     else:
-        hdulist = fits.open(whtMap)
+        hdulist = fits.open(wht_map)
         whtData = hdulist[next].data
         phot_wht = aperture_phot_fast(whtData, xArray, yArray, np.array(radii), subpix = 1)
     # centre means a pixel is either in or outside the aperture
@@ -431,10 +501,10 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
     ## I can do cuts etc in another code
     ## to speed this up!!
     
-    if outputFitsName == 'none':
-        directory = imageDir + 'depths/catalogues/'
-        filterName = segMap[0:segMap.rfind('_')]
-        outputFitsName = filterName + '_aperPhot.fits'
+    if output_fits_name == 'none':
+        directory = image_dir + 'depths/catalogues/'
+        filter_name = seg_map[0:seg_map.rfind('_')]
+        output_fits_name = filter_name + '_aperPhot.fits'
         
     # stack the tables
     bigTable = hstack([phot_image, phot_seg, phot_wht], table_names=['IMAGE', 'SEG', 'WHT'], uniq_col_name='{table_name}_{col_name}')
@@ -463,7 +533,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
             print('Cleaning at the aperture phot level')
             # remove the bad columns here.
             smallNum = 0.0000001
-            deltaZero = 1E-13 #0.00000001
+            deltaZero = 1E-13
             apString = '2'
             
             seg_sum = np.array(bigTable['SEG_flux_' + apString])
@@ -475,12 +545,11 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
                 
             else:
                 good_indicies = (seg_sum < 0.5)  & (wht_sum > smallNum) & ((ap_sum > deltaZero) | (ap_sum < -deltaZero))
-            #good_indicies = np.where(good_indicies)
             bigTable = bigTable[good_indicies]
 
     # rename the columns with the diameter size
     for tt, typ in enumerate(['IMAGE', 'SEG', 'WHT']):
-        for ai, apD in enumerate(apSize):
+        for ai, apD in enumerate(ap_size):
             
             oldcolname = '{0}_flux_{1}'.format(typ, ai)
             newcolname = '{0}_flux_{1:.1f}as'.format(typ, apD)
@@ -489,10 +558,6 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
                 bigTable.rename_column(oldcolname, newcolname)
             
     bigTable.info
-    
-    # remove the wht and seg columns
-    #bigTable.remove_column('WHT_flux_' + apString)
-    #bigTable.remove_column('SEG_flux_' + apString)
 
     if append:
         print(bigTable.colnames)
@@ -503,15 +568,22 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
         bigTable = join(origTable, bigTable, keys = ['IMAGE_xcenter', 'IMAGE_ycenter'])
         print(bigTable.colnames)
         print('After ', bigTable)
-    #exit()
-        
-    #bigTable.meta['aperture_photometry_args'] = ''
-    bigTable.write(outputFitsName, overwrite = True)
-    print("Aperture table has been saved to ", outputFitsName)
+
+    bigTable.write(output_fits_name, overwrite = True)
+    print("Aperture table has been saved to ", output_fits_name)
      
     return
 
-def read_image_lis(dirHere):
+def read_image_lis(dirHere: Path) -> Table:
+    """
+    Read in photometric filters/images/tiles from 'images.lis' file.
+
+    Args:
+        dirHere (Path): Directory path.
+
+    Returns:
+        Table: Table containing image data.
+    """
 
     # read in filters
     inputFile = dirHere / 'images.lis'
@@ -523,19 +595,27 @@ def read_image_lis(dirHere):
             
     return Table.read(inputFile, format = 'ascii.commented_header')
 
-def aperture_phot_fast(imageData, xArray, yArray, radii, subpix = 5):
-    
-    # Subpix = 5 is what SEXtractor uses.
-    import sep
-    from astropy.table import Table, Column
+def aperture_phot_fast(imageData: np.ndarray, xArray: np.ndarray, yArray: np.ndarray, radii: np.ndarray, subpix: int = 5) -> Table:
+    """
+    Perform rapid aperture photometry on some predefined positions using sep (SExtractor Python wrapper).
 
+    Args:
+        imageData (np.ndarray): Image data.
+        xArray (np.ndarray): Array of x coordinates.
+        yArray (np.ndarray): Array of y coordinates.
+        radii (np.ndarray): Array of aperture radii.
+        subpix (int): Subpixel sampling factor (default is 5, which is what SEXtractor uses.).
+
+    Returns:
+        Table: Table containing aperture photometry results.
+    """
+    
     print("In ap phot fast ")
     
     data = imageData.byteswap().newbyteorder()    
     for ri, r in enumerate(radii):
         print("Before phot fast ")
-        #print(data, r, subpix)
-        #print(xArray)
+
         flux, fluxerr, flag = sep.sum_circle(data, xArray, yArray, r, subpix = subpix)
         print("After ap phot fast ")
         
@@ -549,39 +629,45 @@ def aperture_phot_fast(imageData, xArray, yArray, radii, subpix = 5):
     
     return phot_apertures
 
-def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, numApertures = 200, strips = False, plot = True, local = True, recalculate = True, globalplot = True, clean = True, plotDir = '', maskreg = 'none', refimage = 'none'):
-    ''' extractDepths.py
-    
-    Code to extract the depths from the input table of aperture photometry
-    
-    Modified: Dec 2019 '''
+def extract_local_depths(inputTableFile: str, ap_diametersAS: np.ndarray, zeropoint: float, step: int = 500, num_apertures: int = 200, strips: bool = False, 
+                         plot: bool = True, local: bool = True, recalculate: bool = True, globalplot: bool = True, clean: bool = True, plotDir: str = '', 
+                         maskreg: str = 'none', refimage: str = 'none') -> tuple:
+    """Extract depths from the input table of aperture photometry.
+
+    Args:
+        inputTableFile (str): Path to the input table file.
+        ap_diametersAS (np.ndarray): Array of aperture diameters.
+        zeropoint (float): Zeropoint value.
+        step (int, optional): Step size. Defaults to 500.
+        num_apertures (int, optional): Number of apertures. Defaults to 200.
+        strips (bool, optional): Whether to use strips. Defaults to False.
+        plot (bool, optional): Whether to plot. Defaults to True.
+        local (bool, optional): Whether to calculate local depths. Defaults to True.
+        recalculate (bool, optional): Whether to recalculate. Defaults to True.
+        globalplot (bool, optional): Whether to plot global depths. Defaults to True.
+        clean (bool, optional): Whether to clean. Defaults to True.
+        plotDir (str, optional): Directory to save plots. Defaults to ''.
+        maskreg (str, optional): Mask region. Defaults to 'none'.
+        refimage (str, optional): Reference image. Defaults to 'none'.
+
+    Returns:
+        tuple: Tuple containing regions, global depth, median local depth, and mode local depth.
+    """
 
     import matplotlib
-    #matplotlib.use('pdf')
     matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import matplotlib.mlab as mlab
-    from matplotlib import gridspec
-    from scipy.stats import norm
-    from astropy import units as u
-    import matplotlib.backends.backend_pdf
-    from new_catalogue_codes import return_instrips, mask_column
+
     
     ###########################################
     # important setup
     nirspec = False
     edgebuffer = 0.1 ## 10% of the edge #500
     edgebuffer_full = 0 #3000
-    #magmin = 23
-    #magmax = 28
+
     # remove things close to zero!
     deltaZero = 1E-13
-    
-    # extract name for local depth results
-    #if clean:
-    #    basename = inputTableFile[:-21]
-    #else:
-    basename = inputTableFile[:-13]
+
+    basename = str(inputTableFile)[:-13]
         
     colourArray = ['Blue', 'Green', 'Green', 'Green', 'Green', 'Red', 'Red', 'Red', 'Red', 'Red']
     
@@ -590,48 +676,33 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
         # for ultravista!
         regions = ['fullimage', 'stripone', 'striptwo', 'stripthree', 'stripfour', 'gap1', 'gap2', 'gap3', 'gap4']
         regions = ['full', 'str1', 'str2', 'str3', 'str4', 'gap1', 'gap2', 'gap3', 'gap4']
-        #deepStrips_ra_low = [149.3, 149.65, 150.02, 150.4]
-        #deepStrips_ra_high = [149.5, 149.85, 150.25, 150.6]
-        # convert to x and y!
-        #strips_x_high = [9513, 18626, 27500, 35895]
-        #strips_x_low = [4716, 13111, 22703, 31098]
-        #x_low_limit = strips_x_low + [0] + strips_x_high
-        #x_high_limit = strips_x_high + strips_x_low + [36261]
-        
-        ## this is conservative, gives only the deepest part
-        ## for the gaps I should probably add a few 2000...
-        #gaps = gapone | gaptwo | gapthree| gapfour | gapfive
         
     else:
         regions = ['full']
         
-    global_depth = np.zeros([len(regions), apDiametersAS.size])
-    median_local_depth = np.zeros([len(regions), apDiametersAS.size])
-    mode_local_depth = np.zeros([len(regions), apDiametersAS.size])
+    global_depth = np.zeros([len(regions), ap_diametersAS.size])
+    median_local_depth = np.zeros([len(regions), ap_diametersAS.size])
+    mode_local_depth = np.zeros([len(regions), ap_diametersAS.size])
     
     # define a nice figure
     # save the plot somewhere sensible
-    # extract the filtername
-    startI = inputTableFile.rfind('/') + 1
-    endI = inputTableFile.rfind('_')
-    filterName = inputTableFile[startI:endI]
-    plotName = plotDir + filterName + '_' + str(numApertures) + '_{0}.pdf'.format(step)
+    # extract the filter_name
+    startI = str(inputTableFile).rfind('/') + 1
+    endI = str(inputTableFile).rfind('_')
+    filter_name = str(inputTableFile)[startI:endI]
+    plotName = Path(plotDir) / str(filter_name + '_' + str(num_apertures) + '_{0}.pdf'.format(step))
     pdf = matplotlib.backends.backend_pdf.PdfPages(plotName)
     
     # Loop through the available apertures
-    for ai, apDiAS in enumerate(apDiametersAS):
+    for ai, apDiAS in enumerate(ap_diametersAS):
         
         print("Extracting local and global depths for aperture = ", apDiAS, " as.")
         
         # The apertures are strings _0, _1 etc
-        #apString = '_' + str(ai)
         apString = '_{0:.1f}as'.format(apDiAS)
         
-        #if clean:
-        localDepthsFile = basename + str(apDiAS) + 'as_gridDepths_{0}_{1}.fits'.format(numApertures, step)
-        #else:
-        #    localDepthsFile = basename + str(apDiAS) + 'as_gridDepths.fits'
-            
+        localDepthsFile = basename + str(apDiAS) + 'as_gridDepths_{0}_{1}.fits'.format(num_apertures, step)
+
         print("File will be saved to ", localDepthsFile)
         
         ## Always read in aperture file
@@ -646,12 +717,10 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
         if clean == False:
             # do the cleaning here
             smallNum = 0.0000001
-        #print inputTable.colnames
-        #print inputTable['IMAGE_xcenter']
-        #print inputTable['IMAGE_ycenter']
-         ## cut the table depending on apertures
-         ## only accept coordinates where the seg map
-         ## aperture is blank, and the wht map is > 0
+
+            ## cut the table depending on apertures
+            ## only accept coordinates where the seg map
+            ## aperture is blank, and the wht map is > 0
             seg_sum = np.array(inputTable['SEG_flux' + apString])
             wht_sum = np.array(inputTable['WHT_flux' + apString])
             ap_sum = np.array(inputTable['IMAGE_flux' + apString])
@@ -660,7 +729,7 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
             print("There are ", sum(good_indicies), " good indicies, out of ", len(seg_sum))
             good_indicies = np.where(good_indicies)
             
-        ## This table has all the good apertures
+            ## This table has all the good apertures
             reducedTable = inputTable[good_indicies]
             
         else:
@@ -678,29 +747,20 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
             #############################################################
             ################## RUNNING LOCAL DEPTHS ####################
             
-           ## Find the min max so I can create array for local depths
-            #maxNumx = max(apX)
-            #maxNumy = max(apY)
-            #minNumx = min(apX)
-            #minNumy = min(apY)
-
-            ## Why?!
-            #xmax = max(apX) + min(apX)*3.0
-            #ymax = max(apY) + min(apY)*3.0
-            xmax = max(apX)# - min(apX)#*3.0
-            ymax = max(apY)# - min(apY)#*3.0
+            xmax = max(apX)
+            ymax = max(apY)
             
             numX = np.ceil(xmax/step)
             numY = np.ceil(ymax/step)
 
-            x = min(apX) + np.arange(numX)*step ## modifed 21/9/2018 to add min(apX).
+            x = min(apX) + np.arange(numX)*step 
             y = min(apY) + np.arange(numY)*step
             print("Step = ", step, " numx, y = ", numX, numY)
             print("Max = ", xmax, ymax, max(apX), min(apX))
             
             # create x, y arrays
-            x = np.zeros(1) #.value
-            y = np.zeros(1) #.value                
+            x = np.zeros(1)
+            y = np.zeros(1)             
             
             for xi in np.arange(step/2.0, numX*step, step):
                 for yi in np.arange(step/2.0, numY*step, step):
@@ -708,22 +768,12 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                     y = np.append(y, yi)
                     
             # I want a constant grid over the image.
-            
             # remove the first elements
             x = x[1:]
             y = y[1:]
 
-            #            x = x[7000:7010]
-            #            y = y[7000:7010]
-            
             ## Now run local depths at those points
-            depthsLocalFull, maskArray = local_depths(reducedTable, apString, x, y, numApertures, zeropoint = zeropoint, mask = True, sigmaClip = 3.0)#, plot = plotDir + filterName + '_' + str(numApertures))
-            
-            ## remove points that lie off the image
-            #good_ind = depthsLocal > 0.0
-            #x = x[good_ind]
-            #y = y[good_ind]
-            #depthsLocalFull = depthsLocal[good_ind]
+            depthsLocalFull, maskArray = local_depths(reducedTable, apString, x, y, num_apertures, zeropoint = zeropoint, mask = True, sigmaClip = 3.0)
             
             ## Now save these results for faster calculating/plotting in future
             ## Create a table
@@ -734,21 +784,10 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
         else:
             # simply restore the results
             localTable = Table.read(localDepthsFile)
-            
-                ## extract the depths
-            #if 'depth' in keys:
-            #        #print "Yes!"
-            #    depthsLocalFull = localTable['depth']
-            #else:
-            #        #print "Calculating depths here. "
-            #    depthsLocalFull = localTable['depths']
-                
-
-                
+               
     # for plotting and median depths, remove negative objects!
         gg = (localTable['mask'] > 0)
 
-        #gg = (localTable['depths'] > 0.0)
         localTable = localTable[gg]
         x = localTable['x']
         y = localTable['y']
@@ -789,7 +828,6 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                     
                 else:
                     # read in a header
-                    from astropy.wcs import WCS
                     w = WCS(refimage)
                     ra, dec= w.all_pix2world(x,y, 1)
 
@@ -823,17 +861,15 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                     else:
                         good_indicies = mask_column(ra, dec, maskreg, tokeep = True, hsc = hsc)
                     
-                
-                #print "There are ", x.shape, y.shape, " local depth positions..."
 
             print('There are {0} good indicies'.format(np.sum(good_indicies)))
 
             good_indicies = good_indicies & np.logical_not(np.isnan(localTable['depths']))
             
             finalTable = localTable[good_indicies]
-            apXregion = finalTable['x'] #/u.pix
-            apYregion = finalTable['y'] #/u.pix
-            depthsLocal = finalTable['depths'] #depthsLocalFull[good_indicies]
+            apXregion = finalTable['x'] 
+            apYregion = finalTable['y'] 
+            depthsLocal = finalTable['depths'] 
 
             ii = np.logical_not(np.isnan(depthsLocal))
             
@@ -842,8 +878,7 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
             # For the median depth of the local depths
             # I want to exclude the edges
             medianLocalDepth = np.median(depthsLocal)
- #           print(depthsLocal, medianLocalDepth)
-#            exit()
+
             magmin = medianLocalDepth - 1.2
             magmax = medianLocalDepth + 0.8
 
@@ -863,9 +898,8 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                 cm = plt.cm.get_cmap('RdYlBu')
                 sc = plt.scatter(x, y, s = 5, c = depthsLocalFull, cmap = cm, linewidth = 0.0, vmin = magmin, vmax = magmax)
                 
-#                plt.scatter(x[good_indicies], y[good_indicies], s = 11, linewidth = 0.1, facecolor = 'none', edgecolor = 'k', alpha = 0.5)
                 plt.colorbar(sc)
-                plt.title('Local depths for filter {0}\n Aperture diameter is {1:.1f}as'.format(filterName, apDiAS))
+                plt.title('Local depths for filter {0}\n Aperture diameter is {1:.1f}as'.format(filter_name, apDiAS))
                 
                 # now make a histogram to go underneath, do this differently if in strips!
                 ax = plt.subplot(gs[1])
@@ -948,15 +982,12 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
             
             ## Fit with Gaussian
             (mu, sigma) = norm.fit(reducedResults)
-            
-            #print "The global depth is then: MAD = {0:.2f}, GAUSSIAN = {1:.2f} from {2} apertures.".format(return_mag(mad, zeropoint, sigma = 5.0), return_mag(sigma, zeropoint, sigma = 5.0), reducedResults.shape)
+
             
             medianFlux = np.median(reducedResults)
             mad = np.median(abs(reducedResults - medianFlux))
             sigma_mad = 1.4826*mad
             global_depth[ri, ai] = return_mag(sigma_mad, zeropoint, sigma = 5.0)
-            
-            #print "The global depth is ", sigma, zeropoint, global_depth[ri,ai]
 
             ####################################################
             # Median local depth
@@ -993,7 +1024,6 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                         # print('Mode = ', mode)
                     else:
 
-                        from scipy.signal import find_peaks
                         peaks,_ = find_peaks(smoothed, width = 10)
                         print(peaks)
                         print('Smoothed!', smoothx[peaks])
@@ -1008,7 +1038,6 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
                 n, bins, patches = plt.hist(reducedResults, 20, density = True)
                 
                 #yll = mlab.normpdf(bins, mu, sigma)
-                from scipy.stats import norm
                 yll = norm(loc = mu, scale = sigma)
                 l = plt.plot(bins, yll.pdf(bins), 'r--', linewidth=1)
                 plt.xlabel('Flux/counts')
@@ -1032,17 +1061,33 @@ def extract_local_depths(inputTableFile, apDiametersAS, zeropoint, step = 500, n
     return regions, global_depth, median_local_depth, mode_local_depth
 
 
-def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, verbose=False, mask = False, sigmaClip = 3.0, plot = 'none', regFile = 'none', fitGauss = False):
-    ''' Code to find the local depth around a given aperture coordinate, or coodinates.
-    Using the closest numApertures apertures.'''
+def local_depths(cleanTable: dict, apString: str, x: np.ndarray, y: np.ndarray, num_apertures: int,
+                 zeropoint: float = -99.0, verbose: bool = False, mask: bool = False, sigmaClip: float = 3.0,
+                 plot: str = 'none', regFile: str = 'none', fitGauss: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ''' 
+    Code to find the local depth around a given aperture coordinate, or coordinates.
+    Using the closest num_apertures apertures.
 
-    #plot = 'nirspec_test'
+    Parameters:
+    cleanTable (dict): A dictionary containing the required columns from the input table.
+    apString (str): A string representing the aperture.
+    x (np.ndarray): An array of x-coordinates.
+    y (np.ndarray): An array of y-coordinates.
+    num_apertures (int): The number of closest apertures to consider.
+    zeropoint (float, optional): The zeropoint value. Defaults to -99.0.
+    verbose (bool, optional): Whether to print verbose output. Defaults to False.
+    mask (bool, optional): Whether to return the mask array. Defaults to False.
+    sigmaClip (float, optional): The sigma value for clipping. Defaults to 3.0.
+    plot (str, optional): Plotting option. Defaults to 'none'.
+    regFile (str, optional): Regular file option. Defaults to 'none'.
+    fitGauss (bool, optional): Whether to fit a Gaussian. Defaults to False.
+
+    Returns:
+    Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]: An array of local depths or a tuple of local depths and mask array.
+    '''
+
     verbose = True
-    
-    #from astropy import units as u
-    import numpy as np
-    import matplotlib.pyplot as plt
-    
+
     ## Check x and y have the same size
     if len(x) != len(y):
         print("Error, the x and y arrays have a different length.")
@@ -1063,10 +1108,6 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
     maskArray = np.zeros(x.size)
     
     print("There are ", x.size, " positions to calculate depths for.")
-    #print cleanTable
-    #print allApertureResults
-    #print localDepths
-    #exit()
     
     if regFile != 'none':
         tf = open(regFile, 'w')
@@ -1077,22 +1118,14 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         plotname = plot + '_check_mad.pdf'
         pdf = matplotlib.backends.backend_pdf.PdfPages(plotname)
 
-    # testing
-    #x = x[1000:1100]
-    
     # get a minimum separation
     diffx = np.min(np.abs(y - np.roll(y, 1)))
     print('the miminum x separation is ', diffx)
     
-    
-    
     # loop through the positions
     for xi, xpos in enumerate(x):
-        #for yi, ypos in enumerate(y):
         ypos = y[xi]
-        
-        #if yi > 4000:
-        #    print "Initialising loop."
+
             
         ## calculate the radius        
         deltaX = apX - xpos
@@ -1100,38 +1133,20 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         radius = np.sqrt(deltaX*deltaX + deltaY*deltaY)
         
         ## sort this array, and then the table
-        #sortedIndicies = np.argsort(radius)
-        ## do this faster!
-        idx = np.argpartition(radius, numApertures)
-        useIndicies = idx[0:numApertures]
+        idx = np.argpartition(radius, num_apertures)
+        useIndicies = idx[0:num_apertures]
         
-        ## Check that the radius here is close!!
-        #print "The radius is ", radius[useIndicies]
-        #print "the pos is ", xpos, ypos
         apRedX= apX[useIndicies]
         apRedY= apY[useIndicies]
         
-        #print numApertures
+        #print num_apertures
         if regFile != 'none':
             for i in range(apRedX.size):
                 tf.write('circle\t{0}\t{1}\t6\n'.format(apRedX[i], apRedY[i]))
         
-        # this return the indicies of the lowerest numApertures apertures
-        # not necessarily sorted
-        
-        #if yi > 4000:
-        #    print "Is it the sort?", sortedIndicies.size
-  
-        ## Take the closest XX
-        #useIndicies = sortedIndicies[0:numApertures]
-        
-        #sortedRadius = radius[useIndicies]
-        #sortedTable = cleanTable[useIndicies]
-        #print "the size is ", sortedRadius.size
         
         ## extract the data here
         apertureResults = allApertureResults[useIndicies]
-        #print "Now working with {:4f} results.".format(apertureResults.size)
         smallRadius = radius[useIndicies]
         sortedRadius = smallRadius[np.argsort(smallRadius)]
         if verbose:
@@ -1157,15 +1172,11 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         if (plot != 'none'):
             fig = plt.figure()
             bins = np.arange(-3.0*sigma_mad, 3.0*sigma_mad, sigma_mad/5.0)
-            #print bins
-            #exit()
             n,bin,patches = plt.hist(apertureResults, bins = bins, facecolor = 'green', alpha = 0.75)
             
             # split by region
             north = (apRedX > np.median(apRedX)) & (apRedY > np.median(apRedY))
-            #n,bin,patches = plt.hist(apertureResults[north], bins = bins, facecolor = 'yellow', alpha = 0.75)
             south = (apRedX < np.median(apRedX)) & (apRedY < np.median(apRedY))
-            #n,bin,patches = plt.hist(apertureResults[south], bins = bins, facecolor = 'blue', alpha = 0.75)
             
             # plot the median etc
             plt.plot([medianFlux, medianFlux], [0, max(n)])
@@ -1176,11 +1187,6 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         
         if verbose:
             print("The mad sigma is ", sigma_mad, " after first run, mag = {0:.2f}".format(-2.5*np.log10(5.0*sigma_mad) + zeropoint))
-            
-            #if yi > 4000:
-            #        print "Searching for apertures in this sigma range. "
-            
-            #print "the mad = ", sigma_mad
 
         if sigma_mad > 1E-15:
             
@@ -1209,11 +1215,8 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
                     n,bin,patches = plt.hist(finalClippedResults, bins = bins, facecolor = 'red', alpha = 0.75)
                 
                     if fitGauss:
-                        from scipy.stats import norm
-                        import matplotlib.mlab as mlab
                         
-                    # fit a gaussian to these points!
-                        
+                        # fit a gaussian to these points!
                         (mu, sigma) = norm.fit(clippedResults)                
                         yll = mlab.normpdf(bins, mu, sigma)
                         
@@ -1237,16 +1240,12 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         #######################################
         
         if float(zeropoint) > -1.0:
-                ## convert to magnitudes
-            #print sigma_mad, xpos, ypos
+            ## convert to magnitudes
             localDepths[xi] = return_mag(sigma_mad, zeropoint, sigma = 5.0)
-                #print "The depth is then: {0:.2f} from {1} apertures.".format(return_mag(sigma_mad, zeropoint, sigma = 5.0), finalClippedResults.size)
             
         else:
-                ## keep as fluxes
-                #print "The depths are going to be in fluxes, not magnitudes"
+            ## keep as fluxes
             localDepths[xi] = sigma_mad
-                #if yi > 4000:
 
 
         if np.isnan(localDepths[xi]):
@@ -1257,13 +1256,6 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
             ## There are no apertures nearby...
             ## Set a masked value (for plotting)
             maskArray[xi] = 1
-            #print('Masking this as good ', diffx*10, sortedRadius[0])
-            
-## set the depth to -99
-         #   localDepths[xi] = -np.abs(localDepths[xi])
-            #print "Here ", localDepths
-            #    print "I have added to the final array."
-            #exit()
             
         if xi % 1000 == 0:
             print("At position ", xi)
@@ -1279,13 +1271,11 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         pdf.close()
         print('Plot at ', plotname)
 
-#    print(localDepths)
     # get rid of nans
     bad_indicies = np.isnan(localDepths)
     if np.any(bad_indicies):
         print('Fixing NANs in the local_depth code')
         localDepths[bad_indicies] = -99.0
-        #print localDepths[xi], xpos, ypos, sigma_mad
 
     if mask: 
         return localDepths, maskArray
@@ -1293,174 +1283,173 @@ def local_depths(cleanTable, apString, x, y, numApertures, zeropoint = -99.0, ve
         print("CONSIDER updating code to use masked depths.")
         return localDepths
 
-def return_mag(flux_counts, zeropoint, sigma = 1.0):
-    
-    import math
-    
+def return_mag(flux_counts: float, zeropoint: float, sigma: float = 1.0) -> float:
+    ''' 
+    Calculate the magnitude from flux counts.
+
+    Parameters:
+    flux_counts (float): Flux counts.
+    zeropoint (float): The zeropoint value.
+    sigma (float, optional): Sigma value. Defaults to 1.0.
+
+    Returns:
+    float: The calculated magnitude.
+    '''
+
     if flux_counts < 1E-15:
         return -99.0
     else:
         return -2.5*math.log(sigma*flux_counts, 10.0) + zeropoint
     
-def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False):
-    
-   ''' Code to find the closest depth measurement from my previous analysis. Faster than truely local depths '''
-   
-   import numpy as np
-   
-   xgrid = gridTable['x']
-   ygrid = gridTable['y']
-   keys = gridTable.colnames
-   #print keys
-   #print "Grid params."
-   #print len(xgrid), len(ygrid)
-   #print xgrid[0], ygrid[0], xgrid[1], ygrid[1]
-   
-   depthsOverField = gridTable['depths']
-   
-   ## Make an output array
-   depthArray = np.zeros(x.size)
-   depthArray[:] = -99.0
-   
-   if faster:
-       if verbose:
-           print("Using faster method.")
-           print("Input array size is ", x.size)
-       deltay = np.min(ygrid)
-       deltax = np.min(xgrid)
-      
-    #print "The delta is ", deltax, deltay
-       #print deltax, np.max(xgrid)
-       #print deltay, np.max(ygrid)
-       #print xgrid[0:10]
-       #print ygrid[0:10]
-    ## loop through the grid instead of each object
-       for xi in range(xgrid.size):
-           
-           xmin = xgrid[xi] - deltax
-           xmax = xgrid[xi] + deltax
-           ymin = ygrid[xi] - deltay
-           ymax = ygrid[xi] + deltay
-           #print xmin, xmax, ymin, ymax
-           #exit()
-           
+def grid_depths(gridTable: dict, x: np.ndarray, y: np.ndarray, faster: bool = True, verbose: bool = False, nearby: bool = False) -> np.ndarray:
+    ''' 
+    Code to find the closest depth measurement from my previous analysis. Faster than truly local depths
 
-           ii = (x > xmin) & (x <= xmax) & (y > ymin) & (y <= ymax)
-           
-           depthArray[ii] = depthsOverField[xi]
-               
-           # use this to average over nearby pixels.
-           
-               
-   else:
-       
-   ## Find the closest point to the objects x and y positions
-   ## Loop!
-       for xi in range(x.size):
-           
-       ## make a radius array
-           deltax = (xgrid - x[xi])
-           deltay = (ygrid - y[xi])
-           radius = np.sqrt(deltax*deltax + deltay*deltay)
-           mini = np.argmin(radius)
-           
-       ## try using argpartition
-           numpoints = 10
-           idx = np.argpartition(radius, numpoints)
-           
-           if nearby:
-               
-               mini = idx[0:numpoints]
-               print("The nearby depths are = ", depthsOverField[mini])
-               print("Before = ", depthsOverField[mini][0])
-           
-           
-       #print "The closest point is ", xgrid[mini], ygrid[mini], " to ", x[xi], y[xi]
-           depthArray[xi] = depthsOverField[mini][0]
-       #exit()
-   
-   return depthArray
-       
-       
-   
-def grid_psf(gridTable, x, y, faster = True, verbose = False, nearby = False):
-    
-   ''' Code to find the closest psf measurement from PSFEx map '''
-   '''Note from Rohan: copy and pasted above grid_depths, changed a couple things to adapt to PSFEx map.'''
-   import numpy as np
-   
-   xgrid = gridTable['x']
-   ygrid = gridTable['y']
-   keys = gridTable.colnames
-   #print keys
-   #print "Grid params."
-   #print len(xgrid), len(ygrid)
-   #print xgrid[0], ygrid[0], xgrid[1], ygrid[1]
-   
-   PSFsOverField = gridTable['ef_2.0']
-   
-   ## Make an output array
-   psfArray = np.zeros(x.size)
-   psfArray[:] = -99.0
-   
-   if faster:
-       if verbose:
-           print("Using faster method.")
-           print("Input array size is ", x.size)
-       deltay = np.min(ygrid)
-       deltax = np.min(xgrid)
-      
-    #print "The delta is ", deltax, deltay
-       #print deltax, np.max(xgrid)
-       #print deltay, np.max(ygrid)
-       #print xgrid[0:10]
-       #print ygrid[0:10]
-    ## loop through the grid instead of each object
-       for xi in range(xgrid.size):
-           
-           xmin = xgrid[xi] - deltax
-           xmax = xgrid[xi] + deltax
-           ymin = ygrid[xi] - deltay
-           ymax = ygrid[xi] + deltay
-           #print xmin, xmax, ymin, ymax
-           #exit()
-           
+    Parameters:
+    gridTable (dict): Dictionary containing grid information.
+    x (np.ndarray): Array of x coordinates.
+    y (np.ndarray): Array of y coordinates.
+    faster (bool, optional): If True, use a faster method. Defaults to True.
+    verbose (bool, optional): If True, enable verbose output. Defaults to False.
+    nearby (bool, optional): If True, consider nearby pixels. Defaults to False.
 
-           ii = (x > xmin) & (x <= xmax) & (y > ymin) & (y <= ymax)
-           
-           psfArray[ii] = PSFsOverField[xi]
-               
-           # use this to average over nearby pixels.
-           
-               
-   else:
+    Returns:
+    np.ndarray: Array of depth values.
+    '''
+
+    xgrid = gridTable['x']
+    ygrid = gridTable['y']
+    keys = gridTable.colnames
+
+    depthsOverField = gridTable['depths']
+
+    ## Make an output array
+    depthArray = np.zeros(x.size)
+    depthArray[:] = -99.0
+
+    if faster:
+        if verbose:
+            print("Using faster method.")
+            print("Input array size is ", x.size)
+        deltay = np.min(ygrid)
+        deltax = np.min(xgrid)
+
+    ## loop through the grid instead of each object
+        for xi in range(xgrid.size):
+            
+            xmin = xgrid[xi] - deltax
+            xmax = xgrid[xi] + deltax
+            ymin = ygrid[xi] - deltay
+            ymax = ygrid[xi] + deltay
+
+            ii = (x > xmin) & (x <= xmax) & (y > ymin) & (y <= ymax)
+            
+            depthArray[ii] = depthsOverField[xi]
+
+    else:
+        
+    ## Find the closest point to the objects x and y positions
+    ## Loop!
+        for xi in range(x.size):
+            
+        ## make a radius array
+            deltax = (xgrid - x[xi])
+            deltay = (ygrid - y[xi])
+            radius = np.sqrt(deltax*deltax + deltay*deltay)
+            mini = np.argmin(radius)
+            
+        ## try using argpartition
+            numpoints = 10
+            idx = np.argpartition(radius, numpoints)
+            
+            if nearby:
+                
+                mini = idx[0:numpoints]
+                print("The nearby depths are = ", depthsOverField[mini])
+                print("Before = ", depthsOverField[mini][0])
+            
+
+            depthArray[xi] = depthsOverField[mini][0]
+
+    return depthArray
+        
        
-   ## Find the closest point to the objects x and y positions
-   ## Loop!
-       for xi in range(x.size):
-           
-       ## make a radius array
-           deltax = (xgrid - x[xi])
-           deltay = (ygrid - y[xi])
-           radius = np.sqrt(deltax*deltax + deltay*deltay)
-           mini = np.argmin(radius)
-           
-       ## try using argpartition
-           numpoints = 10
-           idx = np.argpartition(radius, numpoints)
-           
-           if nearby:
-               
-               mini = idx[0:numpoints]
-               print("The nearby PSFs are = ", PSFsOverField[mini])
-               print("Before = ", PSFsOverField[mini][0])
-           
-           
-       #print "The closest point is ", xgrid[mini], ygrid[mini], " to ", x[xi], y[xi]
-           depthArray[xi] = PSFsOverField[mini][0]
-       #exit()
    
-   return psfArray
-       
-       
+def grid_psf(gridTable: dict, x: np.ndarray, y: np.ndarray, faster: bool = True, verbose: bool = False, nearby: bool = False) -> np.ndarray:
+    ''' 
+    Finds the closest psf measurement from PSFEx map. Adapted from grid_depths, changed a couple things to adapt to PSFEx map.
+
+    Parameters:
+    gridTable (dict): Dictionary containing grid information.
+    x (np.ndarray): Array of x coordinates.
+    y (np.ndarray): Array of y coordinates.
+    faster (bool, optional): If True, use a faster method. Defaults to True.
+    verbose (bool, optional): If True, enable verbose output. Defaults to False.
+    nearby (bool, optional): If True, consider nearby pixels. Defaults to False.
+
+    Returns:
+    np.ndarray: Array of PSF values.
+    '''
+
+    xgrid = gridTable['x']
+    ygrid = gridTable['y']
+    keys = gridTable.colnames
+
+
+    PSFsOverField = gridTable['ef_2.0']
+
+    ## Make an output array
+    psfArray = np.zeros(x.size)
+    psfArray[:] = -99.0
+
+    if faster:
+        if verbose:
+            print("Using faster method.")
+            print("Input array size is ", x.size)
+        deltay = np.min(ygrid)
+        deltax = np.min(xgrid)
+        
+    ## loop through the grid instead of each object
+        for xi in range(xgrid.size):
+            
+            xmin = xgrid[xi] - deltax
+            xmax = xgrid[xi] + deltax
+            ymin = ygrid[xi] - deltay
+            ymax = ygrid[xi] + deltay
+
+            ii = (x > xmin) & (x <= xmax) & (y > ymin) & (y <= ymax)
+            
+            psfArray[ii] = PSFsOverField[xi]
+                
+            # use this to average over nearby pixels.
+            
+                
+    else:
+        
+    ## Find the closest point to the objects x and y positions
+    ## Loop!
+        for xi in range(x.size):
+            
+        ## make a radius array
+            deltax = (xgrid - x[xi])
+            deltay = (ygrid - y[xi])
+            radius = np.sqrt(deltax*deltax + deltay*deltay)
+            mini = np.argmin(radius)
+            
+        ## try using argpartition
+            numpoints = 10
+            idx = np.argpartition(radius, numpoints)
+            
+            if nearby:
+                
+                mini = idx[0:numpoints]
+                print("The nearby PSFs are = ", PSFsOverField[mini])
+                print("Before = ", PSFsOverField[mini][0])
+            
+            psfArray[xi] = PSFsOverField[mini][0]
+
+
+    return psfArray
+        
+        
    

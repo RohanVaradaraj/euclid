@@ -1,0 +1,1566 @@
+=========================================================
+Job submitted date = Thu 21 Mar 13:45:46 GMT 2024
+1 nodes ( 1 processes per node )
+1 hosts used: comp54
+Job output begins
+-----------------
+
+Running STUPID
+/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18.fits
+The base name is  EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18
+The pixel scale is 0.1000
+/mnt/users/videouser/sextractor/bin/sex /mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18.fits -c /mnt/vardy/vardygroupshare/data/bertin_config/video_mine.sex -CATALOG_TYPE FITS_1.0 -CATALOG_NAME /mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/catalogues/dY_18.fits -MAG_ZEROPOINT 29.8 -WEIGHT_TYPE MAP_RMS -WEIGHT_IMAGE /mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-RMS_TILE_101547134_18.fits -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" -CHECKIMAGE_NAME "/mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/images/Y_18_bgsub.fits,/mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/images/Y_18_seg.fits" -PHOT_APERTURES 2.0,2.9999999999999996,5.0,10.0,18.0,20.0,30.0
+The SEG and BG subtracted map do not exist.  Running...
+[1M> 
+[1A----- SExtractor 2.19.5 started on 2024-03-21 at 13:46:00 with 1 thread
+
+[1M> Setting catalog parameters
+[1A[1M> Reading detection filter
+[1A[1M> Initializing Neural Network
+[1A[1M> Reading Neural Network Weights
+[1A[1M> Initializing check-image(s)
+[1A[1M> Initializing catalog
+[1A[1M> Looking for EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18.fits
+[1A----- Measuring from: EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18.fits
+      "Unnamed" / no ext. header / 10200x10200 / 32 bits (floats)
+[1M> Looking for EUC_MER_MOSAIC-NIR-Y-RMS_TILE_101547134_18.fits
+[1A----- Weighting from: EUC_MER_MOSAIC-NIR-Y-RMS_TILE_101547134_18.fits
+      "Unnamed" / no ext. header / 10200x10200 / 32 bits (floats)
+Detection+Measurement image: [1M> Setting up background maps
+[1A[1M> Setting up background map at line:   64
+[1A[1M> Setting up background map at line:  128
+[1A[1M> Setting up background map at line:  192
+[1A[1M> Setting up background map at line:  256
+[1A[1M> Setting up background map at line:  320
+[1A[1M> Setting up background map at line:  384
+[1A[1M> Setting up background map at line:  448
+[1A[1M> Setting up background map at line:  512
+[1A[1M> Setting up background map at line:  576
+[1A[1M> Setting up background map at line:  640
+[1A[1M> Setting up background map at line:  704
+[1A[1M> Setting up background map at line:  768
+[1A[1M> Setting up background map at line:  832
+[1A[1M> Setting up background map at line:  896
+[1A[1M> Setting up background map at line:  960
+[1A[1M> Setting up background map at line: 1024
+[1A[1M> Setting up background map at line: 1088
+[1A[1M> Setting up background map at line: 1152
+[1A[1M> Setting up background map at line: 1216
+[1A[1M> Setting up background map at line: 1280
+[1A[1M> Setting up background map at line: 1344
+[1A[1M> Setting up background map at line: 1408
+[1A[1M> Setting up background map at line: 1472
+[1A[1M> Setting up background map at line: 1536
+[1A[1M> Setting up background map at line: 1600
+[1A[1M> Setting up background map at line: 1664
+[1A[1M> Setting up background map at line: 1728
+[1A[1M> Setting up background map at line: 1792
+[1A[1M> Setting up background map at line: 1856
+[1A[1M> Setting up background map at line: 1920
+[1A[1M> Setting up background map at line: 1984
+[1A[1M> Setting up background map at line: 2048
+[1A[1M> Setting up background map at line: 2112
+[1A[1M> Setting up background map at line: 2176
+[1A[1M> Setting up background map at line: 2240
+[1A[1M> Setting up background map at line: 2304
+[1A[1M> Setting up background map at line: 2368
+[1A[1M> Setting up background map at line: 2432
+[1A[1M> Setting up background map at line: 2496
+[1A[1M> Setting up background map at line: 2560
+[1A[1M> Setting up background map at line: 2624
+[1A[1M> Setting up background map at line: 2688
+[1A[1M> Setting up background map at line: 2752
+[1A[1M> Setting up background map at line: 2816
+[1A[1M> Setting up background map at line: 2880
+[1A[1M> Setting up background map at line: 2944
+[1A[1M> Setting up background map at line: 3008
+[1A[1M> Setting up background map at line: 3072
+[1A[1M> Setting up background map at line: 3136
+[1A[1M> Setting up background map at line: 3200
+[1A[1M> Setting up background map at line: 3264
+[1A[1M> Setting up background map at line: 3328
+[1A[1M> Setting up background map at line: 3392
+[1A[1M> Setting up background map at line: 3456
+[1A[1M> Setting up background map at line: 3520
+[1A[1M> Setting up background map at line: 3584
+[1A[1M> Setting up background map at line: 3648
+[1A[1M> Setting up background map at line: 3712
+[1A[1M> Setting up background map at line: 3776
+[1A[1M> Setting up background map at line: 3840
+[1A[1M> Setting up background map at line: 3904
+[1A[1M> Setting up background map at line: 3968
+[1A[1M> Setting up background map at line: 4032
+[1A[1M> Setting up background map at line: 4096
+[1A[1M> Setting up background map at line: 4160
+[1A[1M> Setting up background map at line: 4224
+[1A[1M> Setting up background map at line: 4288
+[1A[1M> Setting up background map at line: 4352
+[1A[1M> Setting up background map at line: 4416
+[1A[1M> Setting up background map at line: 4480
+[1A[1M> Setting up background map at line: 4544
+[1A[1M> Setting up background map at line: 4608
+[1A[1M> Setting up background map at line: 4672
+[1A[1M> Setting up background map at line: 4736
+[1A[1M> Setting up background map at line: 4800
+[1A[1M> Setting up background map at line: 4864
+[1A[1M> Setting up background map at line: 4928
+[1A[1M> Setting up background map at line: 4992
+[1A[1M> Setting up background map at line: 5056
+[1A[1M> Setting up background map at line: 5120
+[1A[1M> Setting up background map at line: 5184
+[1A[1M> Setting up background map at line: 5248
+[1A[1M> Setting up background map at line: 5312
+[1A[1M> Setting up background map at line: 5376
+[1A[1M> Setting up background map at line: 5440
+[1A[1M> Setting up background map at line: 5504
+[1A[1M> Setting up background map at line: 5568
+[1A[1M> Setting up background map at line: 5632
+[1A[1M> Setting up background map at line: 5696
+[1A[1M> Setting up background map at line: 5760
+[1A[1M> Setting up background map at line: 5824
+[1A[1M> Setting up background map at line: 5888
+[1A[1M> Setting up background map at line: 5952
+[1A[1M> Setting up background map at line: 6016
+[1A[1M> Setting up background map at line: 6080
+[1A[1M> Setting up background map at line: 6144
+[1A[1M> Setting up background map at line: 6208
+[1A[1M> Setting up background map at line: 6272
+[1A[1M> Setting up background map at line: 6336
+[1A[1M> Setting up background map at line: 6400
+[1A[1M> Setting up background map at line: 6464
+[1A[1M> Setting up background map at line: 6528
+[1A[1M> Setting up background map at line: 6592
+[1A[1M> Setting up background map at line: 6656
+[1A[1M> Setting up background map at line: 6720
+[1A[1M> Setting up background map at line: 6784
+[1A[1M> Setting up background map at line: 6848
+[1A[1M> Setting up background map at line: 6912
+[1A[1M> Setting up background map at line: 6976
+[1A[1M> Setting up background map at line: 7040
+[1A[1M> Setting up background map at line: 7104
+[1A[1M> Setting up background map at line: 7168
+[1A[1M> Setting up background map at line: 7232
+[1A[1M> Setting up background map at line: 7296
+[1A[1M> Setting up background map at line: 7360
+[1A[1M> Setting up background map at line: 7424
+[1A[1M> Setting up background map at line: 7488
+[1A[1M> Setting up background map at line: 7552
+[1A[1M> Setting up background map at line: 7616
+[1A[1M> Setting up background map at line: 7680
+[1A[1M> Setting up background map at line: 7744
+[1A[1M> Setting up background map at line: 7808
+[1A[1M> Setting up background map at line: 7872
+[1A[1M> Setting up background map at line: 7936
+[1A[1M> Setting up background map at line: 8000
+[1A[1M> Setting up background map at line: 8064
+[1A[1M> Setting up background map at line: 8128
+[1A[1M> Setting up background map at line: 8192
+[1A[1M> Setting up background map at line: 8256
+[1A[1M> Setting up background map at line: 8320
+[1A[1M> Setting up background map at line: 8384
+[1A[1M> Setting up background map at line: 8448
+[1A[1M> Setting up background map at line: 8512
+[1A[1M> Setting up background map at line: 8576
+[1A[1M> Setting up background map at line: 8640
+[1A[1M> Setting up background map at line: 8704
+[1A[1M> Setting up background map at line: 8768
+[1A[1M> Setting up background map at line: 8832
+[1A[1M> Setting up background map at line: 8896
+[1A[1M> Setting up background map at line: 8960
+[1A[1M> Setting up background map at line: 9024
+[1A[1M> Setting up background map at line: 9088
+[1A[1M> Setting up background map at line: 9152
+[1A[1M> Setting up background map at line: 9216
+[1A[1M> Setting up background map at line: 9280
+[1A[1M> Setting up background map at line: 9344
+[1A[1M> Setting up background map at line: 9408
+[1A[1M> Setting up background map at line: 9472
+[1A[1M> Setting up background map at line: 9536
+[1A[1M> Setting up background map at line: 9600
+[1A[1M> Setting up background map at line: 9664
+[1A[1M> Setting up background map at line: 9728
+[1A[1M> Setting up background map at line: 9792
+[1A[1M> Setting up background map at line: 9856
+[1A[1M> Setting up background map at line: 9920
+[1A[1M> Setting up background map at line: 9984
+[1A[1M> Setting up background map at line:10048
+[1A[1M> Setting up background map at line:10112
+[1A[1M> Setting up background map at line:10176
+[1A[1M> Filtering background map(s)
+[1A[1M> Computing background d-map
+[1A[1M> Computing background-noise d-map
+[1A(M+D) Background: 0.0553926  RMS: 0.902927   / Threshold: 1.2641     
+[1M> Scanning image
+[1A[1M> Line:   25  Objects:        1 detected /        0 sextracted
+[1A[1M> Line:   50  Objects:        2 detected /        0 sextracted
+[1A[1M> Line:   75  Objects:        3 detected /        0 sextracted
+[1A[1M> Line:  100  Objects:        3 detected /        0 sextracted
+[1A[1M> Line:  125  Objects:        4 detected /        0 sextracted
+[1A[1M> Line:  150  Objects:        4 detected /        0 sextracted
+[1A[1M> Line:  175  Objects:        5 detected /        0 sextracted
+[1A[1M> Line:  200  Objects:        5 detected /        0 sextracted
+[1A[1M> Line:  225  Objects:        5 detected /        0 sextracted
+[1A[1M> Line:  250  Objects:        5 detected /        0 sextracted
+[1A[1M> Line:  275  Objects:        7 detected /        0 sextracted
+[1A[1M> Line:  300  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  325  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  350  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  375  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  400  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  425  Objects:        8 detected /        0 sextracted
+[1A[1M> Line:  450  Objects:        9 detected /        0 sextracted
+[1A[1M> Line:  475  Objects:        9 detected /        0 sextracted
+[1A[1M> Line:  500  Objects:       10 detected /        0 sextracted
+[1A[1M> Line:  525  Objects:       12 detected /        0 sextracted
+[1A[1M> Line:  550  Objects:       13 detected /        0 sextracted
+[1A[1M> Line:  575  Objects:       13 detected /        0 sextracted
+[1A[1M> Line:  600  Objects:       13 detected /        0 sextracted
+[1A[1M> Line:  625  Objects:       13 detected /        0 sextracted
+[1A[1M> Line:  650  Objects:       15 detected /        0 sextracted
+[1A[1M> Line:  675  Objects:       15 detected /        0 sextracted
+[1A[1M> Line:  700  Objects:       17 detected /        0 sextracted
+[1A[1M> Line:  725  Objects:       19 detected /        0 sextracted
+[1A[1M> Line:  750  Objects:       20 detected /        0 sextracted
+[1A[1M> Line:  775  Objects:       21 detected /        0 sextracted
+[1A[1M> Line:  800  Objects:       22 detected /        0 sextracted
+[1A[1M> Line:  825  Objects:       23 detected /        0 sextracted
+[1A[1M> Line:  850  Objects:       24 detected /        0 sextracted
+[1A[1M> Line:  875  Objects:       26 detected /        0 sextracted
+[1A[1M> Line:  900  Objects:       26 detected /        0 sextracted
+[1A[1M> Line:  925  Objects:       34 detected /        0 sextracted
+[1A[1M> Line:  950  Objects:       38 detected /        0 sextracted
+[1A[1M> Line:  975  Objects:       41 detected /        0 sextracted
+[1A[1M> Line: 1000  Objects:       41 detected /        0 sextracted
+[1A[1M> Line: 1023  Objects:       42 detected /        0 sextracted
+[1A[1M> Line: 1025  Objects:       42 detected /        1 sextracted
+[1A[1M> Line: 1050  Objects:       45 detected /        2 sextracted
+[1A[1M> Line: 1075  Objects:       45 detected /        3 sextracted
+[1A[1M> Line: 1100  Objects:       54 detected /        3 sextracted
+[1A[1M> Line: 1125  Objects:       55 detected /        4 sextracted
+[1A[1M> Line: 1150  Objects:       57 detected /        4 sextracted
+[1A[1M> Line: 1175  Objects:       58 detected /        5 sextracted
+[1A[1M> Line: 1200  Objects:       60 detected /        5 sextracted
+[1A[1M> Line: 1225  Objects:       60 detected /        6 sextracted
+[1A[1M> Line: 1250  Objects:       60 detected /        6 sextracted
+[1A[1M> Line: 1275  Objects:       61 detected /        8 sextracted
+[1A[1M> Line: 1300  Objects:       62 detected /        8 sextracted
+[1A[1M> Line: 1325  Objects:       62 detected /        8 sextracted
+[1A[1M> Line: 1350  Objects:       62 detected /        8 sextracted
+[1A[1M> Line: 1375  Objects:       66 detected /        8 sextracted
+[1A[1M> Line: 1400  Objects:       67 detected /        8 sextracted
+[1A[1M> Line: 1425  Objects:       67 detected /       10 sextracted
+[1A[1M> Line: 1450  Objects:       69 detected /       10 sextracted
+[1A[1M> Line: 1475  Objects:       69 detected /       11 sextracted
+[1A[1M> Line: 1500  Objects:       69 detected /       11 sextracted
+[1A[1M> Line: 1525  Objects:       70 detected /       13 sextracted
+[1A[1M> Line: 1550  Objects:       70 detected /       14 sextracted
+[1A[1M> Line: 1575  Objects:       70 detected /       14 sextracted
+[1A[1M> Line: 1600  Objects:       71 detected /       15 sextracted
+[1A[1M> Line: 1625  Objects:       73 detected /       15 sextracted
+[1A[1M> Line: 1650  Objects:       73 detected /       17 sextracted
+[1A[1M> Line: 1675  Objects:       74 detected /       19 sextracted
+[1A[1M> Line: 1700  Objects:       74 detected /       22 sextracted
+[1A[1M> Line: 1725  Objects:       75 detected /       22 sextracted
+[1A[1M> Line: 1750  Objects:       77 detected /       23 sextracted
+[1A[1M> Line: 1775  Objects:       78 detected /       24 sextracted
+[1A[1M> Line: 1800  Objects:       78 detected /       25 sextracted
+[1A[1M> Line: 1825  Objects:       78 detected /       26 sextracted
+[1A[1M> Line: 1850  Objects:       78 detected /       26 sextracted
+[1A[1M> Line: 1875  Objects:       79 detected /       28 sextracted
+[1A[1M> Line: 1900  Objects:       79 detected /       31 sextracted
+[1A[1M> Line: 1925  Objects:       79 detected /       31 sextracted
+[1A[1M> Line: 1950  Objects:       79 detected /       32 sextracted
+[1A[1M> Line: 1975  Objects:       80 detected /       33 sextracted
+[1A[1M> Line: 2000  Objects:       82 detected /       33 sextracted
+[1A[1M> Line: 2025  Objects:       82 detected /       34 sextracted
+[1A[1M> Line: 2050  Objects:       82 detected /       34 sextracted
+[1A[1M> Line: 2075  Objects:       82 detected /       35 sextracted
+[1A[1M> Line: 2100  Objects:       82 detected /       36 sextracted
+[1A[1M> Line: 2125  Objects:       82 detected /       37 sextracted
+[1A[1M> Line: 2150  Objects:       82 detected /       37 sextracted
+[1A[1M> Line: 2175  Objects:       82 detected /       38 sextracted
+[1A[1M> Line: 2200  Objects:       82 detected /       40 sextracted
+[1A[1M> Line: 2225  Objects:       82 detected /       40 sextracted
+[1A[1M> Line: 2250  Objects:       82 detected /       41 sextracted
+[1A[1M> Line: 2275  Objects:       82 detected /       41 sextracted
+[1A[1M> Line: 2300  Objects:       82 detected /       42 sextracted
+[1A[1M> Line: 2325  Objects:       82 detected /       42 sextracted
+[1A[1M> Line: 2350  Objects:       82 detected /       43 sextracted
+[1A[1M> Line: 2375  Objects:       82 detected /       46 sextracted
+[1A[1M> Line: 2400  Objects:       82 detected /       47 sextracted
+[1A[1M> Line: 2425  Objects:       82 detected /       48 sextracted
+[1A[1M> Line: 2450  Objects:       82 detected /       49 sextracted
+[1A[1M> Line: 2475  Objects:       82 detected /       50 sextracted
+[1A[1M> Line: 2500  Objects:       82 detected /       50 sextracted
+[1A[1M> Line: 2525  Objects:       82 detected /       51 sextracted
+[1A[1M> Line: 2550  Objects:       82 detected /       51 sextracted
+[1A[1M> Line: 2575  Objects:       82 detected /       53 sextracted
+[1A[1M> Line: 2600  Objects:       82 detected /       53 sextracted
+[1A[1M> Line: 2625  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2650  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2675  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2700  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2725  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2750  Objects:       82 detected /       55 sextracted
+[1A[1M> Line: 2775  Objects:       82 detected /       56 sextracted
+[1A[1M> Line: 2800  Objects:       82 detected /       56 sextracted
+[1A[1M> Line: 2825  Objects:       82 detected /       56 sextracted
+[1A[1M> Line: 2850  Objects:       82 detected /       56 sextracted
+[1A[1M> Line: 2875  Objects:       82 detected /       57 sextracted
+[1A[1M> Line: 2900  Objects:       82 detected /       57 sextracted
+[1A[1M> Line: 2925  Objects:       82 detected /       58 sextracted
+[1A[1M> Line: 2950  Objects:       82 detected /       58 sextracted
+[1A[1M> Line: 2975  Objects:       82 detected /       59 sextracted
+[1A[1M> Line: 3000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 3975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 4975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 5975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 6975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 7975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 8975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9200  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9225  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9250  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9275  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9300  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9325  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9350  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9375  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9400  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9425  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9450  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9475  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9500  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9525  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9550  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9575  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9600  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9625  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9650  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9675  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9700  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9725  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9750  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9775  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9800  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9825  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9850  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9875  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9900  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9925  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9950  Objects:       82 detected /       60 sextracted
+[1A[1M> Line: 9975  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10000  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10025  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10050  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10075  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10100  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10125  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10150  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10175  Objects:       82 detected /       60 sextracted
+[1A[1M> Line:10200  Objects:       82 detected /       60 sextracted
+[1A      Objects: detected 82       / sextracted 60              
+
+[1M> Closing files
+[1A[1M> 
+[1A> All done (in 16.4 s: 621.2 lines/s , 3.7 detections/s)
+Measuring the aperture photometry.
+The number of apertures is  114921
+In ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+In ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+In ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Before phot fast 
+After ap phot fast 
+Cleaning at the aperture phot level
+Renaming column from  IMAGE_flux_0 IMAGE_flux_0.2as
+Renaming column from  IMAGE_flux_1 IMAGE_flux_0.3as
+Renaming column from  IMAGE_flux_2 IMAGE_flux_0.5as
+Renaming column from  IMAGE_flux_3 IMAGE_flux_1.0as
+Renaming column from  IMAGE_flux_4 IMAGE_flux_1.8as
+Renaming column from  IMAGE_flux_5 IMAGE_flux_2.0as
+Renaming column from  IMAGE_flux_6 IMAGE_flux_3.0as
+Renaming column from  SEG_flux_2 SEG_flux_0.5as
+Renaming column from  WHT_flux_2 WHT_flux_0.5as
+Aperture table has been saved to  /mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/phot/Y_18_aperPhot.fits
+Extracting local and global depths for aperture =  0.2  as.
+File will be saved to  /mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/phot/Y_18_0.2as_gridDepths_300_200.fits
+Reading file  /mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS/phot/Y_18_aperPhot.fits
+Step =  200  numx, y =  51.0 51.0
+Max =  10155.0 10155.0 10155.0 15.0
+There are  2601  positions to calculate depths for.
+the miminum x separation is  200.0
+The largest radii [459.61942 462.87146 462.87146 463.51913]
+The mad sigma is  2.142862199807167  after first run, mag = 27.23
+After the first clipping we have  298  good indicies.
+After the second clipping we have  298  good indicies.
+After second clipping... =  2.1162466160058973
+The depth = 27.24
+At position  0
+The largest radii [367.76352 372.62582 372.62582 373.43005]
+The mad sigma is  2.1213480304956436  after first run, mag = 27.24
+After the first clipping we have  297  good indicies.
+After the second clipping we have  297  good indicies.
+After second clipping... =  2.1043384257316586
+The depth = 27.24
+The largest radii [357.5612  359.2353  360.06943 360.90164]
+The mad sigma is  1.9658123289585112  after first run, mag = 27.32
+After the first clipping we have  296  good indicies.
+After the second clipping we have  296  good indicies.
+After second clipping... =  1.9238826042652128
+The depth = 27.34
+The largest radii [361.73193 365.03424 365.03424 365.03424]
+The mad sigma is  1.9844548317432402  after first run, mag = 27.31
+After the first clipping we have  295  good indicies.
+After the second clipping we have  295  good indicies.
+After second clipping... =  1.9783060578346252
+The depth = 27.31
+The largest radii [372.62582 373.43005 373.43005 375.03333]
+The mad sigma is  1.8974069983005524  after first run, mag = 27.36
+After the first clipping we have  291  good indicies.
+After the second clipping we have  288  good indicies.
+After second clipping... =  1.7083156754493714
+The depth = 27.47
+The largest radii [368.30695 369.12057 369.12057 369.12057]
+The mad sigma is  1.6805304283618927  after first run, mag = 27.49
+After the first clipping we have  289  good indicies.
+After the second clipping we have  289  good indicies.
+After second clipping... =  1.538682155585289
+The depth = 27.58
+The largest radii [359.2353  360.06943 360.90164 365.03424]
+The mad sigma is  1.6232915114879607  after first run, mag = 27.53
+After the first clipping we have  289  good indicies.
+After the second clipping we have  286  good indicies.
+After second clipping... =  1.4724549649000167
+The depth = 27.63
+The largest radii [355.31677 357.0014  357.0014  357.84076]
+The mad sigma is  1.275304488801956  after first run, mag = 27.79
+After the first clipping we have  282  good indicies.
+After the second clipping we have  270  good indicies.
+After second clipping... =  1.0611608447313308
+The depth = 27.99
+The largest radii [359.2353  360.06943 360.90164 360.90164]
+The mad sigma is  0.8469766389012336  after first run, mag = 28.23
+After the first clipping we have  253  good indicies.
+After the second clipping we have  228  good indicies.
+After second clipping... =  0.5921820701837539
+The depth = 28.62
+The largest radii [357.5612  359.2353  360.06943 360.90164]
+The mad sigma is  0.6944626558899879  after first run, mag = 28.45
+After the first clipping we have  251  good indicies.
+After the second clipping we have  230  good indicies.
+After second clipping... =  0.33339464251399037
+The depth = 29.25
+The largest radii [355.31677 355.31677 355.31677 355.31677]
+The mad sigma is  0.17925931583940982  after first run, mag = 29.92
+After the first clipping we have  224  good indicies.
+After the second clipping we have  135  good indicies.
+After second clipping... =  0.0038650982469320295
+The depth = 34.08
+The largest radii [356.7212 356.7212 357.5612 357.5612]
+The mad sigma is  0.00159531874358654  after first run, mag = 35.05
+After the first clipping we have  183  good indicies.
+After the second clipping we have  129  good indicies.
+After second clipping... =  5.306609272956848e-05
+The depth = 38.74
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  2.1186670660972595e-05  after first run, mag = 39.74
+After the first clipping we have  186  good indicies.
+After the second clipping we have  124  good indicies.
+After second clipping... =  3.645256161689758e-07
+The depth = 44.15
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  2.2092461585998533e-07  after first run, mag = 44.69
+After the first clipping we have  183  good indicies.
+After the second clipping we have  144  good indicies.
+After second clipping... =  2.2092461585998534e-08
+The depth = 47.19
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+/mnt/vardy/vardygroupshare/rohan/euclid/src/depths/new_depth_codes.py:1189: RuntimeWarning: divide by zero encountered in log10
+  print("The mad sigma is ", sigma_mad, " after first run, mag = {0:.2f}".format(-2.5*np.log10(5.0*sigma_mad) + zeropoint))
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [375.8324 375.8324 376.6298 378.2195]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [480.6766  480.6766  481.30032 481.30032]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [367.76352 372.62582 372.62582 373.43005]
+The mad sigma is  2.016088055419922  after first run, mag = 27.29
+After the first clipping we have  297  good indicies.
+After the second clipping we have  297  good indicies.
+After second clipping... =  1.9757132865428924
+The depth = 27.31
+The largest radii [288.53076 288.53076 294.70325 294.70325]
+The mad sigma is  2.125667548584938  after first run, mag = 27.23
+After the first clipping we have  297  good indicies.
+After the second clipping we have  297  good indicies.
+After second clipping... =  2.0718096620321274
+The depth = 27.26
+The largest radii [292.31833 292.31833 293.3428  293.3428 ]
+The mad sigma is  1.86405498111248  after first run, mag = 27.38
+After the first clipping we have  294  good indicies.
+After the second clipping we have  293  good indicies.
+After second clipping... =  1.847257463979721
+The depth = 27.39
+The largest radii [297.40546 297.40546 298.41248 298.41248]
+The mad sigma is  1.4654187809944152  after first run, mag = 27.64
+After the first clipping we have  283  good indicies.
+After the second clipping we have  281  good indicies.
+After second clipping... =  1.4138482595443724
+The depth = 27.68
+The largest radii [303.72684 303.72684 303.72684 303.72684]
+The mad sigma is  1.4014333565711974  after first run, mag = 27.69
+After the first clipping we have  278  good indicies.
+After the second clipping we have  275  good indicies.
+After second clipping... =  1.2284711213350294
+The depth = 27.83
+The largest radii [300.41638 304.3846  304.3846  304.3846 ]
+The mad sigma is  1.3719598035693168  after first run, mag = 27.71
+After the first clipping we have  283  good indicies.
+After the second clipping we have  273  good indicies.
+After second clipping... =  1.0437188463091849
+The depth = 28.01
+The largest radii [295.3811  295.3811  297.40546 297.40546]
+The mad sigma is  0.7935774802207947  after first run, mag = 28.30
+After the first clipping we have  244  good indicies.
+After the second clipping we have  182  good indicies.
+After second clipping... =  0.10298902467191219
+The depth = 30.52
+The largest radii [294.70325 294.70325 294.70325 294.70325]
+The mad sigma is  0.6905664735496044  after first run, mag = 28.45
+After the first clipping we have  252  good indicies.
+After the second clipping we have  184  good indicies.
+After second clipping... =  0.06049428527355194
+The depth = 31.10
+The largest radii [292.31833 293.3428  293.3428  294.3637 ]
+The mad sigma is  0.7848007638216018  after first run, mag = 28.32
+After the first clipping we have  264  good indicies.
+After the second clipping we have  252  good indicies.
+After second clipping... =  0.5664628659188747
+The depth = 28.67
+The largest radii [293.3428 294.3637 294.3637 295.3811]
+The mad sigma is  0.4644589220166206  after first run, mag = 28.89
+After the first clipping we have  262  good indicies.
+After the second clipping we have  262  good indicies.
+After second clipping... =  0.46027425631284713
+The depth = 28.90
+The largest radii [288.53076 288.53076 294.70325 294.70325]
+The mad sigma is  0.07555580991357565  after first run, mag = 30.86
+After the first clipping we have  219  good indicies.
+After the second clipping we have  144  good indicies.
+After second clipping... =  0.00407602602392435
+The depth = 34.03
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0007343423768877982  after first run, mag = 35.89
+After the first clipping we have  183  good indicies.
+After the second clipping we have  135  good indicies.
+After second clipping... =  6.318444013595581e-05
+The depth = 38.55
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  1.4061851799488067e-05  after first run, mag = 40.18
+After the first clipping we have  189  good indicies.
+After the second clipping we have  134  good indicies.
+After second clipping... =  4.1975677013397216e-07
+The depth = 44.00
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  1.5464723110198974e-07  after first run, mag = 45.08
+After the first clipping we have  195  good indicies.
+After the second clipping we have  127  good indicies.
+After second clipping... =  0.0
+The depth = -99.00
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [294.70325 294.70325 294.70325 294.70325]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [381.3791  386.84622 387.62094 387.62094]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  1.0976988599896431  after first run, mag = 27.95
+After the first clipping we have  264  good indicies.
+After the second clipping we have  219  good indicies.
+After second clipping... =  0.2740216822206974
+The depth = 29.46
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  1.2262648797512055  after first run, mag = 27.83
+After the first clipping we have  273  good indicies.
+After the second clipping we have  238  good indicies.
+After second clipping... =  0.4592789467334747
+The depth = 28.90
+The largest radii [293.0017  293.0017  293.0017  295.04236]
+The mad sigma is  0.45215907658338544  after first run, mag = 28.91
+After the first clipping we have  210  good indicies.
+After the second clipping we have  154  good indicies.
+After second clipping... =  0.034288853544741864
+The depth = 31.71
+The largest radii [296.05743 297.06903 297.06903 297.06903]
+The mad sigma is  0.2999889848291874  after first run, mag = 29.36
+After the first clipping we have  207  good indicies.
+After the second clipping we have  174  good indicies.
+After second clipping... =  0.07076754502058029
+The depth = 30.93
+The largest radii [300.41638 300.41638 304.3846  304.3846 ]
+The mad sigma is  0.34612445143461223  after first run, mag = 29.20
+After the first clipping we have  219  good indicies.
+After the second clipping we have  172  good indicies.
+After second clipping... =  0.0896014182306826
+The depth = 30.67
+The largest radii [301.0814  302.07614 302.07614 302.07614]
+The mad sigma is  0.5863372001767159  after first run, mag = 28.63
+After the first clipping we have  253  good indicies.
+After the second clipping we have  251  good indicies.
+After second clipping... =  0.5479529179036617
+The depth = 28.71
+The largest radii [295.04236 295.04236 296.05743 296.05743]
+The mad sigma is  0.11995932694673538  after first run, mag = 30.35
+After the first clipping we have  209  good indicies.
+After the second clipping we have  194  good indicies.
+After second clipping... =  0.0519740181684494
+The depth = 31.26
+The largest radii [291.29022 292.31833 292.31833 293.3428 ]
+The mad sigma is  0.0869209564357996  after first run, mag = 30.70
+After the first clipping we have  235  good indicies.
+After the second clipping we have  202  good indicies.
+After second clipping... =  0.022821026784181592
+The depth = 32.16
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.18153265222907064  after first run, mag = 29.91
+After the first clipping we have  191  good indicies.
+After the second clipping we have  140  good indicies.
+After second clipping... =  0.012887968853116034
+The depth = 32.78
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.6294733941972256  after first run, mag = 28.56
+After the first clipping we have  300  good indicies.
+After the second clipping we have  300  good indicies.
+After second clipping... =  0.6294733941972256
+The depth = 28.56
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.021182848665118215  after first run, mag = 32.24
+After the first clipping we have  185  good indicies.
+After the second clipping we have  126  good indicies.
+After second clipping... =  0.0005431210756301879
+The depth = 36.22
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.00034771325290203095  after first run, mag = 36.70
+After the first clipping we have  197  good indicies.
+After the second clipping we have  143  good indicies.
+After second clipping... =  2.6356306672096253e-05
+The depth = 39.50
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  6.48413747549057e-06  after first run, mag = 41.02
+After the first clipping we have  194  good indicies.
+After the second clipping we have  132  good indicies.
+After second clipping... =  1.5464723110198974e-07
+The depth = 45.08
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  6.62773847579956e-08  after first run, mag = 46.00
+After the first clipping we have  197  good indicies.
+After the second clipping we have  154  good indicies.
+After second clipping... =  0.0
+The depth = -99.00
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.3428 294.3637 294.3637 295.3811]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [369.12057 369.12057 369.12057 369.12057]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.17801451609134672  after first run, mag = 29.93
+After the first clipping we have  216  good indicies.
+After the second clipping we have  211  good indicies.
+After second clipping... =  0.11017908257246017
+The depth = 30.45
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.15794865123778581  after first run, mag = 30.06
+After the first clipping we have  237  good indicies.
+After the second clipping we have  211  good indicies.
+After second clipping... =  0.03522840727418661
+The depth = 31.69
+The largest radii [293.0017  293.0017  293.0017  295.04236]
+The mad sigma is  0.06826730248108506  after first run, mag = 30.97
+After the first clipping we have  220  good indicies.
+After the second clipping we have  163  good indicies.
+After second clipping... =  0.011790625239908694
+The depth = 32.87
+The largest radii [293.0017  293.0017  293.0017  295.04236]
+The mad sigma is  0.0660747747927904  after first run, mag = 31.00
+After the first clipping we have  224  good indicies.
+After the second clipping we have  177  good indicies.
+After second clipping... =  0.018157805223762986
+The depth = 32.40
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.15938123690932987  after first run, mag = 30.05
+After the first clipping we have  239  good indicies.
+After the second clipping we have  193  good indicies.
+After second clipping... =  0.04254238179177046
+The depth = 31.48
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.6433631899058818  after first run, mag = 28.53
+After the first clipping we have  290  good indicies.
+After the second clipping we have  290  good indicies.
+After second clipping... =  0.5925343123912811
+The depth = 28.62
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.10112629877328873  after first run, mag = 30.54
+After the first clipping we have  247  good indicies.
+After the second clipping we have  243  good indicies.
+After second clipping... =  0.057758310645818704
+The depth = 31.15
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.06451511328220368  after first run, mag = 31.03
+After the first clipping we have  292  good indicies.
+After the second clipping we have  292  good indicies.
+After second clipping... =  0.06209967817962169
+The depth = 31.07
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.03381962623000145  after first run, mag = 31.73
+After the first clipping we have  245  good indicies.
+After the second clipping we have  178  good indicies.
+After second clipping... =  0.005706571197509765
+The depth = 33.66
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.12052317075133323  after first run, mag = 30.35
+After the first clipping we have  192  good indicies.
+After the second clipping we have  131  good indicies.
+After second clipping... =  0.002532944905757904
+The depth = 34.54
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.026261916629970072  after first run, mag = 32.00
+After the first clipping we have  180  good indicies.
+After the second clipping we have  132  good indicies.
+After second clipping... =  0.0009090053781867027
+The depth = 35.66
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0004425230517983436  after first run, mag = 36.44
+After the first clipping we have  207  good indicies.
+After the second clipping we have  161  good indicies.
+After second clipping... =  5.8633393049240106e-05
+The depth = 38.63
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  8.052702248096466e-06  after first run, mag = 40.79
+After the first clipping we have  194  good indicies.
+After the second clipping we have  133  good indicies.
+After second clipping... =  2.2092461585998533e-07
+The depth = 44.69
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  7.732361555099487e-08  after first run, mag = 45.83
+After the first clipping we have  194  good indicies.
+After the second clipping we have  150  good indicies.
+After second clipping... =  0.0
+The depth = -99.00
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [293.3428 294.3637 294.3637 295.3811]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [369.12057 369.12057 369.12057 369.12057]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [353.62408 353.62408 355.31677 355.31677]
+The mad sigma is  0.07502175779342651  after first run, mag = 30.86
+After the first clipping we have  260  good indicies.
+After the second clipping we have  239  good indicies.
+After second clipping... =  0.03732866027355194
+The depth = 31.62
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.09783514058589934  after first run, mag = 30.58
+After the first clipping we have  296  good indicies.
+After the second clipping we have  296  good indicies.
+After second clipping... =  0.09756500501185655
+The depth = 30.58
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.028914525353908538  after first run, mag = 31.90
+After the first clipping we have  190  good indicies.
+After the second clipping we have  167  good indicies.
+After second clipping... =  0.0065812117516994475
+The depth = 33.51
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.07026036285683512  after first run, mag = 30.94
+After the first clipping we have  216  good indicies.
+After the second clipping we have  164  good indicies.
+After second clipping... =  0.014480724871158599
+The depth = 32.65
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.16432179618626833  after first run, mag = 30.01
+After the first clipping we have  271  good indicies.
+After the second clipping we have  223  good indicies.
+After second clipping... =  0.06222772608697414
+The depth = 31.07
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.3765895141124725  after first run, mag = 29.11
+After the first clipping we have  291  good indicies.
+After the second clipping we have  290  good indicies.
+After second clipping... =  0.39094475380182264
+The depth = 29.07
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.065265329092741  after first run, mag = 31.02
+After the first clipping we have  271  good indicies.
+After the second clipping we have  264  good indicies.
+After second clipping... =  0.05630151163637638
+The depth = 31.18
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.11308466102778911  after first run, mag = 30.42
+After the first clipping we have  300  good indicies.
+After the second clipping we have  300  good indicies.
+After second clipping... =  0.11308466102778911
+The depth = 30.42
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.01319662263393402  after first run, mag = 32.75
+After the first clipping we have  200  good indicies.
+After the second clipping we have  153  good indicies.
+After second clipping... =  0.0016068289160728454
+The depth = 35.04
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.009156463721394538  after first run, mag = 33.15
+After the first clipping we have  203  good indicies.
+After the second clipping we have  150  good indicies.
+After second clipping... =  0.0013197594702243805
+The depth = 35.25
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.1820850079536438  after first run, mag = 29.90
+After the first clipping we have  300  good indicies.
+After the second clipping we have  300  good indicies.
+After second clipping... =  0.1820850079536438
+The depth = 29.90
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0010802330017089844  after first run, mag = 35.47
+After the first clipping we have  202  good indicies.
+After the second clipping we have  156  good indicies.
+After second clipping... =  0.00014208766669034957
+The depth = 37.67
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  2.1959906816482542e-05  after first run, mag = 39.70
+After the first clipping we have  195  good indicies.
+After the second clipping we have  136  good indicies.
+After second clipping... =  7.842823863029479e-07
+The depth = 43.32
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  1.988321542739868e-07  after first run, mag = 44.81
+After the first clipping we have  194  good indicies.
+After the second clipping we have  147  good indicies.
+After second clipping... =  2.2092461585998534e-08
+The depth = 47.19
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [288.53076 288.53076 288.53076 288.53076]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [294.70325 294.70325 294.70325 294.70325]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [373.43005 373.43005 375.03333 375.03333]
+The mad sigma is  0.0  after first run, mag = inf
+The largest radii [355.87918 356.7212  356.7212  356.7212 ]
+The mad sigma is  0.018060012942552564  after first run, mag = 32.41
+After the first clipping we have  205  good indicies.
+After the second clipping we have  173  good indicies.
+After second clipping... =  0.005553801825642585
+The depth = 33.69
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.05436284290105104  after first run, mag = 31.21
+After the first clipping we have  286  good indicies.
+After the second clipping we have  274  good indicies.
+After second clipping... =  0.03473432041704654
+The depth = 31.70
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.030810384421795605  after first run, mag = 31.83
+After the first clipping we have  188  good indicies.
+After the second clipping we have  160  good indicies.
+After second clipping... =  0.007627659856528043
+The depth = 33.35
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.05302436006963253  after first run, mag = 31.24
+After the first clipping we have  195  good indicies.
+After the second clipping we have  163  good indicies.
+After second clipping... =  0.01250853082537651
+The depth = 32.81
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.14522630956918  after first run, mag = 30.15
+After the first clipping we have  279  good indicies.
+After the second clipping we have  229  good indicies.
+After second clipping... =  0.06404309679418801
+The depth = 31.04
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.4120138925671577  after first run, mag = 29.02
+After the first clipping we have  300  good indicies.
+After the second clipping we have  300  good indicies.
+After second clipping... =  0.4120138925671577
+The depth = 29.02
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.01159518427848816  after first run, mag = 32.89
+After the first clipping we have  196  good indicies.
+After the second clipping we have  159  good indicies.
+After second clipping... =  0.002186093258857727
+The depth = 34.70
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.00966770537495613  after first run, mag = 33.09
+After the first clipping we have  196  good indicies.
+After the second clipping we have  160  good indicies.
+After second clipping... =  0.0015635939687490463
+The depth = 35.07
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0578720868229866  after first run, mag = 31.15
+After the first clipping we have  300  good indicies.
+After the second clipping we have  300  good indicies.
+After second clipping... =  0.0578720868229866
+The depth = 31.15
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.0051253406256437295  after first run, mag = 33.78
+After the first clipping we have  192  good indicies.
+After the second clipping we have  158  good indicies.
+After second clipping... =  0.0011232912093400954
+The depth = 35.43
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  0.10996549265384674  after first run, mag = 30.45
+After the first clipping we have  182  good indicies.
+After the second clipping we have  114  good indicies.
+After second clipping... =  0.0010912792325019835
+The depth = 35.46
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  0.003450886684656143  after first run, mag = 34.21
+After the first clipping we have  200  good indicies.
+After the second clipping we have  150  good indicies.
+After second clipping... =  0.0003193023473024368
+The depth = 36.79
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  6.295246928930283e-05  after first run, mag = 38.56
+After the first clipping we have  194  good indicies.
+After the second clipping we have  135  good indicies.
+After second clipping... =  1.7453044652938843e-06
+The depth = 42.45
+The largest radii [291.29022 291.29022 292.31833 292.31833]
+The mad sigma is  6.406813859939575e-07  after first run, mag = 43.54
+After the first clipping we have  197  good indicies.
+After the second clipping we have  145  good indicies.
+After second clipping... =  6.62773847579956e-08
+The depth = 46.00
+The largest radii [293.0017 293.0017 293.0017 293.0017]
+The mad sigma is  2.2092461585998534e-08  after first run, mag = 47.19
+After the first clipping we have  194  good indicies.
+After the second clipping we have  0  good indicies.
+/mnt/users/varadaraj/.local/lib/python3.11/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/mnt/users/varadaraj/.local/lib/python3.11/site-packages/numpy/core/_methods.py:129: RuntimeWarning: invalid value encountered in divide
+  ret = ret.dtype.type(ret / rcount)
+After second clipping... =  nan
+The depth = nan
+NAN here nan
+---------------
+Job output ends
+=========================================================
+PBS job: finished date = Thu 21 Mar 13:46:29 GMT 2024
+Total run time : 0 Hours 0 Minutes 31 Seconds
+=========================================================

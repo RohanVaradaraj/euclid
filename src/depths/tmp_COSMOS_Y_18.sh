@@ -1,0 +1,2 @@
+#!/bin/bash
+python3 stupid.py /mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE_101547134_18.fits /mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-RMS_TILE_101547134_18.fits MAP_RMS 29.8 /mnt/vardy/vardygroupshare/rohan/euclid/data/depths/COSMOS False Y_18 True /mnt/vardy/vardygroupshare/data/masks/COSMOS/none 3.0 0.20,0.30,0.50,1.00,1.80,2.00,3.00

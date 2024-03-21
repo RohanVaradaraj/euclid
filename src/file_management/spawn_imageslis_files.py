@@ -32,11 +32,11 @@ for filter_name in filter_names:
         weight_stub = glob.glob(str(image_dir/ f'*RMS*{tile}*'))
 
         image = image_stub[0].split('/')[-1]
-        image = image[:-5] + f'_{index}.fits' # Add tile index to file name
+        image = image[:-5] + '.fits'
 
         if len(weight_stub) == 1:
             weight = weight_stub[0].split('/')[-1]
-            weight = weight[:-5] + f'_{index}.fits'
+            weight = weight[:-5] + '.fits'
         if len(weight_stub) == 0:
             weight = 'NONE'
 
@@ -47,4 +47,4 @@ for filter_name in filter_names:
             if index == 1:
                 f.write(f'#Name  Tile   Image   Weight  wht_type    zeropoint   filter  directory   mask\n')
             
-            f.write(f'{filter_name}_{index} {tile}  {image} {weight} RMS 29.8 {filter_name} here none\n')
+            f.write(f'{filter_name}_{index} {tile}  {image} {weight} MAP_RMS 29.8 {filter_name} here none\n')
