@@ -55,7 +55,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
 
     """
 
-    os.environ['EXTRACTOR_DIR'] = Path.home().parent.parent / 'users' / 'videouser' / 'sextractor' / 'share' / 'sextractor' '/mnt/users/videouser/sextractor/share/sextractor'
+    os.environ['EXTRACTOR_DIR'] = str(Path.home().parent.parent / 'users' / 'videouser' / 'sextractor' / 'share' / 'sextractor')
     plot = False
     
     ##############################################
@@ -461,7 +461,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
             # define the images etc to send through
             image_name = imagedata['Image'][j]
             wht_name = imagedata['Weight'][j]
-            wht_type = imagedata['Wht_type'][j]
+            wht_type = imagedata['wht_type'][j]
             zeropoint = imagedata['zeropoint'][j]
             imageDir = imagedata['directory'][j]
 
@@ -469,13 +469,13 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
 
             
             if imageDir == 'here':
-                imageDir = data_dir / field_name
+                imageDir = data_dir / filter_name / field_name
             
             # Now spawn the depths!
             if queue == 'none':
                 print("Running here ")
                 
-                psfex(imageDir + image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir + wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat= use_cat)
+                psfex(imageDir / image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir / wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat= use_cat)
 
             else:
                 print("Spawning in the queue...", queue)
@@ -483,7 +483,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(imageDir + image_name, imageDir +  wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir))
+                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}'.format(imageDir / image_name, imageDir / wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir))
                 f.close()
                 
                 # now execute this

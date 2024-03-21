@@ -20,7 +20,7 @@ fields = ['COSMOS']
 reqFilters = ['Y']
 
 # enter the prefered queue.
-queue = 'berg'
+queue = 'cmb'
 overwrite = True # this is the default anyway
 
 # to run the first stage for each filter, set to true
@@ -38,8 +38,8 @@ for ff, fieldName in enumerate(fields):
     outputDir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'rohan' / 'euclid' / 'data' / 'psf' / fieldName
 
     if os.path.isdir(outputDir) == False:
-        os.system('mkdir ' + outputDir)
+        os.system('mkdir ' + str(outputDir))
     
     # get the depths, nice clean code
-    get_psf(fieldName, queue = queue, reqFilters = reqFilters, \
-               overwrite = overwrite, outputDir = outputDir, starsOnly = stars)
+    get_psf(fieldName, queue = queue, req_filters = reqFilters, \
+               overwrite = overwrite, output_dir = outputDir, stars_only = stars)

@@ -12,19 +12,19 @@ import re
 import os
 
 euclid_dir = Path.home() / 'euclid'
-filter_names = ['VIS', 'Y', 'J', 'H']
+filter_names = ['J']
 
 # do bgsub images?
 bgsub = False
 
 # Do the rms files?
-rms = False
+rms = True
 
 # Do the PSF files?
 psf = True
 
 for filter_name in filter_names:
-    filter_dir = euclid_dir / filter_name
+    filter_dir = euclid_dir / filter_name / 'COSMOS'
 
     #! Do the bgsub images
     if bgsub:

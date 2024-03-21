@@ -5,12 +5,11 @@ whtName = sys.argv[2]
 whtType = sys.argv[3]
 zeropoint = float(sys.argv[4])
 outputDir = sys.argv[5]
-stripSt = sys.argv[6]
-filterName = sys.argv[7]
-overwriteSt = sys.argv[8]
-starsOnlySt = sys.argv[9]
-fieldName = sys.argv[10]
-depthDir = sys.argv[11]
+filterName = sys.argv[6]
+overwriteSt = sys.argv[7]
+starsOnlySt = sys.argv[8]
+fieldName = sys.argv[9]
+depthDir = sys.argv[10]
 
 if starsOnlySt == 'True':
     starsOnly = True

@@ -1,21 +1,22 @@
 import numpy as np
 from astropy.table import Table
+from pathlib import Path
 import os
+from astropy.io import fits
 
-# Ground-based
-#def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), whtName = 'NONE', whtType = 'NONE', IRACapDiametersAS = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), segName = 'NONE', outputDir = 'none', filterName = 'NONE', numApertures = 300, step = 200, overwrite = False, inputSex = '/mnt/vardy/vardygroupshare/data/bertin_config/video_mine.sex', strips = False, bgSub = True, mask = 'none', gridSepAS = 3.0):
 
-# PRIMER
-#def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), whtName = 'NONE', whtType = 'NONE', IRACapDiametersAS = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), segName = 'NONE', outputDir = 'none', filterName = 'NONE', numApertures = 300, step = 200, overwrite = False, inputSex = '/mnt/vardy/vardygroupshare/HSC_SSP_DR3/config_files/jwstparam.sc', strips = False, bgSub = True, mask = 'none', gridSepAS = 1.0):
-def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), whtName = 'NONE', whtType = 'NONE', IRACapDiametersAS = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), segName = 'NONE', outputDir = 'none', filterName = 'NONE', numApertures = 300, step = 200, overwrite = False, inputSex = '/mnt/vardy/vardygroupshare/data/bertin_config/jwst_mine.sex', strips = False, bgSub = True, mask = 'none', gridSepAS = 1.0):
+def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), whtName = 'NONE', whtType = 'NONE', 
+                IRACapDiametersAS = np.array([2.8, 3.8, 5.8, 9.8, 11.6]), segName = 'NONE', outputDir = 'none', filterName = 'NONE', 
+                numApertures = 300, step = 200, overwrite = False, 
+                inputSex = Path.home().parent.parent / 'vardy' /'vardygroupshare' / 'data' / 'bertin_config' / 'video_mine.sex', 
+                strips = False, bgSub = True, mask = 'none', gridSepAS = 1.0):
 
 
     # with 300 apertures, the radius is roughly 200 due to blending etc
     # hence a step of 200 means that these don't overlap
     
-    from astropy.io import fits
+
     os.environ['EXTRACTOR_DIR'] = '/usr/local/shared/sextractor/2.25.0/share/sextractor'
-    #    bgSub = False
     
     if filterName[0:2] == 'ch':
         print('Using IRAC apertures.')
@@ -209,99 +210,67 @@ def image_depth(imageName, zeropoint, apDiametersAS = np.array([1.8, 2.0, 3.0, 4
 
 
 
-# Note from Rohan (01/02/2022): I am unable to run with dataDir='/users/bowlerr/vardygroupshare/data', change to absolute path '/mnt/vardy/vardygroupshare/data'.
-def get_depths(fieldName, queue = 'none', reqFilters= ['all'], apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), dataDir = '/mnt/vardy/vardygroupshare/data/', outputDir = 'none', overwrite = False):
+def get_depths(fieldName, queue = 'none', reqFilters= ['all'], apDiametersAS = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), dataDir = Path.home() / 'euclid', outputDir = 'none', overwrite = False):
 
-    
-    # set the grid sep
-    if fieldName == 'NIRSPEC':
-        print('Nirspec data, setting grid separation to be much lower!')
-        gridSepAS = 0.5
-    else:
-        gridSepAS = 3.0
-        
-    # Read in the images file
-    dirHere = dataDir + fieldName + '/'
-    imagedata = read_image_lis(dirHere)
-    availableFilters = np.array(imagedata['Name'])
-    print("The available filters are ", availableFilters)
 
-    if reqFilters[0] != 'all':
-
-        # reduce the list down!
-        keep = np.zeros(availableFilters.size, dtype=bool)
-        for bf, keepfilt in enumerate(reqFilters):
-            ii = np.where((availableFilters == keepfilt))
-            keep[ii] = True
-            
-        imagedata = imagedata[keep]
-        availableFilters = imagedata['Name']
-        
-    print("Only running for filters ", availableFilters)
-
-    # check if we are in UltraVISTa
-    stripFilt = np.array(['Y', 'J', 'H', 'Ks', 'JH', 'YJ', 'HKs'])
+    strips=False # Placeholder - old code has this for UVISTA strips
 
     # loop through each filter
     # for the queue run, run each as a separate file...
 
-    for fi, filterName in enumerate(availableFilters):
-        # define the images etc to send through
-        imageName = imagedata['Image'][fi]
-        whtName = imagedata['Weight'][fi]
-        whtType = imagedata['Wht_type'][fi]
-        zeropoint = imagedata['zeropoint'][fi]
-        imageDir = imagedata['directory'][fi]
-        maskName = '../../data/masks/{0}/{1}'.format(fieldName, imagedata['mask'][fi])
-        print(maskName)
+    for fi, filterName in enumerate(reqFilters):
+
+        # Read in the images file
+        dirHere = dataDir / filterName / fieldName
+        imagedata = read_image_lis(dirHere)
+        availableFilters = np.array(imagedata['Name'])
+        print("The available filters are ", availableFilters)
         
-        if imageDir == 'here':
-            imageDir = dataDir + fieldName + '/'
-        
-        # Now spawn the depths!
-        if queue == 'none':
-            print("Running here ")
-
-            strips = False
-            if (fieldName == 'COSMOS') and (filterName[0] != 'f'): # Account for jwst filters
-                jj = (filterName == stripFilt)
-                if np.any(jj):
-                    strips = True
-                    
-            image_depth(imageDir + imageName, zeropoint, whtName = imageDir + whtName, whtType = whtType, outputDir = outputDir, strips = strips, filterName = filterName, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, apDiametersAS = apDiametersAS)
-
-        else:
-
-            strips = "False"
-            if fieldName == 'COSMOS':
-                jj = (filterName == stripFilt)
-                if np.any(jj):
-                    strips = "True"
-        
-
-            # make an ap diameters string
-            apDiametersAS = np.array(apDiametersAS)
-            apDiametersASstring = '{0:.2f}'.format(apDiametersAS[0])
-            for i in range(apDiametersAS.size-1):
-
-                apDiametersASstring = apDiametersASstring + ',{0:.2f}'.format(apDiametersAS[i+1])
+        #! Loop through each Euclid tile
+        for j, tile_name in enumerate(availableFilters):
+            # define the images etc to send through
+            imageName = imagedata['Image'][j]
+            whtName = imagedata['Weight'][j]
+            whtType = imagedata['Wht_type'][j]
+            zeropoint = imagedata['zeropoint'][j]
+            imageDir = imagedata['directory'][j]
+            maskName = '../../data/masks/{0}/{1}'.format(fieldName, imagedata['mask'][j])
+            print(maskName)
             
-
-            print(apDiametersASstring)
-            print("Spawning in the queue...", queue)
-            # make shell script
-            tmpName = "tmp_{1}_{0}.sh".format(filterName, fieldName)
-            f = open(tmpName, 'w')
-            f.write('#!/bin/bash\n')
-            f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(imageDir + imageName, imageDir +  whtName, whtType, zeropoint, outputDir, strips, filterName, overwrite, maskName, gridSepAS, apDiametersASstring))
-            f.close()
+            if imageDir == 'here':
+                imageDir = dataDir + fieldName + '/'
             
-            # now execute this
-            command = "addqueue -c 'tmp_{0}' -m 9 -q {0} -d ./{1}".format(queue, tmpName)
-            #print(command)
-            os.system('chmod +x {0}'.format(tmpName))
-            os.system(command)
-    
+            # Now spawn the depths!
+            if queue == 'none':
+                print("Running here ")
+                        
+                image_depth(imageDir + imageName, zeropoint, whtName = imageDir + whtName, whtType = whtType, outputDir = outputDir, strips = strips, filterName = filterName, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, apDiametersAS = apDiametersAS)
+
+            else:
+
+                # make an ap diameters string
+                apDiametersAS = np.array(apDiametersAS)
+                apDiametersASstring = '{0:.2f}'.format(apDiametersAS[0])
+                for i in range(apDiametersAS.size-1):
+
+                    apDiametersASstring = apDiametersASstring + ',{0:.2f}'.format(apDiametersAS[i+1])
+                
+
+                print(apDiametersASstring)
+                print("Spawning in the queue...", queue)
+                # make shell script
+                tmpName = "tmp_{1}_{0}.sh".format(filterName, fieldName)
+                f = open(tmpName, 'w')
+                f.write('#!/bin/bash\n')
+                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(imageDir + imageName, imageDir +  whtName, whtType, zeropoint, outputDir, strips, filterName, overwrite, maskName, gridSepAS, apDiametersASstring))
+                f.close()
+                
+                # now execute this
+                command = "addqueue -c 'tmp_{0}' -m 9 -q {0} -d ./{1}".format(queue, tmpName)
+                #print(command)
+                os.system('chmod +x {0}'.format(tmpName))
+                os.system(command)
+        
     return
     
 def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation = 100, pixScale = -99.0, next = 0, clean = False, outputFitsName = 'none', imageDir = '', verbose =False, field = 'NORMAL', overwrite = False):
@@ -545,7 +514,7 @@ def aperture_photometry_blank(imageName, segMap, whtMap, apSize, gridSeparation 
 def read_image_lis(dirHere):
 
     # read in filters
-    inputFile = dirHere + 'images.lis'
+    inputFile = dirHere / 'images.lis'
     if os.path.isfile(inputFile):
         print("Reading in images...")
     else:

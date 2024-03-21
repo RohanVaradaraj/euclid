@@ -89,17 +89,27 @@ with fits.open(primer) as hdu_primer:
     primer_footprint = wcs_primer.calc_footprint()
     print(primer_footprint)
 
-r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA')
-p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER')
+r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
+p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
 dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='r', facecolor='none', lw=2.5, label='Euclid')
 ax.add_patch(r)
 ax.add_patch(dummy)
 ax.add_patch(p)
 
+#! Add the COSMOS-Web tiles
+jwst_dir = Path.home() / 'CWEB'
+jwst_files = glob.glob(str(jwst_dir / '*'))
 
+for jwst_file in jwst_files:
+    with fits.open(jwst_file) as hdu_jwst:
+        wcs_jwst = WCS(hdu_jwst[1].header)
+        jwst_footprint = wcs_jwst.calc_footprint()
+        r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
+        ax.add_patch(r)
+dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='orange', facecolor='none', lw=2.5, label='CWEB')
+ax.add_patch(dummy)
 
-
-
+# Set axis limits and labels
 ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.2)
 ax.set_xlabel('RA (deg)')
