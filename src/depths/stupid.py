@@ -42,4 +42,4 @@ print(imageName)
 #segseg = whtName.split('.')
 #segName = segseg[0] + '_seg.fits'
 
-image_depth(imageName, zeropoint, wht_name = strwhtName, wht_type = whtType, output_dir = outputDir, strips = strip, filter_name = filterName, overwrite = overwrite, mask = mask, gridSepAS = gridSepAS, ap_diametersAS = apDiametersAS)    
+image_depth(imageName, zeropoint, wht_name = str(whtName), wht_type = whtType, output_dir = outputDir, strips = strip, filter_name = filterName, overwrite = overwrite, mask = mask, gridSepAS = gridSepAS, ap_diametersAS = apDiametersAS)    

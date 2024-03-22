@@ -828,14 +828,14 @@ def extract_local_depths(inputTableFile: str, ap_diametersAS: np.ndarray, zeropo
                     
                 else:
                     # read in a header
-                    w = WCS(refimage)
+                    w = WCS(str(refimage))
                     ra, dec= w.all_pix2world(x,y, 1)
 
                     print(ra)
                     print(dec)
                     print('Masking with ', maskreg)
                                         
-                    hsci = refimage.find('HSC')
+                    hsci = str(refimage).find('HSC')
                     
                     if hsci > -1:
                         hsc = True
@@ -851,7 +851,7 @@ def extract_local_depths(inputTableFile: str, ap_diametersAS: np.ndarray, zeropo
                         regDir = maskreg[:kk+1]
                         print(regDir)
                         
-                        fff = refimage.find('HSC-R')
+                        fff = str(refimage).find('HSC-R')
                         if fff > -1:
                             circlesFile = regDir + 'HSC_circle_cdfs_R_xy.reg'
                         else:
