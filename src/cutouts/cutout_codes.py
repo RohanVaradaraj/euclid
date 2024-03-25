@@ -10,7 +10,37 @@ from shapely.geometry import Point, Polygon
 import numpy as np
 from pathlib import Path
 from astropy.io import ascii
+from typing import Optional
+from astropy.io import fits
+from astropy.nddata.utils import Cutout2D
+from astropy.wcs import WCS
+import glob
+from astropy.coordinates import SkyCoord
+import matplotlib.pyplot as plt
+from astropy.visualization import simple_norm
+from reproject import reproject_interp
+from scipy.ndimage import rotate
+from astropy.table import Table
 
+import warnings
+from astropy.utils.exceptions import AstropyWarning
+warnings.simplefilter('ignore', category=AstropyWarning)
+
+ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
+euclid_dir = Path.home() / 'euclid'
+cweb_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
+primer_dir = Path.home() / 'JWST'
+plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
+
+
+def findPlotLimits(data: np.ndarray) -> tuple:
+
+    mean = np.mean(data)
+    std_dev = np.std(data)
+    lower = mean - 1 * std_dev
+    upper = mean + 3 * std_dev
+
+    return lower, upper
 
 
 
@@ -45,9 +75,13 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
     ra = np.array(ra)
     dec = np.array(dec)
 
+    # Reshape ra and dec to make sure they are at least one-dimensional arrays
+    ra = np.atleast_1d(ra)
+    dec = np.atleast_1d(dec)
+
     assert ra.shape == dec.shape, "ra and dec arrays must have the same shape"
 
-    points = [Point(ra, dec) for ra, dec in zip(ra, dec)]
+    points = [Point(x, y) for x, y in zip(ra, dec)]
 
     # Load the footprints
     euclid_footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'euclid_footprint.npy')
@@ -69,9 +103,9 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
     for point in points:
 
-        in_euclid = 0
-        in_cweb = 0
-        in_primer = 0
+        in_euclid = '0'
+        in_cweb = '0'
+        in_primer = '0'
 
         #! Check if the point lies in any of the Euclid polygons
         for i, polygon in enumerate(euclid_polygons):
@@ -87,7 +121,7 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
         #! Check if point lies in PRIMER footprint
         if primer_polygons.contains(point):
-            in_primer = 1
+            in_primer = '1'
 
         # Append results of search to lists
         points_in_euclid.append(in_euclid)
@@ -103,16 +137,318 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 
+def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
+           save_cutout: bool = False, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts') -> None:
 
+    """
+    Create cutouts from Euclid, ground-based and JWST imaging.
+
+    Parameters
+    ----------
+
+    ra : float
+        Right ascension of the cutout center in degrees.
+    dec : float
+        Declination of the cutout center in degrees.
+    contained_in : np.array (str, str, str)
+        Array with three strings. The strings are the values returned by isCoordInSurveyFootprints.
+        The first string is the Euclid tile label (0 if absent), the second is the CWEB tile label (0 if absent) and the third is '1' if in PRIMER.
+    size : float, optional
+        Size of the cutout in arcseconds. The default is 2.0.
+    save_cutout : bool, optional
+        Whether to save the cutout. The default is False.
+    save_dir : Path, optional
+        Directory to save the cutout. The default is Path.cwd().parent.parent / 'data' / 'cutouts'.
+
+    
+    Returns
+    -------
+    None
+
+    """
+
+    # If contained_in is None, do the check for coordinates in the footprints
+    if contained_in is None:
+        contained_in = isCoordInSurveyFootprints(ra, dec)
+        print(contained_in)
+
+    # Check if all values of contained_in are '0'.
+    if np.all(contained_in[0] == '0'):
+        print("Cutout not in any survey footprint")
+        return None
+    
+    if contained_in[0][0] == '0':
+        print('Cutout not in Euclid footprint')
+        return None
+
+    # Convert RA, DEC to skycoords.
+    c = SkyCoord(ra, dec, unit='deg')
+    
+    #! First get the ground-based cutouts (I, Y, J, H)
+    vista_dir = ground_dir / 'COSMOS'
+
+    #### I ####
+    with fits.open(vista_dir / 'HSC-I_DR3.fits') as hdu_I:
+            
+            data_I = hdu_I[0].data
+            hdr_I = hdu_I[0].header
+            pix_scale = np.abs(hdr_I['CD1_1']) * 3600
+            wcs_I = WCS(hdr_I)
+    
+            cutout_grI = Cutout2D(data_I, c, size=size/pix_scale, wcs=wcs_I)
+
+    #### Y ####
+    with fits.open(vista_dir / 'UVISTA_Y_DR6_cropped.fits') as hdu_Y:
+
+        data_Y = hdu_Y[0].data
+        hdr_Y = hdu_Y[0].header
+        pix_scale = np.abs(hdr_Y['CD1_1']) * 3600
+        wcs_Y = WCS(hdr_Y)
+
+        cutout_grY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
+
+    #### J ####
+    with fits.open(vista_dir / 'UVISTA_J_DR6_cropped.fits') as hdu_J:
+
+        data_J = hdu_J[0].data
+        hdr_J = hdu_J[0].header
+        pix_scale = np.abs(hdr_J['CD1_1']) * 3600
+        wcs_J = WCS(hdr_J)
+
+        cutout_grJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
+
+    #### H ####
+    with fits.open(vista_dir / 'UVISTA_H_DR6_cropped.fits') as hdu_H:
+            
+        data_H = hdu_H[0].data
+        hdr_H = hdu_H[0].header
+        pix_scale = np.abs(hdr_H['CD1_1']) * 3600
+        wcs_H = WCS(hdr_H)
+
+        cutout_grH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+
+    
+    #! Next get the Euclid cutouts
+    euclid_tile = contained_in[0][0]
+
+    #### VIS ####
+    tile_VIS = glob.glob(str(euclid_dir / 'VIS' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+    with fits.open(tile_VIS) as hdu_VIS:
+
+        data_VIS = hdu_VIS[0].data
+        hdr_VIS = hdu_VIS[0].header
+        pix_scale = np.abs(hdr_VIS['CD1_1']) * 3600
+        wcs_VIS = WCS(hdr_VIS)
+
+        cutout_euVIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
+
+    #### Y ####
+    tile_Y = glob.glob(str(euclid_dir / 'Y' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+    with fits.open(tile_Y) as hdu_Y:
+
+        data_Y = hdu_Y[0].data
+        hdr_Y = hdu_Y[0].header
+        pix_scale = np.abs(hdr_Y['CD1_1']) * 3600
+        wcs_Y = WCS(hdr_Y)
+
+        cutout_euY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
+
+    #### J ####
+    tile_J = glob.glob(str(euclid_dir / 'J' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+    with fits.open(tile_J) as hdu_J:
+
+        data_J = hdu_J[0].data
+        hdr_J = hdu_J[0].header
+        pix_scale = np.abs(hdr_J['CD1_1']) * 3600
+        wcs_J = WCS(hdr_J)
+
+        cutout_euJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
+
+    #### H ####
+    tile_H = glob.glob(str(euclid_dir / 'H' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+    with fits.open(tile_H) as hdu_H:
+
+        data_H = hdu_H[0].data
+        hdr_H = hdu_H[0].header
+        pix_scale = np.abs(hdr_H['CD1_1']) * 3600
+        wcs_H = WCS(hdr_H)
+
+        cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+
+    #! Next check for and get the JWST cutouts
+    
+    #### CWEB ####
+    cweb_tile = contained_in[0][1]
+
+    if cweb_tile != '0':
+
+        tile_f277w = glob.glob(str(cweb_dir / f'*F277W*{cweb_tile}*'))[0]
+        tile_f444w = glob.glob(str(cweb_dir / f'*F444W*{cweb_tile}*'))[0]
+
+        #### F277W ####
+        with fits.open(tile_f277w) as hdu_CWEB:
+
+            data_CWEB = hdu_CWEB[1].data
+            hdr_CWEB = hdu_CWEB[1].header
+            pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
+            wcs_CWEB = WCS(hdr_CWEB)
+
+            cutout_f277w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+        
+        #### F444W ####
+        with fits.open(tile_f444w) as hdu_CWEB:
+            
+            data_CWEB = hdu_CWEB[1].data
+            hdr_CWEB = hdu_CWEB[1].header
+            pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
+            wcs_CWEB = WCS(hdr_CWEB)
+            pa = hdr_CWEB['PA_APER']
+
+            cutout_f444w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+
+
+    #### PRIMER ####
+    primer_tile = contained_in[0][2]
+
+    if primer_tile == '1':
+
+        #### F277W ####
+        with fits.open(primer_dir / 'primer_cosmos_nircam_v0.5_f277w_30mas_sci.fits') as hdu_PRIMER:
+
+            data_PRIMER = hdu_PRIMER[0].data
+            hdr_PRIMER = hdu_PRIMER[0].header
+            pix_scale = np.abs(hdr_PRIMER['CD1_1']) * 3600
+            wcs_PRIMER = WCS(hdr_PRIMER)
+
+            cutout_f277w_prim = Cutout2D(data_PRIMER, c, size=size/pix_scale, wcs=wcs_PRIMER)
+
+        #### F444W ####
+        with fits.open(primer_dir / 'primer_cosmos_nircam_v0.5_f444w_30mas_sci.fits') as hdu_PRIMER:
+
+            data_PRIMER = hdu_PRIMER[0].data
+            hdr_PRIMER = hdu_PRIMER[0].header
+            pix_scale = np.abs(hdr_PRIMER['CD1_1']) * 3600
+            wcs_PRIMER = WCS(hdr_PRIMER)
+
+            cutout_f444w_prim = Cutout2D(data_PRIMER, c, size=size/pix_scale, wcs=wcs_PRIMER)
+
+
+    # Convert footprint array into bools: if it is '0' then False, else True
+    footprint_bools = [0 if i == '0' else 1 for i in contained_in[0]]
+    footprint_bools = np.array(footprint_bools, dtype=bool)
+
+    #! Plots based on different footprint bools
+
+    #* Define a lambda function to plot each cutout
+    plot_cutout = lambda ax, data, lims, title: ax.imshow(data, origin='lower', cmap='gist_yarg', vmin=lims[0], vmax=lims[1]) and ax.set_title(title)
+
+    # Only in Euclid
+    if footprint_bools[0] and not footprint_bools[1] and not footprint_bools[2]:
+
+        fig, ax = plt.subplots(2, 4, figsize=(15, 10))
+
+        # Turn off axis labels and ticks
+        for axis in ax.flat:
+            axis.set_axis_off()
+            axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+        # Top row: ground-based cutouts
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, i], data, lims, title)
+
+        # Bottom row: Euclid cutouts
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[1, i], data, lims, title)
+
+    # In Euclid and CWEB
+    elif footprint_bools[0] and footprint_bools[1] and not footprint_bools[2]:
+
+        fig, ax = plt.subplots(2, 5, figsize=(15, 10))
+
+        # Turn off axis labels and ticks
+        for axis in ax.flat:
+            axis.set_axis_off()
+            axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+        # Top row: ground-based cutouts
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, i], data, lims, title)
+
+
+        # Bottom row: Euclid cutouts
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[1, i], data, lims, title)
+
+
+        # CWEB cutouts in final column. Reproject to Euclid WCS
+        for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
+            data = rotate(data, -pa, reshape=False)
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
+
+
+    # In Euclid and CWEB and PRIMER
+    elif footprint_bools[0] and not footprint_bools[1] and footprint_bools[2]:
+
+        fig, ax = plt.subplots(2, 5, figsize=(15, 10))
+
+        # Turn off axis labels and ticks
+        for axis in ax.flat:
+            axis.set_axis_off()
+            axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+        # Top row: ground-based cutouts
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, i], data, lims, title)
+
+
+        # Bottom row: Euclid cutouts
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[1, i], data, lims, title)
+
+
+        # PRIMER cutouts in final column
+        for i, (data, title) in enumerate(zip([cutout_f277w_prim.data, cutout_f444w_prim.data], ['F277W', 'F444W'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
+
+    #plt.savefig(plot_dir / f'cutout_test.png')
+    plt.show()
+
+    return None
+
+
+#! REBELS sources
 t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-
 ra = t['RA']
 dec = t['Dec']
 
+#! Nathan's z=3 sources
+#nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
+#cat = Table.read(nathan_dir / 'Z3_FinalSample.fits')
+#cat.sort('MUV', reverse=True)
+#cat = cat[cat['RA'] > 148]
+#ra = cat['RA']
+#dec = cat['DEC']
 
-class Cutout:
-    """
-    Class to make cutouts of images in our various fields
-    """
+#! DEVILS sources
+#devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues' / 'fits_format'
+#cat = Table.read(devils_dir / 'D10ProFoundPhotometry.fits', format='fits')
+#cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+#cat.sort('flux_Y')
+
+#ra = cat['RAcen']
+#dec = cat['DECcen']
+
+
+for i in range(len(ra)):
+
+    Cutout(ra[i], dec[i], size=20)
 
     

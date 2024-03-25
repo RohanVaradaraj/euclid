@@ -1,2 +1,3 @@
 #!/bin/bash
-./swarp.py
+#./swarp.py
+./crop_mosaics.py

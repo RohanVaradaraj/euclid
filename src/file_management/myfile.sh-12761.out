@@ -1,0 +1,40 @@
+=========================================================
+Job submitted date = Fri 22 Mar 14:26:58 GMT 2024
+1 nodes ( 1 processes per node )
+1 hosts used: comp54
+Job output begins
+-----------------
+
+Cropping J
+Doing science image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_J_MOSAIC.fits
+Doing RMS image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_J_MOSAIC_RMS.fits
+Cropping H
+Doing science image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_H_MOSAIC.fits
+Doing RMS image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_H_MOSAIC_RMS.fits
+Cropping VIS
+Doing science image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_VIS_MOSAIC.fits
+Doing RMS image
+Image opened
+Cutout made
+Cutout saved to /mnt/users/varadaraj/euclid/COSMOS/COSMOS_VIS_MOSAIC_RMS.fits
+---------------
+Job output ends
+=========================================================
+PBS job: finished date = Fri 22 Mar 17:33:55 GMT 2024
+Total run time : 3 Hours 6 Minutes 53 Seconds
+=========================================================
