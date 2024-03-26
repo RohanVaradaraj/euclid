@@ -37,7 +37,7 @@ def smooth(y, box_pts):
     return y_smooth
 
 
-# ! control the field and filter here
+#! control the field and filter here
 fieldName = 'COSMOS'
 filterName = 'Y'
 

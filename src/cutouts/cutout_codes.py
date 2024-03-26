@@ -37,8 +37,8 @@ def findPlotLimits(data: np.ndarray) -> tuple:
 
     mean = np.mean(data)
     std_dev = np.std(data)
-    lower = mean - 1 * std_dev
-    upper = mean + 3 * std_dev
+    lower = mean - 2 * std_dev
+    upper = mean + 5 * std_dev
 
     return lower, upper
 
@@ -424,31 +424,36 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     return None
 
 
-#! REBELS sources
-t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-ra = t['RA']
-dec = t['Dec']
+if __name__ == '__main__':
+    #! REBELS sources
+    #t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    #ra = t['RA']
+    #dec = t['Dec']
 
-#! Nathan's z=3 sources
-#nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
-#cat = Table.read(nathan_dir / 'Z3_FinalSample.fits')
-#cat.sort('MUV', reverse=True)
-#cat = cat[cat['RA'] > 148]
-#ra = cat['RA']
-#dec = cat['DEC']
+    #! Strong lens
+    #ra = [150.00280406167596]
+    #dec = [2.2002751856804608]
 
-#! DEVILS sources
-#devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues' / 'fits_format'
-#cat = Table.read(devils_dir / 'D10ProFoundPhotometry.fits', format='fits')
-#cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
-#cat.sort('flux_Y')
+    #! Nathan's z=3 sources
+    nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
+    cat = Table.read(nathan_dir / 'Z5_FinalSample.fits')
+    cat.sort('MUV', reverse=True)
+    cat = cat[cat['RA'] > 148]
+    ra = cat['RA']
+    dec = cat['DEC']
 
-#ra = cat['RAcen']
-#dec = cat['DECcen']
+    #! DEVILS sources
+    #devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues' / 'fits_format'
+    #cat = Table.read(devils_dir / 'D10ProFoundPhotometry.fits', format='fits')
+    #cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+    #cat.sort('flux_Y')
+
+    #ra = cat['RAcen']
+    #dec = cat['DECcen']
 
 
-for i in range(len(ra)):
+    for i in range(len(ra)):
 
-    Cutout(ra[i], dec[i], size=20)
+        Cutout(ra[i], dec[i], size=10)
 
     

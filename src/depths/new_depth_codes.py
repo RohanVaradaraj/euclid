@@ -205,7 +205,6 @@ def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = 
 
     # mask
     regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, ap_diametersAS, zeropoint, recalculate = recalculate, num_apertures = num_apertures, step = step, plotDir = str(plotDir), strips = strips, maskreg = mask, refimage = bgSubName) #, plot = True)
-#    regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, ap_diametersAS, zeropoint, recalculate = recalculate, num_apertures = num_apertures, step = step, plotDir = plotDir, strips = strips, maskreg = 'none', refimage = bgSubName) #, plot = True)
     
     ######################################################################
     # make a nice file with the output
@@ -279,6 +278,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
 
         # Read in the images file
         dirHere = data_dir / filter_name / field_name
+        print(dirHere)
         imagedata = read_image_lis(dirHere)
         availableFilters = np.array(imagedata['Name'])
         print("The available filters are ", availableFilters)
@@ -292,7 +292,6 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
             zeropoint = imagedata['zeropoint'][j]
             image_dir = imagedata['directory'][j]
             maskName = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'masks' / field_name / imagedata['mask'][j]
-            print(maskName)
             
             if image_dir == 'here':
                 image_dir = data_dir / filter_name / field_name
@@ -301,7 +300,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
             if queue == 'none':
                 print("Running here ")
                         
-                image_depth(image_dir + image_name, zeropoint, wht_name = image_dir + wht_name, wht_type = wht_type, output_dir = output_dir, strips = strips, filter_name = tile_name, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, ap_diametersAS = ap_diametersAS)
+                image_depth(str(image_dir/image_name), zeropoint=zeropoint, wht_name = str(image_dir/wht_name), wht_type = wht_type, output_dir = output_dir, strips = strips, filter_name = tile_name, overwrite = overwrite, mask = maskName, gridSepAS = gridSepAS, ap_diametersAS = ap_diametersAS)
 
             else:
 
@@ -319,7 +318,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir) + str(image_name), str(image_dir) + str(wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
+                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir/image_name), str(image_dir/wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
                 f.close()
                 
                 # now execute this
@@ -1250,7 +1249,7 @@ def local_depths(cleanTable: dict, apString: str, x: np.ndarray, y: np.ndarray, 
 
         if np.isnan(localDepths[xi]):
             print('NAN here', sigma_mad)
-            exit()
+            #exit()
 
         if sortedRadius[0] < diffx*0.1:
             ## There are no apertures nearby...

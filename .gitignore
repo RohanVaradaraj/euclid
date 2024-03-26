@@ -1,2 +1,6 @@
 # Ignore data
 /data
+
+# Ignore temporary .sh files 
+/src/*/tmp_*
+/src/*/myfile.sh*

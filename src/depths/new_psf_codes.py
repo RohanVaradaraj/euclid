@@ -87,19 +87,19 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     #if os.path.isdir(imageDir) == False:
     #    os.system('mkdir ' + imageDir)
 
-    plot_dir = output_dir + 'plots/'
+    plot_dir = output_dir + '/plots/'
     if os.path.isdir(plot_dir) == False:
         os.system('mkdir ' + plot_dir)
 
-    catDir = output_dir + 'catalogues/'
+    catDir = output_dir + '/catalogues/'
     if os.path.isdir(catDir) == False:
         os.system('mkdir ' + catDir)
 
-    efDir = output_dir + 'enclosedflux/'
+    efDir = output_dir + '/enclosedflux/'
     if os.path.isdir(efDir) == False:
         os.system('mkdir ' + efDir)
 
-    resultsDir = output_dir + 'results/'
+    resultsDir = output_dir + '/results/'
     if os.path.isdir(resultsDir) == False:
         os.system('mkdir ' + resultsDir)
         
@@ -144,16 +144,16 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
 
     #####################################################
     # Define the point sources for the run
-    depthCat = depth_dir + '{0}/catalogues/d{1}.fits'.format(field_name, filter_name)
+    depthCat = depth_dir + '/{0}/catalogues/d{1}.fits'.format(field_name, filter_name)
 
     # get the five sigma limit
-    five_sigFile = depth_dir + '{0}/results/{1}_300.txt'.format(field_name, filter_name)
+    five_sigFile = depth_dir + '/{0}/results/{1}_300.txt'.format(field_name, filter_name)
     five_sig = Table.read(five_sigFile, format = 'ascii.commented_header')
 
     print('################' + filter_name + '#####################')
 
     if filter_name[0] != 'f':
-        five_sigHere = five_sig['2.0as'][0]
+        five_sigHere = five_sig['1.0as'][0]
 
     if filter_name[0] == 'f':
         five_sigHere = five_sig['0.3as'][0]
@@ -164,7 +164,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     else:
         # use the depth catalogue
         print('Using catalogue', depthCat)
-        plot_name = plot_dir + '{0}_sizemag.pdf'.format(filter_name)
+        plot_name = plot_dir + '/{0}_sizemag.pdf'.format(filter_name)
         starName = sizemag_stars(depthCat, five_sigHere, filter_name, field_name, pix_scale, plot_dir = plot_dir, star_dir = catDir, plot_name = plot_name, size_type = 'FLUX_RADIUS')
 
     if stars_only:
@@ -196,8 +196,8 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     if os.path.isfile(seCatalogue) and overwrite == False:
         print("Catalogue has been created previous.  Skipping this step.")
     else:
-        print('sex '+  image_name +' -c ' + input_sex + extraKeywords + keywords + keywordsWeight )
-        os.system('sex '+  image_name +' -c ' + input_sex + extraKeywords + keywords + keywordsWeight) 
+        print('sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight )
+        os.system('sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight) 
         print("Source extractor catalogue has been saved to ", seCatalogue)
         
 
@@ -232,14 +232,14 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     # Can uncomment this line if we want to look at some snaps.
     #psfOutFile = resultsDir + 'snap_{0}_rohan.fits'.format(filter_name)
     
-    print('psfex '+ seCatalogue +' -c ' + input_PSFEx + keywords)
+    print('psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)
     overwrite_PSF = True
     
     if os.path.isfile(psfOutFile) and overwrite_PSF == False:
         print("PSFEx has already been run, do not overwrite.")
     else:
         print("Running psfex", seCatalogue)
-        os.system('psfex '+ seCatalogue +' -c ' + input_PSFEx + keywords)    
+        os.system('psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
         
     #############################################################
     # Extract the PSFs over the full FOV
@@ -465,7 +465,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
             zeropoint = imagedata['zeropoint'][j]
             imageDir = imagedata['directory'][j]
 
-            depth_dir = data_dir / 'depths/'
+            depth_dir = str(Path.cwd().parent.parent / 'data' / 'depths')
 
             
             if imageDir == 'here':
@@ -475,7 +475,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
             if queue == 'none':
                 print("Running here ")
                 
-                psfex(imageDir / image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir / wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat= use_cat)
+                psfex(imageDir+'/'+image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir+'/'+wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat= use_cat)
 
             else:
                 print("Spawning in the queue...", queue)
@@ -483,7 +483,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}'.format(imageDir / image_name, imageDir / wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir))
+                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}'.format(imageDir+'/'+image_name, imageDir+'/'+wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir))
                 f.close()
                 
                 # now execute this
@@ -567,7 +567,7 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
     # with minimal intervention.
     
     # read in the cut from a nice file
-    cuts = Table.read('star_param_{0}.txt'.format(field), format = 'ascii.commented_header')
+    cuts = Table.read('./stars/star_param_{0}.txt'.format(field), format = 'ascii.commented_header')
     ff = (cuts['name'] == filter_name)
     brMag = cuts['bright'][ff]
     faMag = cuts['faint'][ff]

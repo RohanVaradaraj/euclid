@@ -17,16 +17,16 @@ from pathlib import Path
 ######################### Set-up ####################################
 fields = ['COSMOS']
 
-reqFilters = ['Y']
+reqFilters = ['Y', 'J', 'H']
 
 # enter the prefered queue.
-queue = 'cmb'
+queue = 'normal'
 overwrite = True # this is the default anyway
 
 # to run the first stage for each filter, set to true
 # then check the pdf, update the star_param file
 # then run again set to false
-stars = True
+stars = False
 
 ############################### Loop ################################
 ## Loop through the different fields
