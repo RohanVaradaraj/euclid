@@ -4,3 +4,6 @@
 # Ignore temporary .sh files 
 /src/*/tmp_*
 /src/*/myfile.sh*
+
+# Ignore miscellaneous plots
+/plots/misc

@@ -196,8 +196,8 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     if os.path.isfile(seCatalogue) and overwrite == False:
         print("Catalogue has been created previous.  Skipping this step.")
     else:
-        print('sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight )
-        os.system('sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight) 
+        print('/mnt/users/videouser/sextractor/bin/sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight )
+        os.system('/mnt/users/videouser/sextractor/bin/sex '+  image_name +' -c ' + str(input_sex) + extraKeywords + keywords + keywordsWeight) 
         print("Source extractor catalogue has been saved to ", seCatalogue)
         
 
@@ -239,7 +239,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
         print("PSFEx has already been run, do not overwrite.")
     else:
         print("Running psfex", seCatalogue)
-        os.system('psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
+        os.system('~/psfex-3.24.1/src/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
         
     #############################################################
     # Extract the PSFs over the full FOV
