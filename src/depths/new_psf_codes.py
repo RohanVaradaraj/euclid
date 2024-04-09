@@ -239,7 +239,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
         print("PSFEx has already been run, do not overwrite.")
     else:
         print("Running psfex", seCatalogue)
-        os.system('~/psfex-3.24.1/src/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
+        os.system('~/psfex/bin/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
         
     #############################################################
     # Extract the PSFs over the full FOV
