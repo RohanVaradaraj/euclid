@@ -17,7 +17,7 @@ from pathlib import Path
 ######################### Set-up ####################################
 fields = ['COSMOS']
 
-reqFilters = ['Y', 'J', 'H']
+reqFilters = ['Y']
 
 # enter the prefered queue.
 queue = 'normal'

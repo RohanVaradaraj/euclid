@@ -20,7 +20,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
           ap_diametersAS: np.ndarray = np.array([0.2, 0.3, 0.5, 1.0, 1.8, 2.0, 3.0]),
           wht_name: str = 'NONE', wht_type: str = 'NONE', seg_name: str = 'NONE',
           output_dir: str = 'none', overwrite: bool = False, overwrite_PSF: bool = False,
-          input_sex: Path = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'config_files' / 'video_psfex.sex',
+          input_sex: Path = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'config_files' / 'euclid_psfex.sex',
           input_PSFEx: Path = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'config_files' / 'default_cube.psfex',
           bzk: bool = False, stars_only: bool = False, use_cat: str = 'NONE') -> None:
 
@@ -56,14 +56,14 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     """
 
     os.environ['EXTRACTOR_DIR'] = str(Path.home().parent.parent / 'users' / 'videouser' / 'sextractor' / 'share' / 'sextractor')
-    plot = False
+    plot = True
     
     ##############################################
     psfSize = 75
     psfDegree = 5
-    psfNSNAP = 10
+    psfNSNAP = 2
 
-    assocRad = 1.0/0.3 
+    assocRad = 1.0/0.1 # Euclid pix scale
 
     rstepAS = 0.05 ## arcsec
     rmaxAS = 9.0 ## arcsec
@@ -239,7 +239,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
         print("PSFEx has already been run, do not overwrite.")
     else:
         print("Running psfex", seCatalogue)
-        os.system('~/psfex/bin/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
+        os.system('/mnt/zfsusers/varadaraj/psfex/bin/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)    
         
     #############################################################
     # Extract the PSFs over the full FOV
@@ -526,8 +526,8 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
     expectedSize = np.median(pssize)
     print('Expected size is ', expectedSize*pix_scale)
 
-        
-    minSize = 0.5*expectedSize*pix_scale
+    #minSize = 0.1*expectedSize*pix_scale     #! IF FILTER IS VIS, SET LOWER MIN SIZE
+    minSize = 0.5*expectedSize*pix_scale 
     maxSize = 1.5*expectedSize*pix_scale # arcseconds
     
     apMag = tbdata['MAG_APER'][:,0]
