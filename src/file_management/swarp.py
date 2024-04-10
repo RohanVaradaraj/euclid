@@ -15,7 +15,7 @@ from pathlib import Path
 
 euclid_dir = Path.home() / 'euclid'
 field_name = 'COSMOS'
-filter_names = ['VIS'] #, 'J', 'H', 'VIS']
+filter_names = ['Y'] #, 'J', 'H', 'VIS']
 
 # Define the sorting function
 def sort_by_number(filename):
@@ -27,7 +27,7 @@ for filter_name in filter_names:
 
     # Get all the fits files for the filter.
     fits_files = glob.glob(str(euclid_dir / filter_name / field_name / '*BGSUB*.fits'))
-    rms_files = glob.glob(str(euclid_dir / filter_name / field_name / '*RMS*.fits'))
+    rms_files = glob.glob(str(euclid_dir / filter_name / field_name / '*MAP_WEIGHT*.fits'))
 
     # Sort fits_files and rms_files based on the numeric part of the filenames
     fits_files = sorted(fits_files, key=sort_by_number)
@@ -37,7 +37,9 @@ for filter_name in filter_names:
     images = ' '.join(fits_files)
 
     # Create a list of the rms images
-    rms = '-WEIGHT_IMAGE ' + ','.join(rms_files)
+    rms = ' '.join(rms_files)
+    rms_command = '-WEIGHT_IMAGE ' + ','.join(rms_files)
+
 
     # Output directory.
     output_dir = euclid_dir / field_name
@@ -45,14 +47,25 @@ for filter_name in filter_names:
     # Output file.
     output_file = output_dir / f'{field_name}_{filter_name}_MOSAIC.fits'
 
-    outrms_file = output_dir / f'{field_name}_{filter_name}_MOSAIC_RMS.fits'
+    outrms_file = output_dir / f'{field_name}_{filter_name}_MOSAIC_WHT.fits'
 
     # Key words
     config_string = '-c ./euclid.swarp'
 
-    # Swarp command.
-    swarp_command = f'swarp {images} {rms} {config_string} -IMAGEOUT_NAME {output_file} -WEIGHTOUT_NAME {outrms_file}'
+    #! Run swarp on Euclid image
+    keywords = '-WEIGHT_TYPE MAP_WEIGHT -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
+                -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCLAE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0'
+    
+    swarp_command = f'swarp {images} {rms_command} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
     print(swarp_command)
+    os.system(swarp_command)
 
-    # Run the swarp command.
-    #os.system(swarp_command)
+    #! And again on the weight image
+    keywords = ' -WEIGHT_TYPE ' + 'NONE' + \
+               " -PIXELSCALE_TYPE MEDIAN " + "-PIXEL_SCALE 0.0 -IMAGE_SIZE 0 "+ \
+               " -VMEM_MAX 16384  -VMEM_DIR . " \
+               + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
+    
+    swarp_command_rms = f'swarp {rms} {config_string} {keywords}'
+    print(swarp_command_rms)
+    os.system(swarp_command_rms)
