@@ -34,11 +34,14 @@ for filter_name in filter_names:
     rms_files = sorted(rms_files, key=sort_by_number)
 
     # Create a list of the images to swarp together.
-    images = ' '.join(fits_files)
+    images = fits_files[0]
+    for i in range(1, len(fits_files)):
+        images = images + ',' + fits_files[i]
 
-    # Create a list of the rms images
-    rms = ' '.join(rms_files)
-    rms_command = '-WEIGHT_IMAGE ' + ','.join(rms_files)
+    # Same for rms images
+    rms = rms_files[0]
+    for i in range(1, len(rms_files)):
+        rms = rms + ',' + rms_files[i]
 
 
     # Output directory.
@@ -54,11 +57,11 @@ for filter_name in filter_names:
 
     #! Run swarp on Euclid image
     keywords = '-WEIGHT_TYPE MAP_WEIGHT -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
-                -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCLAE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0'
+                -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCALE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0'
     
-    swarp_command = f'~/swarp/bin/swarp {images} {rms_command} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
+    swarp_command = f'~/swarp/bin/swarp {images} -WEIGHT_IMAGE {rms} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
     print(swarp_command)
-    os.system(swarp_command)
+    #os.system(swarp_command)
 
     #! And again on the weight image
     keywords = ' -WEIGHT_TYPE ' + 'NONE' + \
@@ -66,6 +69,6 @@ for filter_name in filter_names:
                " -VMEM_MAX 16384  -VMEM_DIR . " \
                + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
     
-    swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} {keywords}'
+    swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} -IMAGEOUT_NAME {outrms_file} {keywords}'
     print(swarp_command_rms)
     os.system(swarp_command_rms)

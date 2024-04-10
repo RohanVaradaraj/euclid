@@ -109,6 +109,16 @@ for jwst_file in jwst_files:
 dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='orange', facecolor='none', lw=2.5, label='CWEB')
 ax.add_patch(dummy)
 
+#! Add the Hubble 3D-DASH footprint
+dash = Path.home().parent.parent / 'hoy' / 'DASH' / 'hlsp_3d-dash_hst_wfc3_combined-cosmos_f160w_v1.0_drz-sci.fits'
+with fits.open(dash) as hdu_dash:
+    wcs_dash = WCS(hdu_dash[0].header)
+    hubble_footprint = wcs_dash.calc_footprint()
+
+    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='3D-DASH', alpha=0.8)
+    ax.add_patch(r)
+
+
 #! Plot positions of REBELS galaxies
 rebels = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
 rebels_ra = rebels['RA']
