@@ -95,6 +95,7 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
     euclid_footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'euclid_footprint.npy')
     primer_footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'primer_footprint.npy')
     cweb_footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'cweb_footprint.npy')
+    hubble_footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'hubble_footprint.npy')
 
     # Load the labels for CWEB and Euclid
     euclid_labels = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / 'euclid_labels.npy')
@@ -104,16 +105,19 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
     euclid_polygons = [Polygon(footprint) for footprint in euclid_footprint]
     cweb_polygons = [Polygon(footprint) for footprint in cweb_footprint]
     primer_polygons = Polygon(primer_footprint)
+    hubble_polygons = Polygon(hubble_footprint)
 
     points_in_euclid = []
     points_in_cweb = []
     points_in_primer = []
+    points_in_hubble = []
 
     for point in points:
 
         in_euclid = '0'
         in_cweb = '0'
         in_primer = '0'
+        in_hubble = '0'
 
         #! Check if the point lies in any of the Euclid polygons
         for i, polygon in enumerate(euclid_polygons):
@@ -131,17 +135,23 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
         if primer_polygons.contains(point):
             in_primer = '1'
 
+        #! Check if point lies in Hubble footprint
+        if hubble_polygons.contains(point):
+            in_hubble = '1'
+
         # Append results of search to lists
         points_in_euclid.append(in_euclid)
         points_in_cweb.append(in_cweb)
         points_in_primer.append(in_primer)
+        points_in_hubble.append(in_hubble)
     
     # Convert lists to numpy arrays
     euclid_mask = np.array(points_in_euclid)
     cweb_mask = np.array(points_in_cweb)
     primer_mask = np.array(points_in_primer)
+    hubble_mask = np.array(points_in_hubble)
 
-    return np.column_stack((euclid_mask, cweb_mask, primer_mask))
+    return np.column_stack((euclid_mask, cweb_mask, primer_mask, hubble_mask))
 
 
 
@@ -282,6 +292,23 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         wcs_H = WCS(hdr_H)
 
         cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+
+    #! Next check for and get the Hubble cutouts
+    hubble_tile = contained_in[0][3]
+
+    if hubble_tile == '1':
+
+        dash = Path.home().parent.parent / 'hoy' / 'DASH' / 'hlsp_3d-dash_hst_wfc3_combined-cosmos_f160w_v1.0_drz-sci.fits'
+
+        with fits.open(dash) as hdu_dash:
+
+            data_hubble = hdu_dash[0].data
+            hdr_hubble = hdu_dash[0].header
+            pix_scale = np.abs(hdr_hubble['CDELT1']) * 3600
+            wcs_hubble = WCS(hdr_hubble)
+
+            cutout_hubble = Cutout2D(data_hubble, c, size=size/pix_scale, wcs=wcs_hubble)
+
 
     #! Next check for and get the JWST cutouts
     
@@ -426,6 +453,60 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             lims = findPlotLimits(data)
             plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
 
+    # In Euclid and Hubble, not JWST
+    if footprint_bools[0] and footprint_bools[3] and not footprint_bools[1] and not footprint_bools[2]:
+
+        fig, ax = plt.subplots(2, 5, figsize=(15, 10))
+
+        # Turn off axis labels and ticks
+        for axis in ax.flat:
+            axis.set_axis_off()
+            axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+        # Top row: ground-based cutouts
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, i], data, lims, title)
+
+        # Bottom row: Euclid cutouts
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[1, i], data, lims, title)
+
+        # Plot Hubble data in final column
+        lims = findPlotLimits(cutout_hubble.data)
+        plot_cutout(ax[1, 4], cutout_hubble.data, lims, 'F160W')
+
+    # In Euclid and Hubble and JWST
+    if footprint_bools[0] and footprint_bools[3] and (footprint_bools[1] or footprint_bools[2]):
+
+        fig, ax = plt.subplots(2, 6, figsize=(15, 10))
+
+        # Turn off axis labels and ticks
+        for axis in ax.flat:
+            axis.set_axis_off()
+            axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+        # Top row: ground-based cutouts
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, i], data, lims, title)
+
+        # Bottom row: Euclid cutouts
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+            lims = findPlotLimits(data)
+            plot_cutout(ax[1, i], data, lims, title)
+
+        # Plot Hubble data in penultimate column
+        lims = findPlotLimits(cutout_hubble.data)
+        plot_cutout(ax[1, 4], cutout_hubble.data, lims, 'F160W')
+
+        # CWEB cutouts in final column. Reproject to Euclid WCS
+        for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
+            data = rotate(data, -pa, reshape=False)
+            lims = findPlotLimits(data)
+            plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+
     #plt.savefig(plot_dir / f'cutout_test.png')
     plt.show()
 
@@ -473,6 +554,6 @@ if __name__ == '__main__':
         print(cat[i]['zBest'])
         print(cat[i]['FIRST_CLASS'])
 
-        Cutout(ra[i], dec[i], size=5)
+        Cutout(ra[i], dec[i], size=8)
 
     
