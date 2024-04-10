@@ -56,7 +56,7 @@ for filter_name in filter_names:
     keywords = '-WEIGHT_TYPE MAP_WEIGHT -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
                 -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCLAE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0'
     
-    swarp_command = f'swarp {images} {rms_command} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
+    swarp_command = f'~/swarp/bin/swarp {images} {rms_command} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
     print(swarp_command)
     os.system(swarp_command)
 
@@ -66,6 +66,6 @@ for filter_name in filter_names:
                " -VMEM_MAX 16384  -VMEM_DIR . " \
                + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
     
-    swarp_command_rms = f'swarp {rms} {config_string} {keywords}'
+    swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} {keywords}'
     print(swarp_command_rms)
     os.system(swarp_command_rms)

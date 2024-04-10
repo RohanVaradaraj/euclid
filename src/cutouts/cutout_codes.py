@@ -37,6 +37,14 @@ def findPlotLimits(data: np.ndarray) -> tuple:
 
     mean = np.mean(data)
     std_dev = np.std(data)
+
+    # Sigma clip the data
+    data = data[(data < mean + 3 * std_dev)]
+
+    # Recalculate mean and std_dev
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
     lower = mean - 2 * std_dev
     upper = mean + 5 * std_dev
 
@@ -154,7 +162,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         Array with three strings. The strings are the values returned by isCoordInSurveyFootprints.
         The first string is the Euclid tile label (0 if absent), the second is the CWEB tile label (0 if absent) and the third is '1' if in PRIMER.
     size : float, optional
-        Size of the cutout in arcseconds. The default is 2.0.
+        Size of the cutout in arcseconds. The default is 10.0
     save_cutout : bool, optional
         Whether to save the cutout. The default is False.
     save_dir : Path, optional
@@ -435,25 +443,36 @@ if __name__ == '__main__':
     #dec = [2.2002751856804608]
 
     #! Nathan's z=3 sources
-    nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
-    cat = Table.read(nathan_dir / 'Z5_FinalSample.fits')
-    cat.sort('MUV', reverse=True)
-    cat = cat[cat['RA'] > 148]
-    ra = cat['RA']
-    dec = cat['DEC']
+    #nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
+    #cat = Table.read(nathan_dir / 'Z5_FinalSample.fits')
+    #cat.sort('MUV', reverse=True)
+    #cat = cat[cat['RA'] > 148]
+    #ra = cat['RA']
+    #dec = cat['DEC']
 
     #! DEVILS sources
-    #devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues' / 'fits_format'
-    #cat = Table.read(devils_dir / 'D10ProFoundPhotometry.fits', format='fits')
-    #cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
-    #cat.sort('flux_Y')
+    devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
+    cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
+    print(cat.colnames)
+    cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+    # Drop 'NA' strings from zBest column
+    cat = cat[cat['zBest'] != 'NA']
+    # Convert zBest to float
+    cat['zBest'] = cat['zBest'].astype(float)
+    # Remove zBest values of -99
+    cat = cat[cat['zBest'] > 0.]
 
-    #ra = cat['RAcen']
-    #dec = cat['DECcen']
+    cat = cat[cat['FIRST_CLASS'] != 'NA']
+    cat.sort('zBest')
+    ra = cat['RAcen']
+    dec = cat['DECcen']
 
 
     for i in range(len(ra)):
 
-        Cutout(ra[i], dec[i], size=10)
+        print(cat[i]['zBest'])
+        print(cat[i]['FIRST_CLASS'])
+
+        Cutout(ra[i], dec[i], size=5)
 
     
