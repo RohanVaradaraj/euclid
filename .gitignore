@@ -7,3 +7,6 @@
 
 # Ignore miscellaneous plots
 /plots/misc
+
+# Ignore on-the-fly swarp outputs
+/src/*/EUC_MER*

@@ -589,6 +589,19 @@ if __name__ == '__main__':
     ra = [c1.ra.deg, c2.ra.deg]
     dec = [c1.dec.deg, c2.dec.deg]
 
+    #! Rebecca's z>8.5 sources
+    uvista_1212 = '10:02:31.81 02:31:17.10'
+    uvista_237 = '10:00:31.88 01:57:50.04'
+
+    c1 = SkyCoord(uvista_1212, unit=(u.hourangle, u.deg))
+    c2 = SkyCoord(uvista_237, unit=(u.hourangle, u.deg))
+
+    ra = [c1.ra.deg, c2.ra.deg]
+    dec = [c1.dec.deg, c2.dec.deg]
+
+    names = ['uvista_1212', 'uvista_237']
+
+
 
     for i in range(len(ra)):
 
@@ -596,7 +609,8 @@ if __name__ == '__main__':
         #print(cat[i]['FIRST_CLASS'])
 
         #Cutout(ra[i], dec[i], size=6., plot_title=ID[i] + ', z=' + str(z[i]))
-        Cutout(ra[i], dec[i], size=10.)
+        #Cutout(ra[i], dec[i], size=10.)
+        Cutout(ra[i], dec[i], size=6., plot_title=names[i])
 
 
     
