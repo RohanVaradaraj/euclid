@@ -318,7 +318,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir/image_name), str(image_dir/wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
+                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir+'/'+image_name), str(image_dir+'/'+wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
                 f.close()
                 
                 # now execute this

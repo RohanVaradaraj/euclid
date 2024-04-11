@@ -87,7 +87,6 @@ primer = Path.home() / 'JWST' / 'primer_cosmos_nircam_v0.5_f444w_30mas_sci.fits'
 with fits.open(primer) as hdu_primer:
     wcs_primer = WCS(hdu_primer[0].header)
     primer_footprint = wcs_primer.calc_footprint()
-    print(primer_footprint)
 
 r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
 p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
@@ -97,13 +96,14 @@ ax.add_patch(dummy)
 ax.add_patch(p)
 
 #! Add the COSMOS-Web tiles
-jwst_dir = Path.home() / 'CWEB'
-jwst_files = glob.glob(str(jwst_dir / '*'))
+jwst_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
+jwst_files = glob.glob(str(jwst_dir / '*F277*'))
 
 for jwst_file in jwst_files:
     with fits.open(jwst_file) as hdu_jwst:
         wcs_jwst = WCS(hdu_jwst[1].header)
         jwst_footprint = wcs_jwst.calc_footprint()
+        print(jwst_footprint)
         r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
         ax.add_patch(r)
 dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='orange', facecolor='none', lw=2.5, label='CWEB')
@@ -115,7 +115,7 @@ with fits.open(dash) as hdu_dash:
     wcs_dash = WCS(hdu_dash[0].header)
     hubble_footprint = wcs_dash.calc_footprint()
 
-    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='3D-DASH', alpha=0.8)
+    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='3D-DASH', alpha=0.8, linestyle='--')
     ax.add_patch(r)
 
 

@@ -3,7 +3,7 @@
 <VOTABLE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ivoa.net/xml/VOTable/v1.1">
 <DESCRIPTION>produced by SWarp</DESCRIPTION>
 <!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html -->
-<RESOURCE ID="SWarp" name="COSMOS_Y_MOSAIC_WHT.fits">
+<RESOURCE ID="SWarp" name="COSMOS_VIS_MOSAIC.fits">
  <DESCRIPTION>Data related to SWarp</DESCRIPTION>
  <INFO name="QUERY_STATUS" value="OK" />
  <COOSYS ID="J2000" equinox="J2000" epoch="J2000" system="ICRS"/>
@@ -16,17 +16,17 @@
   <PARAM name="Soft_Auth" datatype="char" arraysize="*" ucd="meta.bib.author;meta.software" value="Emmanuel Bertin"/>
   <PARAM name="Soft_Ref" datatype="char" arraysize="*" ucd="meta.bib.bibcode;meta.software" value="2002ASPC..281..228B"/>
   <PARAM name="NThreads" datatype="int" ucd="meta.number;meta.software" value="40"/>
-  <PARAM name="Date" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="2024-04-10"/>
-  <PARAM name="Time" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="16:15:13"/>
-  <PARAM name="Duration" datatype="float" ucd="time.event;meta.software" value="1105.21" unit="s"/>
+  <PARAM name="Date" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="2024-04-11"/>
+  <PARAM name="Time" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="11:37:57"/>
+  <PARAM name="Duration" datatype="float" ucd="time.event;meta.software" value="1529.73" unit="s"/>
   <PARAM name="User" datatype="char" arraysize="*" ucd="meta.curation" value="varadaraj"/>
   <PARAM name="Host" datatype="char" arraysize="*" ucd="meta.curation" value="comp01"/>
   <PARAM name="Path" datatype="char" arraysize="*" ucd="meta.dataset" value="/mnt/vardy/vardygroupshare/rohan/euclid/src/file_management"/>
-  <PARAM name="Image_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="/mnt/users/varadaraj/euclid/COSMOS/COSMOS_Y_MOSAIC_WHT.fits"/>
+  <PARAM name="Image_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="/mnt/users/varadaraj/euclid/COSMOS/COSMOS_VIS_MOSAIC.fits"/>
   <PARAM name="Weight_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="coadd.rms.fits"/>
   <PARAM name="NOverlap_Max" datatype="int" ucd="meta.number;stat.max;obs.image" value="4"/>
-  <PARAM name="ExpTime_Max" datatype="float" ucd="time.expo;stat.max;obs.image" value="0" unit="s"/>
-  <PARAM name="Gain_Max" datatype="float" ucd="instr.calib;stat.max;obs.image" value="0" unit="photon/ADU"/>
+  <PARAM name="ExpTime_Max" datatype="float" ucd="time.expo;stat.max;obs.image" value="453337" unit="s"/>
+  <PARAM name="Gain_Max" datatype="float" ucd="instr.calib;stat.max;obs.image" value="198.001" unit="photon/ADU"/>
   <TABLE ID="Input_Image_Data" name="Input_Image_Data">
    <DESCRIPTION>Data gathered by SWarp for every FITS input image</DESCRIPTION>
    <!-- NFrames may be 0 if an error occurred early in the processing -->
@@ -67,200 +67,200 @@
    <FIELD name="COOSYS" datatype="char" arraysize="*" ucd="meta.code;pos"/>
    <DATA><TABLEDATA>
     <TR>
-     <TD>1</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101541377_1.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:57:20</TD><TD>32.00</TD>
-     <TD>1e-32</TD><TD>0.0205766</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>T</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>1</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101541377_1.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101541377_1.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:13:15</TD><TD>44.00</TD>
+     <TD>-0.000107142</TD><TD>0.00353986</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.687152</TD><TD>F</TD>
+     <TD>13.3903</TD><TD>48027.1</TD><TD>23541.8</TD><TD>1</TD>
      <TD>0.99982</TD><TD>150.0514216 1.749979846</TD><TD>0.099991</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>2</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101541378_2.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:57:52</TD><TD>31.00</TD>
-     <TD>1e-32</TD><TD>0.0283909</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>2</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101541378_2.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101541378_2.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:13:58</TD><TD>43.00</TD>
+     <TD>4.66598e-05</TD><TD>0.00373008</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.684604</TD><TD>F</TD>
+     <TD>36.5655</TD><TD>48266.1</TD><TD>55802.8</TD><TD>1</TD>
      <TD>0.999804</TD><TD>150.3015226 1.749984423</TD><TD>0.0999902</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>3</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101542815_3.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:58:24</TD><TD>32.00</TD>
-     <TD>1e-32</TD><TD>0.0372778</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>3</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101542815_3.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542815_3.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:14:42</TD><TD>43.00</TD>
+     <TD>7.31457e-05</TD><TD>0.00470531</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.679628</TD><TD>F</TD>
+     <TD>59.5463</TD><TD>47567.6</TD><TD>80617.2</TD><TD>1</TD>
      <TD>0.999804</TD><TD>149.5697692 1.999984611</TD><TD>0.0999902</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>4</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101542816_4.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:58:54</TD><TD>29.00</TD>
-     <TD>1.00582</TD><TD>0.0521371</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>4</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101542816_4.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542816_4.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:15:27</TD><TD>45.00</TD>
+     <TD>4.60047e-05</TD><TD>0.000896252</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.68035</TD><TD>F</TD>
+     <TD>112.95</TD><TD>47568.2</TD><TD>138385</TD><TD>1</TD>
      <TD>0.999898</TD><TD>149.819889 1.999991755</TD><TD>0.0999949</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>5</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101542817_5.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:59:22</TD><TD>28.00</TD>
-     <TD>3.25507</TD><TD>0.0754877</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>5</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101542817_5.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542817_5.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:16:12</TD><TD>45.00</TD>
+     <TD>4.71398e-05</TD><TD>0.000605755</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.679493</TD><TD>F</TD>
+     <TD>112.233</TD><TD>47738.8</TD><TD>137354</TD><TD>1</TD>
      <TD>0.999935</TD><TD>150.0700059 1.999988591</TD><TD>0.0999968</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>6</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101542818_6.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>15:59:51</TD><TD>28.00</TD>
-     <TD>3.26171</TD><TD>0.0776485</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>6</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101542818_6.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542818_6.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:16:58</TD><TD>45.00</TD>
+     <TD>5.32224e-05</TD><TD>0.000637801</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.686829</TD><TD>F</TD>
+     <TD>110.918</TD><TD>48137.2</TD><TD>139238</TD><TD>1</TD>
      <TD>0.999915</TD><TD>150.320138 1.999975119</TD><TD>0.0999957</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>7</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101542819_7.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:00:23</TD><TD>32.00</TD>
-     <TD>1e-32</TD><TD>0.0421749</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>7</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101542819_7.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542819_7.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:17:37</TD><TD>39.00</TD>
+     <TD>0.000966337</TD><TD>0.00675682</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.645724</TD><TD>F</TD>
+     <TD>40.0667</TD><TD>48710.9</TD><TD>48220</TD><TD>1</TD>
      <TD>0.999838</TD><TD>150.5702481 1.999979119</TD><TD>0.0999919</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>8</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101544255_8.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:00:55</TD><TD>31.00</TD>
-     <TD>1e-32</TD><TD>0.0504114</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>8</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101544255_8.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544255_8.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:18:18</TD><TD>41.00</TD>
+     <TD>8.89672e-05</TD><TD>0.00375698</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.708245</TD><TD>F</TD>
+     <TD>71.3598</TD><TD>47523.3</TD><TD>92317.9</TD><TD>1</TD>
      <TD>0.999872</TD><TD>149.5911451 2.249976218</TD><TD>0.0999936</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>9</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101544256_9.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:01:23</TD><TD>27.00</TD>
-     <TD>4.05145</TD><TD>0.0854815</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>9</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101544256_9.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544256_9.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:19:05</TD><TD>46.00</TD>
+     <TD>4.82314e-05</TD><TD>0.000561707</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.68132</TD><TD>F</TD>
+     <TD>111.818</TD><TD>47523.9</TD><TD>142017</TD><TD>1</TD>
      <TD>0.999961</TD><TD>149.8412837 2.249987524</TD><TD>0.099998</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>10</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101544257_10.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:01:51</TD><TD>28.00</TD>
-     <TD>4.13687</TD><TD>0.0887004</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>10</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101544257_10.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544257_10.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:19:51</TD><TD>46.00</TD>
+     <TD>4.54898e-05</TD><TD>0.000562099</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.688856</TD><TD>F</TD>
+     <TD>110.759</TD><TD>47525.6</TD><TD>140448</TD><TD>1</TD>
      <TD>0.999993</TD><TD>150.0914463 2.249983765</TD><TD>0.0999996</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>11</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101544258_11.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:02:19</TD><TD>27.00</TD>
-     <TD>4.15407</TD><TD>0.0838129</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>11</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101544258_11.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544258_11.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:20:37</TD><TD>45.00</TD>
+     <TD>4.84417e-05</TD><TD>0.000572061</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.691254</TD><TD>F</TD>
+     <TD>111.247</TD><TD>48137.8</TD><TD>141098</TD><TD>1</TD>
      <TD>0.999968</TD><TD>150.3416095 2.249992714</TD><TD>0.0999984</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>12</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101544259_12.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:02:50</TD><TD>31.00</TD>
-     <TD>1e-32</TD><TD>0.0718371</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>12</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101544259_12.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544259_12.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:21:52</TD><TD>74.00</TD>
+     <TD>-0.000302468</TD><TD>0.0069447</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.653374</TD><TD>F</TD>
+     <TD>78.9406</TD><TD>48711.4</TD><TD>99826.4</TD><TD>1</TD>
      <TD>0.999886</TD><TD>150.5917498 2.249986597</TD><TD>0.0999943</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>13</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101545695_13.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:03:24</TD><TD>33.00</TD>
-     <TD>1e-32</TD><TD>0.0307821</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>13</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101545695_13.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545695_13.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:22:54</TD><TD>61.00</TD>
+     <TD>-5.60457e-05</TD><TD>0.00366479</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.703295</TD><TD>F</TD>
+     <TD>30.7788</TD><TD>47523.8</TD><TD>42685</TD><TD>1</TD>
      <TD>0.999883</TD><TD>149.6153646 2.499988902</TD><TD>0.0999941</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>14</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101545696_14.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:03:52</TD><TD>28.00</TD>
-     <TD>3.86548</TD><TD>0.0844583</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>14</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101545696_14.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545696_14.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:23:49</TD><TD>54.00</TD>
+     <TD>4.75497e-05</TD><TD>0.000578046</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.682262</TD><TD>F</TD>
+     <TD>108.993</TD><TD>47524.6</TD><TD>140448</TD><TD>1</TD>
      <TD>0.999966</TD><TD>149.8655638 2.499989134</TD><TD>0.0999983</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>15</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101545697_15.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:04:19</TD><TD>27.00</TD>
-     <TD>4.27813</TD><TD>0.0929091</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>15</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101545697_15.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545697_15.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:24:35</TD><TD>46.00</TD>
+     <TD>4.92851e-05</TD><TD>0.000567107</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.690865</TD><TD>F</TD>
+     <TD>109.507</TD><TD>47523.9</TD><TD>141009</TD><TD>1</TD>
      <TD>0.999993</TD><TD>150.1157444 2.499983418</TD><TD>0.0999996</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>16</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101545698_16.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:04:46</TD><TD>26.00</TD>
-     <TD>4.16711</TD><TD>0.0876972</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>16</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101545698_16.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545698_16.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:25:25</TD><TD>49.00</TD>
+     <TD>5.3432e-05</TD><TD>0.000582325</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.697522</TD><TD>F</TD>
+     <TD>110.132</TD><TD>47901.9</TD><TD>141098</TD><TD>1</TD>
      <TD>0.999962</TD><TD>150.3659524 2.499985647</TD><TD>0.0999981</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>17</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101545699_17.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:05:16</TD><TD>30.00</TD>
-     <TD>1e-32</TD><TD>0.0762501</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>17</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101545699_17.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545699_17.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:26:14</TD><TD>48.00</TD>
+     <TD>7.2196e-05</TD><TD>0.00656676</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.675747</TD><TD>F</TD>
+     <TD>93.3069</TD><TD>48452.4</TD><TD>117424</TD><TD>1</TD>
      <TD>0.999874</TD><TD>150.6161366 2.499995823</TD><TD>0.0999937</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>18</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101547134_18.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:05:49</TD><TD>32.00</TD>
-     <TD>1e-32</TD><TD>0.00628051</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>18</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101547134_18.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547134_18.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:26:54</TD><TD>40.00</TD>
+     <TD>-0.000940149</TD><TD>0.00464175</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.631898</TD><TD>F</TD>
+     <TD>3.78408</TD><TD>47574.1</TD><TD>5784.24</TD><TD>1</TD>
      <TD>0.999838</TD><TD>149.6424434 2.749985416</TD><TD>0.0999919</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>19</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101547135_19.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:06:18</TD><TD>29.00</TD>
-     <TD>1.08781</TD><TD>0.0576529</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>19</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101547135_19.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547135_19.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:27:39</TD><TD>44.00</TD>
+     <TD>4.25971e-05</TD><TD>0.000956621</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.680368</TD><TD>F</TD>
+     <TD>108.993</TD><TD>47523.9</TD><TD>140448</TD><TD>1</TD>
      <TD>0.999915</TD><TD>149.8926894 2.749986939</TD><TD>0.0999957</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>20</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101547137_20.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:06:50</TD><TD>31.00</TD>
-     <TD>0.157932</TD><TD>0.0206097</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>20</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101547137_20.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547137_20.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:28:19</TD><TD>40.00</TD>
+     <TD>6.83316e-05</TD><TD>0.00207225</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.696168</TD><TD>F</TD>
+     <TD>109.456</TD><TD>47945.6</TD><TD>133138</TD><TD>1</TD>
      <TD>0.999898</TD><TD>150.3931544 2.749985621</TD><TD>0.0999949</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>21</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101547138_21.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:07:22</TD><TD>32.00</TD>
-     <TD>1e-32</TD><TD>0.0324737</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>21</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101547138_21.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547138_21.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:28:58</TD><TD>39.00</TD>
+     <TD>-0.00238002</TD><TD>0.0072101</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.686653</TD><TD>F</TD>
+     <TD>71.1446</TD><TD>48543.6</TD><TD>83548</TD><TD>1</TD>
      <TD>0.999804</TD><TD>150.6433962 2.749996669</TD><TD>0.0999902</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
     <TR>
-     <TD>22</TD><TD>/mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101548574_22.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-04-10</TD><TD>16:07:56</TD><TD>33.00</TD>
-     <TD>1e-32</TD><TD>0.0075589</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
-     <TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD>
+     <TD>22</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101548574_22.fits</TD><TD>/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101548574_22.fits</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-04-11</TD><TD>11:29:36</TD><TD>37.00</TD>
+     <TD>-0.000666991</TD><TD>0.00722412</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.702513</TD><TD>F</TD>
+     <TD>13.3649</TD><TD>47664.6</TD><TD>13090.3</TD><TD>1</TD>
      <TD>0.999806</TD><TD>149.9226618 2.9999851</TD><TD>0.0999903</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
@@ -276,15 +276,15 @@
   </TABLE>
   <RESOURCE ID="Config" name="Config">
    <DESCRIPTION>SWarp configuration</DESCRIPTION>
-   <PARAM name="Command_Line" datatype="char" arraysize="*" ucd="obs.param" value="/mnt/users/varadaraj/swarp/bin/swarp /mnt/users/varadaraj/euclid/Y/COSMOS/EUC_MER_MOSAIC-NIR-Y-MAP_WEIGHT_TILE_101541377_1.fits -c ./euclid.swarp -IMAGEOUT_NAME /mnt/users/varadaraj/euclid/COSMOS/COSMOS_Y_MOSAIC_WHT.fits -WEIGHT_TYPE NONE -PIXELSCALE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0 -VMEM_MAX 16384 -VMEM_DIR . -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE SUM"/>
+   <PARAM name="Command_Line" datatype="char" arraysize="*" ucd="obs.param" value="/mnt/users/varadaraj/swarp/bin/swarp /mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_BGSUB-MOSAIC-VIS_TILE_101541377_1.fits -WEIGHT_IMAGE /mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101541377_1.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101541378_2.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542815_3.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542816_4.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542817_5.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542818_6.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101542819_7.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544255_8.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544256_9.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544257_10.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544258_11.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101544259_12.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545695_13.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545696_14.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545697_15.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545698_16.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101545699_17.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547134_18.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547135_19.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547137_20.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101547138_21.fits,/mnt/users/varadaraj/euclid/VIS/COSMOS/EUC_MER_MOSAIC-VIS-MAP_WEIGHT_TILE_101548574_22.fits -c ./euclid.swarp -IMAGEOUT_NAME /mnt/users/varadaraj/euclid/COSMOS/COSMOS_VIS_MOSAIC.fits -WEIGHT_TYPE MAP_WEIGHT -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCALE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0"/>
    <PARAM name="Prefs_Name" datatype="char" arraysize="*" ucd="obs.param;meta.file" value="./euclid.swarp"/>
-   <PARAM name="ImageOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="/mnt/users/varadaraj/euclid/COSMOS/COSMOS_Y_MOSAIC_WHT.fits"/>
+   <PARAM name="ImageOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="/mnt/users/varadaraj/euclid/COSMOS/COSMOS_VIS_MOSAIC.fits"/>
    <PARAM name="WeightOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="coadd.rms.fits"/>
    <PARAM name="Header_Only" datatype="boolean" ucd="meta.code;obs.param" value="F"/>
    <PARAM name="Header_Suffix" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value=".head"/>
    <PARAM name="Weight_Suffix" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value=".weight.fits"/>
    <PARAM name="Combine" datatype="boolean" ucd="meta.code" value="T"/>
-   <PARAM name="Combine_Type" datatype="char" arraysize="*" ucd="meta.code;obs.param" value="SUM"/>
+   <PARAM name="Combine_Type" datatype="char" arraysize="*" ucd="meta.code;obs.param" value="WEIGHTED"/>
    <PARAM name="Blank_BadPixels" datatype="boolean" ucd="meta.code;obs.param" value="F"/>
    <PARAM name="Celestial_Type" datatype="char" arraysize="*" ucd="meta;pos;obs.param" value="NATIVE"/>
    <PARAM name="Projection_Type" datatype="char" arraysize="*" ucd="meta;pos;obs.param" value="TAN"/>

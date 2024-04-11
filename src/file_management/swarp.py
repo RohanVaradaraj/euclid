@@ -15,7 +15,7 @@ from pathlib import Path
 
 euclid_dir = Path.home() / 'euclid'
 field_name = 'COSMOS'
-filter_names = ['Y'] #, 'J', 'H', 'VIS']
+filter_names = ['J', 'H', 'VIS']
 
 # Define the sorting function
 def sort_by_number(filename):
@@ -61,7 +61,7 @@ for filter_name in filter_names:
     
     swarp_command = f'~/swarp/bin/swarp {images} -WEIGHT_IMAGE {rms} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
     print(swarp_command)
-    #os.system(swarp_command)
+    os.system(swarp_command)
 
     #! And again on the weight image
     keywords = ' -WEIGHT_TYPE ' + 'NONE' + \
@@ -70,5 +70,5 @@ for filter_name in filter_names:
                + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
     
     swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} -IMAGEOUT_NAME {outrms_file} {keywords}'
-    print(swarp_command_rms)
-    os.system(swarp_command_rms)
+    #print(swarp_command_rms)
+    #os.system(swarp_command_rms)

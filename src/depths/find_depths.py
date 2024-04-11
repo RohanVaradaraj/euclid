@@ -23,7 +23,7 @@ os.system('module load sextractor')
 fields = ['COSMOS']
 
 # required aperture diameter
-reqFilters = ['H']
+reqFilters = ['Y', 'J', 'H', 'VIS']
 
 # enter the prefered queue.
 queue = 'normal'
@@ -33,7 +33,7 @@ overwrite = True # False is the default anyway
 # required aperture diameters to run through
 # change at your peril!
 #apDiametersAS = [1.8, 2.0, 3.0, 4.0, 5.0]
-apDiametersAS = [0.5, 1.0, 1.8, 2.0, 3.0] # For euclid.
+apDiametersAS = [0.3, 0.5, 0.6, 1.0, 1.2, 1.8] # For euclid.
 
 ############################### Loop ################################
 ## Loop through the different fields

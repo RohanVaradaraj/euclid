@@ -12,6 +12,15 @@ import glob
 from astropy.wcs import WCS
 import numpy as np
 
+#! Save the 3D-DASH footprint
+dash = Path.home().parent.parent / 'hoy' / 'DASH' / 'hlsp_3d-dash_hst_wfc3_combined-cosmos_f160w_v1.0_drz-sci.fits'
+with fits.open(dash) as hdu_dash:
+    wcs_dash = WCS(hdu_dash[0].header)
+    hubble_footprint = wcs_dash.calc_footprint()
+
+np.save(Path.cwd().parent.parent / 'data' / 'mosaic' / 'hubble_footprint.npy', hubble_footprint)
+exit()
+
 #! Save Euclid footprint
 euclid_dir = Path.home() / 'euclid' / 'Y' / 'COSMOS'
 images = glob.glob(str(euclid_dir / '*BGSUB-*'))

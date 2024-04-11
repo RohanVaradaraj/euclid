@@ -21,6 +21,7 @@ from astropy.visualization import simple_norm
 from reproject import reproject_interp
 from scipy.ndimage import rotate
 from astropy.table import Table
+import astropy.units as u
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -156,7 +157,8 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
-           save_cutout: bool = False, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts') -> None:
+           save_cutout: bool = False, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
+           plot_title: Optional[str] = None) -> None:
 
     """
     Create cutouts from Euclid, ground-based and JWST imaging.
@@ -177,6 +179,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         Whether to save the cutout. The default is False.
     save_dir : Path, optional
         Directory to save the cutout. The default is Path.cwd().parent.parent / 'data' / 'cutouts'.
+    plot_title: str, optional
+        Can pass a title to the stamp plot. The default is None.
 
     
     Returns
@@ -244,6 +248,16 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         wcs_H = WCS(hdr_H)
 
         cutout_grH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+
+    #### Ks ####
+    # with fits.open(vista_dir / 'UVISTA_K_DR6_cropped.fits') as hdu_K:
+            
+    #     data_K = hdu_K[0].data
+    #     hdr_K = hdu_K[0].header
+    #     pix_scale = np.abs(hdr_K['CD1_1']) * 3600
+    #     wcs_K = WCS(hdr_K)
+
+    #     cutout_grK = Cutout2D(data_K, c, size=size/pix_scale, wcs=wcs_K)
 
     
     #! Next get the Euclid cutouts
@@ -378,7 +392,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     plot_cutout = lambda ax, data, lims, title: ax.imshow(data, origin='lower', cmap='gist_yarg', vmin=lims[0], vmax=lims[1]) and ax.set_title(title)
 
     # Only in Euclid
-    if footprint_bools[0] and not footprint_bools[1] and not footprint_bools[2]:
+    if footprint_bools[0] and not footprint_bools[1] and not footprint_bools[2] and not footprint_bools[3]:
 
         fig, ax = plt.subplots(2, 4, figsize=(15, 10))
 
@@ -398,7 +412,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[1, i], data, lims, title)
 
     # In Euclid and CWEB
-    elif footprint_bools[0] and footprint_bools[1] and not footprint_bools[2]:
+    elif footprint_bools[0] and footprint_bools[1] and not footprint_bools[2] and not footprint_bools[3]: 
 
         fig, ax = plt.subplots(2, 5, figsize=(15, 10))
 
@@ -427,7 +441,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 
     # In Euclid and CWEB and PRIMER
-    elif footprint_bools[0] and not footprint_bools[1] and footprint_bools[2]:
+    elif footprint_bools[0] and not footprint_bools[1] and footprint_bools[2] and not footprint_bools[3]:
 
         fig, ax = plt.subplots(2, 5, figsize=(15, 10))
 
@@ -454,7 +468,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
 
     # In Euclid and Hubble, not JWST
-    if footprint_bools[0] and footprint_bools[3] and not footprint_bools[1] and not footprint_bools[2]:
+    elif footprint_bools[0] and footprint_bools[3] and not footprint_bools[1] and not footprint_bools[2]:
 
         fig, ax = plt.subplots(2, 5, figsize=(15, 10))
 
@@ -477,8 +491,12 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         lims = findPlotLimits(cutout_hubble.data)
         plot_cutout(ax[1, 4], cutout_hubble.data, lims, 'F160W')
 
+        # Could also plot Ks above F160W
+        #lims = findPlotLimits(cutout_grK.data)
+        #plot_cutout(ax[0, 4], cutout_grK.data, lims, 'VISTA-Ks')
+
     # In Euclid and Hubble and JWST
-    if footprint_bools[0] and footprint_bools[3] and (footprint_bools[1] or footprint_bools[2]):
+    elif footprint_bools[0] and footprint_bools[3] and (footprint_bools[1] or footprint_bools[2]):
 
         fig, ax = plt.subplots(2, 6, figsize=(15, 10))
 
@@ -502,12 +520,22 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         plot_cutout(ax[1, 4], cutout_hubble.data, lims, 'F160W')
 
         # CWEB cutouts in final column. Reproject to Euclid WCS
-        for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
-            data = rotate(data, -pa, reshape=False)
-            lims = findPlotLimits(data)
-            plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+        if footprint_bools[1]:
+            for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
+                data = rotate(data, -pa, reshape=False)
+                lims = findPlotLimits(data)
+                plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+        if footprint_bools[2]:
+            for i, (data, title) in enumerate(zip([cutout_f277w_prim.data, cutout_f444w_prim.data], ['F277W', 'F444W'])):
+                lims = findPlotLimits(data)
+                plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+
 
     #plt.savefig(plot_dir / f'cutout_test.png')
+            
+    if plot_title is not None:
+        plt.suptitle(plot_title)
+    plt.tight_layout()
     plt.show()
 
     return None
@@ -515,45 +543,60 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 if __name__ == '__main__':
     #! REBELS sources
-    #t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    #ra = t['RA']
-    #dec = t['Dec']
-
+    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    # ra = t['RA']
+    # dec = t['Dec']
+    # z = t['Redshift (z)']
+    # ID = t['Object Name']
+    # ID = [name.split('>')[1].split('<')[0] for name in ID]
     #! Strong lens
     #ra = [150.00280406167596]
     #dec = [2.2002751856804608]
 
     #! Nathan's z=3 sources
-    #nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
-    #cat = Table.read(nathan_dir / 'Z5_FinalSample.fits')
-    #cat.sort('MUV', reverse=True)
-    #cat = cat[cat['RA'] > 148]
-    #ra = cat['RA']
-    #dec = cat['DEC']
+    # nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
+    # cat = Table.read(nathan_dir / 'Z3_FinalSample.fits')
+    # cat.sort('MUV', reverse=True)
+    # cat = cat[cat['RA'] > 148]
+    # ra = cat['RA']
+    # dec = cat['DEC']
 
     #! DEVILS sources
-    devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
-    cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
-    print(cat.colnames)
-    cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
-    # Drop 'NA' strings from zBest column
-    cat = cat[cat['zBest'] != 'NA']
-    # Convert zBest to float
-    cat['zBest'] = cat['zBest'].astype(float)
-    # Remove zBest values of -99
-    cat = cat[cat['zBest'] > 0.]
+    # devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
+    # cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
+    # print(cat.colnames)
+    # cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+    # # Drop 'NA' strings from zBest column
+    # cat = cat[cat['zBest'] != 'NA']
+    # # Convert zBest to float
+    # cat['zBest'] = cat['zBest'].astype(float)
+    # # Remove zBest values of -99
+    # cat = cat[cat['zBest'] > 0.]
 
-    cat = cat[cat['FIRST_CLASS'] != 'NA']
-    cat.sort('zBest')
-    ra = cat['RAcen']
-    dec = cat['DECcen']
+    # cat = cat[cat['FIRST_CLASS'] != 'NA']
+    # cat.sort('zBest')
+    # ra = cat['RAcen']
+    # dec = cat['DECcen']
+
+    #! Harikane z=12-16 sources
+    hd1 = '10:01:51.31 02:32:50.0'
+    hd2 = '02:18:52.44 -05:08:36.1'
+
+    # Use skycoord to convert these coordinates to degrees
+    c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
+    c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
+
+    ra = [c1.ra.deg, c2.ra.deg]
+    dec = [c1.dec.deg, c2.dec.deg]
 
 
     for i in range(len(ra)):
 
-        print(cat[i]['zBest'])
-        print(cat[i]['FIRST_CLASS'])
+        #print(cat[i]['zBest'])
+        #print(cat[i]['FIRST_CLASS'])
 
-        Cutout(ra[i], dec[i], size=8)
+        #Cutout(ra[i], dec[i], size=6., plot_title=ID[i] + ', z=' + str(z[i]))
+        Cutout(ra[i], dec[i], size=10.)
+
 
     

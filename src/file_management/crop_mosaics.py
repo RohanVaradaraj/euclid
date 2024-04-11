@@ -17,7 +17,7 @@ from pathlib import Path
 
 mosaic_dir = Path.home() / 'euclid' / 'COSMOS'
 
-filter_names = ['J', 'H', 'VIS']
+filter_names = ['Y', 'J', 'H', 'VIS']
 
 xmin = 5200
 xmax = 44000
@@ -60,7 +60,7 @@ for filter_name in filter_names:
 
     #! Crop the RMS
     # Get the mosaic file.
-    rms_file = mosaic_dir / f'COSMOS_{filter_name}_MOSAIC_RMS.fits'
+    rms_file = mosaic_dir / f'COSMOS_{filter_name}_MOSAIC_WHT.fits'
     print('Doing RMS image')
 
     with fits.open(rms_file, memmap=True) as hdul:
@@ -79,7 +79,7 @@ for filter_name in filter_names:
         header.update(cutout.wcs.to_header())
 
         # Save the cutout.
-        cutout_file = mosaic_dir / f'COSMOS_{filter_name}_MOSAIC_RMS.fits'
+        cutout_file = mosaic_dir / f'COSMOS_{filter_name}_MOSAIC_WHT.fits'
         cutout_data = cutout.data
         hdu = fits.PrimaryHDU(cutout_data, header=header)
         hdu.writeto(cutout_file, overwrite=True)
