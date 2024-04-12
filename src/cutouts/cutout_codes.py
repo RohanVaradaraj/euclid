@@ -579,27 +579,33 @@ if __name__ == '__main__':
     # dec = cat['DECcen']
 
     #! Harikane z=12-16 sources
-    hd1 = '10:01:51.31 02:32:50.0'
-    hd2 = '02:18:52.44 -05:08:36.1'
+    # hd1 = '10:01:51.31 02:32:50.0'
+    # hd2 = '02:18:52.44 -05:08:36.1'
 
-    # Use skycoord to convert these coordinates to degrees
-    c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
-    c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
+    # # Use skycoord to convert these coordinates to degrees
+    # c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
+    # c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
 
-    ra = [c1.ra.deg, c2.ra.deg]
-    dec = [c1.dec.deg, c2.dec.deg]
+    # ra = [c1.ra.deg, c2.ra.deg]
+    # dec = [c1.dec.deg, c2.dec.deg]
 
     #! Rebecca's z>8.5 sources
-    uvista_1212 = '10:02:31.81 02:31:17.10'
-    uvista_237 = '10:00:31.88 01:57:50.04'
+    # uvista_1212 = '10:02:31.81 02:31:17.10'
+    # uvista_237 = '10:00:31.88 01:57:50.04'
 
-    c1 = SkyCoord(uvista_1212, unit=(u.hourangle, u.deg))
-    c2 = SkyCoord(uvista_237, unit=(u.hourangle, u.deg))
+    # c1 = SkyCoord(uvista_1212, unit=(u.hourangle, u.deg))
+    # c2 = SkyCoord(uvista_237, unit=(u.hourangle, u.deg))
 
-    ra = [c1.ra.deg, c2.ra.deg]
-    dec = [c1.dec.deg, c2.dec.deg]
+    # ra = [c1.ra.deg, c2.ra.deg]
+    # dec = [c1.dec.deg, c2.dec.deg]
 
-    names = ['uvista_1212', 'uvista_237']
+    # names = ['uvista_1212', 'uvista_237']
+
+    #! Big three dragons
+    b1 = '10:01:40.69 01:54:52.42'
+    b1 = SkyCoord(b1, unit=(u.hourangle, u.deg))
+    ra = [b1.ra.deg]
+    dec = [b1.dec.deg]
 
 
 
@@ -610,7 +616,7 @@ if __name__ == '__main__':
 
         #Cutout(ra[i], dec[i], size=6., plot_title=ID[i] + ', z=' + str(z[i]))
         #Cutout(ra[i], dec[i], size=10.)
-        Cutout(ra[i], dec[i], size=6., plot_title=names[i])
+        Cutout(ra[i], dec[i], size=6., plot_title='Big Three Dragons')
 
 
     
