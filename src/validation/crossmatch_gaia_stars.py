@@ -22,7 +22,7 @@ logging.getLogger('astroquery').setLevel(logging.ERROR)
 stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
 save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues'
 
-filter_names = ['J']
+filter_names = ['H']
 
 for filter_name in filter_names:
 
