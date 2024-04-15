@@ -34,4 +34,8 @@ print(imageName)
 
 #segseg = whtName.split('.')
 #segName = segseg[0] + '_seg.fits'
-psfex(imageName, filterName, fieldName, zeropoint, depthDir, wht_name = whtName, wht_type = whtType, output_dir = outputDir, overwrite = overwrite, stars_only = starsOnly)
+#psfex(imageName, filterName, fieldName, zeropoint, depthDir, wht_name = whtName, wht_type = whtType, output_dir = outputDir, overwrite = overwrite, stars_only = starsOnly)
+
+# Print the command: psfex seems to fail on queue. So run this in python3 on command line!
+command = f"psfex('{imageName}', '{filterName}', '{fieldName}', {zeropoint}, '{depthDir}', wht_name='{whtName}', wht_type='{whtType}', output_dir='{outputDir}', overwrite={overwriteSt}, stars_only={starsOnlySt})"
+print(command)

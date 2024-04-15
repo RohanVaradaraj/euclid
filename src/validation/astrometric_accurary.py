@@ -18,12 +18,12 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
-stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
+stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'astrometry'
 
 psf_fwhm = [0.21, 0.48, 0.51, 0.55] # Taken from pipeline PSFs, psf_fwhm_plots.py
 
-filter_names = ['VIS', 'Y', 'J', 'H']
+filter_names = ['VIS', 'Y', 'J'] #, 'H']
 
 for i, filter_name in enumerate(filter_names):
 
@@ -31,7 +31,7 @@ for i, filter_name in enumerate(filter_names):
 
     # Read the commented header stars.ascii files
     stars_file = stars_dir / f'{filter_name}_euclid_gaia_coords.ascii' #! Stars used for PSFEx 
-    stars_file = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii' #! Brighter stars (inc. saturated)
+    #stars_file = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii' #! Brighter stars (inc. saturated)
     stars = ascii.read(stars_file)
 
     # Calculate the difference between the RA and DEC

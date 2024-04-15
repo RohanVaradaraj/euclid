@@ -6,7 +6,7 @@ from typing import Union, List
 from astropy.io import fits
 import sep
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib.backends.backend_pdf
@@ -288,15 +288,17 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
                     cogplot = resultsDir + '{0}_COG.pdf'.format(filter_name)
                     fig, ax1 = plt.subplots()    
             
-            xArray = halfwidth
-            yArray = halfwidth
+            # sep expects array-like inputs.
+            xArray = [halfwidth]
+            yArray = [halfwidth]
+            xArray = np.array(xArray)
+            yArray = np.array(yArray)
             
             ##############################################
             ## Run my enclosed flux code on this cut-out
             
             ## IMPORTANT - I need to scale by PSF_SAMP
             rpixHere = rpix/psf_samp
-            
             flux, fluxerr, flag = sep.sum_circle(psfHere, xArray, yArray, rpixHere, subpix = 5)
 
             # normalise this

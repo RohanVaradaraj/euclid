@@ -6,4 +6,3 @@ Determine the best aperture size to use, which will contain 80-90% of the total 
 Created: Monday 15th April 2024.
 """
 
-
