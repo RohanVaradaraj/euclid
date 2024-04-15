@@ -17,8 +17,6 @@ from astropy.wcs import WCS
 import glob
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
-from astropy.visualization import simple_norm
-from reproject import reproject_interp
 from scipy.ndimage import rotate
 from astropy.table import Table
 import astropy.units as u
@@ -115,6 +113,7 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
     for point in points:
 
+        # 0 if not in footprint, else the tile label (1 for HST and PRIMER since it is one tile each)
         in_euclid = '0'
         in_cweb = '0'
         in_primer = '0'
@@ -388,9 +387,10 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     #! Plots based on different footprint bools
 
-    #* Define a lambda function to plot each cutout
+    #* Define a lambda function to plot each cutout, instead of repeating this line every time!
     plot_cutout = lambda ax, data, lims, title: ax.imshow(data, origin='lower', cmap='gist_yarg', vmin=lims[0], vmax=lims[1]) and ax.set_title(title)
 
+    #? There must be a better way of doing the if statements below, but I can't think of it right now.
     # Only in Euclid
     if footprint_bools[0] and not footprint_bools[1] and not footprint_bools[2] and not footprint_bools[3]:
 
@@ -438,7 +438,6 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             data = rotate(data, -pa, reshape=False)
             lims = findPlotLimits(data)
             plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
-
 
     # In Euclid and CWEB and PRIMER
     elif footprint_bools[0] and not footprint_bools[1] and footprint_bools[2] and not footprint_bools[3]:
@@ -533,6 +532,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     #plt.savefig(plot_dir / f'cutout_test.png')
             
+    # Set title if we pass a name
     if plot_title is not None:
         plt.suptitle(plot_title)
     plt.tight_layout()
@@ -542,6 +542,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 
 if __name__ == '__main__':
+    
     #! REBELS sources
     # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
     # ra = t['RA']

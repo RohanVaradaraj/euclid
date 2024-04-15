@@ -22,29 +22,30 @@ logging.getLogger('astroquery').setLevel(logging.ERROR)
 stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
 save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues'
 
-filter_names = ['VIS', 'Y', 'J', 'H']
+filter_names = ['J']
 
 for filter_name in filter_names:
 
     print(f'Processing filter {filter_name}')
 
     # Open empty file to star the euclid coords and Gaia coords if there is a match
-    euclid_gaia_coords = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii'
+    #euclid_gaia_coords = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii'
+    euclid_gaia_coords = stars_dir / f'{filter_name}_euclid_gaia_coords.ascii'
     with open(euclid_gaia_coords, 'w') as f:
 
         # Add header for RA_euclid, DEC_euclid, RA_Gaia, DEC_Gaia
         f.write('# RA_euclid DEC_euclid RA_Gaia DEC_Gaia\n')
 
-        # Read the commented header stars.ascii files
-        #stars_file = stars_dir / f'{filter_name}_stars.ascii'
-        #stars = ascii.read(stars_file)
+        #! Option 1) Read the commented header stars.ascii files. Same as used to determine PSF.
+        stars_file = stars_dir / f'{filter_name}_stars.ascii'
+        stars = ascii.read(stars_file)
 
-        #! Alternate file: very bright stars
-        stars_file = save_dir / f'{filter_name}_bright_stars.fits'
-        stars = Table.read(stars_file)
+        #! Option 2) Alternate file: very bright stars, includes saturated stars also.
+        #stars_file = save_dir / f'{filter_name}_bright_stars.fits'
+        #stars = Table.read(stars_file)
         # Change ALPHA_J2000 and DELTA_J2000 to RA and DEC
-        stars.rename_column('ALPHA_J2000', 'RA')
-        stars.rename_column('DELTA_J2000', 'DEC')
+        #stars.rename_column('ALPHA_J2000', 'RA')
+        #stars.rename_column('DELTA_J2000', 'DEC')
 
         # Keep rows with CLASS_STAR above a threshold
         stars = stars[stars['CLASS_STAR'] > 0.95]
