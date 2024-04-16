@@ -11,3 +11,6 @@
 # Ignore on-the-fly swarp outputs
 /src/*/EUC_MER*
 /src/*/*/EUC_MER*
+
+# Ignore depth outputs
+/src/depths/check.*
