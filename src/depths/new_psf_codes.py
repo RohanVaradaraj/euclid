@@ -6,7 +6,7 @@ from typing import Union, List
 from astropy.io import fits
 import sep
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib.backends.backend_pdf
