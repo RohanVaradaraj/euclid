@@ -96,13 +96,25 @@ e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.606
 ax.add_patch(e)
 
 #! Plot positions of large offset stars
-stars = ascii.read(stars_dir / 'Y_vista_euclid_coords.ascii')
+filter_name = 'J'
+stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_vista_euclid_coords.ascii')
 stars_ra = stars['RA_vista']
 stars_dec = stars['DEC_vista']
 
+#! Plot the ultra-deep stripes
+strip1 = Polygon(np.array([[150.43, 2.76], [150.57, 2.76], [150.57, 1.66], [150.43, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
+strip2 = Polygon(np.array([[150.06, 2.76], [150.20, 2.76], [150.20, 1.66], [150.06, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
+strip3 = Polygon(np.array([[149.70, 2.76], [149.83, 2.76], [149.83, 1.66], [149.70, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
+strip4 = Polygon(np.array([[149.33, 2.76], [149.46, 2.76], [149.46, 1.66], [149.33, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8, label='Ultra-deep stripes')
 
-# Plot the REBELS galaxies
-ax.scatter(stars_ra, stars_dec, marker='x', color='black', s=10, label='Astrometry offset > 0.1as')
+ax.add_patch(strip1)
+ax.add_patch(strip2)
+ax.add_patch(strip3)
+ax.add_patch(strip4)
+                 
+
+# Plot the bad stars
+ax.scatter(stars_ra, stars_dec, marker='x', color='black', s=10, label=f'astrom. offset > {filter_name} PSF FWHM')
 
 # Set axis limits and labels
 ax.set_xlim(150.9, 149.1)
@@ -112,6 +124,7 @@ ax.set_ylabel('DEC (deg)')
 ax.legend(loc='upper right')
 plt.gca().set_aspect('equal', adjustable='box')
 plt.tight_layout()
+plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint.png')
 plt.show()
 
 

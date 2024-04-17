@@ -157,7 +157,8 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
            save_cutout: bool = False, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
-           plot_title: Optional[str] = None) -> None:
+           plot_title: Optional[str] = None,
+           add_centre_lines: Optional[bool] = False) -> None:
 
     """
     Create cutouts from Euclid, ground-based and JWST imaging.
@@ -180,6 +181,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         Directory to save the cutout. The default is Path.cwd().parent.parent / 'data' / 'cutouts'.
     plot_title: str, optional
         Can pass a title to the stamp plot. The default is None.
+    add_centre_lines: bool, optional
+        Whether to add lines to the plot showing the centre of the cutout. The default is False.
 
     
     Returns
@@ -219,7 +222,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             cutout_grI = Cutout2D(data_I, c, size=size/pix_scale, wcs=wcs_I)
 
     #### Y ####
-    with fits.open(vista_dir / 'UVISTA_Y_DR6_cropped.fits') as hdu_Y:
+    #with fits.open(vista_dir / 'UVISTA_Y_DR6_cropped.fits') as hdu_Y:
+    with fits.open(vista_dir / 'UVISTA_Y_dr5_rc1.fits') as hdu_Y:
 
         data_Y = hdu_Y[0].data
         hdr_Y = hdu_Y[0].header
@@ -229,7 +233,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         cutout_grY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
 
     #### J ####
-    with fits.open(vista_dir / 'UVISTA_J_DR6_cropped.fits') as hdu_J:
+    #with fits.open(vista_dir / 'UVISTA_J_DR6_cropped.fits') as hdu_J:
+    with fits.open(vista_dir / 'UVISTA_J_dr5_rc1.fits') as hdu_J:
 
         data_J = hdu_J[0].data
         hdr_J = hdu_J[0].header
@@ -239,7 +244,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         cutout_grJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
 
     #### H ####
-    with fits.open(vista_dir / 'UVISTA_H_DR6_cropped.fits') as hdu_H:
+    #with fits.open(vista_dir / 'UVISTA_H_DR6_cropped.fits') as hdu_H:
+    with fits.open(vista_dir / 'UVISTA_H_dr5_rc1.fits') as hdu_H:
             
         data_H = hdu_H[0].data
         hdr_H = hdu_H[0].header
@@ -530,6 +536,34 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
                 plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
 
 
+    if add_centre_lines:
+        # Draw a plus symbol on each subplot to show the centre of the cutout
+        for axis in ax[0, :4]:
+            center_x, center_y = cutout_grY.wcs.world_to_pixel(SkyCoord(c.ra.deg, c.dec.deg, unit='deg'))
+            axis.plot(center_x, center_y, 'r+', markersize=20)            
+
+        for axis in ax[1, :4]:
+            center_x, center_y = cutout_euY.wcs.world_to_pixel(SkyCoord(c.ra.deg, c.dec.deg, unit='deg'))
+            axis.plot(center_x, center_y, 'r+', markersize=20)  
+
+        center_x, center_y = cutout_hubble.wcs.world_to_pixel(SkyCoord(c.ra.deg, c.dec.deg, unit='deg'))
+        ax[1,4].plot(center_x, center_y, 'r+', markersize=20)
+
+        if len(ax[0, :]) > 5:
+            # if in cweb
+            if footprint_bools[1] != 0:
+                center_x, center_y = cutout_f277w_cweb.wcs.world_to_pixel(SkyCoord(c.ra.deg, c.dec.deg, unit='deg'))
+                ax[0,5].plot(center_x, center_y, 'r+', markersize=20)
+                ax[1,5].plot(center_x, center_y, 'r+', markersize=20)
+            else:
+                # Primer
+                center_x, center_y = cutout_f277w_prim.wcs.world_to_pixel(SkyCoord(c.ra.deg, c.dec.deg, unit='deg'))
+                ax[0,5].plot(center_x, center_y, 'r+', markersize=20)
+                ax[1,5].plot(center_x, center_y, 'r+', markersize=20)
+
+
+
+
     #plt.savefig(plot_dir / f'cutout_test.png')
             
     # Set title if we pass a name
@@ -544,16 +578,14 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! REBELS sources
-    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    t = t[t['RA'] > 148]
-    ra = t['RA']
-    dec = t['Dec']
-    z = t['Redshift (z)']
-    ID = t['Object Name']
-    ID = [name.split('>')[1].split('<')[0] for name in ID]
-    print(list(ra))
-    print(list(dec))
-    exit()
+    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    # t = t[t['RA'] > 148]
+    # ra = t['RA']
+    # dec = t['Dec']
+    # z = t['Redshift (z)']
+    # ID = t['Object Name']
+    # ID = [name.split('>')[1].split('<')[0] for name in ID]
+
     #! Strong lens
     #ra = [150.00280406167596]
     #dec = [2.2002751856804608]
@@ -612,6 +644,12 @@ if __name__ == '__main__':
     # ra = [b1.ra.deg]
     # dec = [b1.dec.deg]
 
+    #! Bad astrometry sources
+    stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+    stars = ascii.read(stars_dir / f'H_outside_pixscale_vista_euclid_coords.ascii')
+    ra = stars['RA_euclid']
+    dec = stars['DEC_euclid']
+
 
 
     for i in range(len(ra)):
@@ -621,7 +659,7 @@ if __name__ == '__main__':
 
         #Cutout(ra[i], dec[i], size=6., plot_title=ID[i] + ', z=' + str(z[i]))
         #Cutout(ra[i], dec[i], size=10.)
-        Cutout(ra[i], dec[i], size=6., plot_title='Big Three Dragons')
+        Cutout(ra[i], dec[i], size=6., plot_title='Bad astrometry', add_centre_lines=True)
 
 
     
