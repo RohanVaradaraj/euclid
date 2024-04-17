@@ -14,3 +14,5 @@
 
 # Ignore depth outputs
 /src/depths/check.*
+/src/depths/.nfs*
+/src/*/__pycache__/*

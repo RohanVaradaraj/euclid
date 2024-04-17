@@ -544,12 +544,16 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! REBELS sources
-    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    # ra = t['RA']
-    # dec = t['Dec']
-    # z = t['Redshift (z)']
-    # ID = t['Object Name']
-    # ID = [name.split('>')[1].split('<')[0] for name in ID]
+    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    t = t[t['RA'] > 148]
+    ra = t['RA']
+    dec = t['Dec']
+    z = t['Redshift (z)']
+    ID = t['Object Name']
+    ID = [name.split('>')[1].split('<')[0] for name in ID]
+    print(list(ra))
+    print(list(dec))
+    exit()
     #! Strong lens
     #ra = [150.00280406167596]
     #dec = [2.2002751856804608]
@@ -603,10 +607,10 @@ if __name__ == '__main__':
     # names = ['uvista_1212', 'uvista_237']
 
     #! Big three dragons
-    b1 = '10:01:40.69 01:54:52.42'
-    b1 = SkyCoord(b1, unit=(u.hourangle, u.deg))
-    ra = [b1.ra.deg]
-    dec = [b1.dec.deg]
+    # b1 = '10:01:40.69 01:54:52.42'
+    # b1 = SkyCoord(b1, unit=(u.hourangle, u.deg))
+    # ra = [b1.ra.deg]
+    # dec = [b1.dec.deg]
 
 
 

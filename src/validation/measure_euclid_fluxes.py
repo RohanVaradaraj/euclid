@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 measure_euclid_fluxes.py
 
@@ -15,8 +17,15 @@ from astropy.table import Table
 from astropy.wcs import WCS
 import sys
 sys.path.append(str(Path.cwd().parent))
+from astropy.nddata import Cutout2D
 
 from cutouts.cutout_codes import isCoordInSurveyFootprints
+
+plt.rcParams['axes.linewidth'] = 2.5
+plt.rcParams.update({'font.size': 15})
+plt.rcParams['figure.dpi'] = 100
+
+plot_dir = Path.cwd().parent.parent / 'plots'
 
 
 def grid_depths(gridTable: dict, x: np.ndarray, y: np.ndarray, faster: bool = True, verbose: bool = False, nearby: bool = False) -> np.ndarray:
@@ -92,6 +101,52 @@ def grid_depths(gridTable: dict, x: np.ndarray, y: np.ndarray, faster: bool = Tr
     return depthArray
 
 
+
+def filterCentreAndWidth(filter_name: str, instrument: str) -> tuple[float, float]:
+    """
+    Get the central wavelength and width of a filter.
+
+    Parameters
+    ----------
+    filter_names : list
+        List of filter names.
+    instrument : str
+        Name of the filter instrument.
+
+    Returns
+    -------
+
+    tuple[float, float]
+        Tuple of central wavelength and width.
+    """
+
+    if instrument.lower() == 'euclid':
+
+        t = ascii.read(Path.cwd() / 'euclid_filters.txt')
+
+        centre = t[t['filter'] == filter_name]['centre'][0]
+        upper_edge = t[t['filter'] == filter_name]['upper_edge'][0]
+        lower_edge = t[t['filter'] == filter_name]['lower_edge'][0]
+        width = upper_edge - lower_edge
+
+    if instrument.lower() == 'vista':
+            
+        t = ascii.read(Path.cwd() / 'vista_filters.txt')
+
+        centre = t[t['filter'] == filter_name]['centre'][0]
+        width = t[t['filter'] == filter_name]['width'][0]
+
+    if instrument.lower() == 'hsc':
+                
+            t = ascii.read(Path.cwd() / 'hsc_filters.txt')
+    
+            centre = t[t['filter'] == filter_name]['centre'][0]
+            width = t[t['filter'] == filter_name]['width'][0]
+
+    return centre, width
+
+
+
 def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
     """
     Measure the fluxes of objects in the Euclid filters.
@@ -144,6 +199,9 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
             image = hdu[0].data.byteswap().newbyteorder() # Change byte order to native
             header = hdu[0].header
 
+            pix_scale = np.abs(header['CD1_1']) * 3600
+            print(pix_scale)
+
         # Open the depth table
         depth_table = Table.read(depth_dir / f'{filter_name}_{aperture_diameter}as_gridDepths_300_200.fits')
 
@@ -156,17 +214,24 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
 
         # Find the depth at this x and y
         depths_here = grid_depths(depth_table, x, y)
-
-        # If the object is in the footprint, it may not have a depth (e.g. edge of a tile).
-        # But if it does not have a depth, it is definitely not in the footprint.
-        #? Add some way of removing -99s
+        print(depths_here)
 
         # x, y must be array-like
         x = np.array(x)
         y = np.array(y)
 
         # Use sep to measure flux of object
-        flux_counts, _, _ = sep.sum_circle(image, x, y, aperture_diameter/2.)
+        flux_counts, _, _ = sep.sum_circle(image, x, y, (aperture_diameter/2.) / pix_scale)
+        print((aperture_diameter/2.) * pix_scale)
+        print(flux_counts)
+
+        # Get a quick cutout and plot
+        cutout = Cutout2D(image, (x[0], y[0]), (50, 50), wcs=w)
+        plt.imshow(cutout.data, origin='lower')
+        # Add a circle corresponding to aperture
+        circle = plt.Circle((25, 25), (aperture_diameter/2.) / pix_scale, color='red', fill=False)
+        plt.gca().add_artist(circle)
+        plt.show()
 
         # Convert counts to flux
         value = -(48.6 + zeropoint)/2.5
@@ -181,9 +246,8 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         aperture_table = aperture_table[aperture_table['apD'] == aperture_diameter]
 
         enclosed_flux = aperture_table['ef'][0]
-        print(enclosed_flux)
 
-        fluxFinal = np.array([f*100/enclosed_flux for f in fluxFinal])
+        fluxFinal = np.array([f/enclosed_flux for f in fluxFinal])
 
         # Wherever the depth is -99, set the error and flux to -99
         errors[depths_here == -99] = -99
@@ -251,10 +315,13 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
             with fits.open(ground_dir / image_name, memmap=True) as hdu:
                 image = hdu[0].data.byteswap().newbyteorder() # Change byte order to native
                 header = hdu[0].header
+                pix_scale = np.abs(header['CD1_1']) * 3600
+
         else:
             with fits.open(directory / image_name, memmap=True) as hdu:
                 image = hdu[0].data.byteswap().newbyteorder()
                 header = hdu[0].header
+                pix_scale = np.abs(header['CD1_1']) * 3600
 
         # Open the depth table
         depth_table = Table.read(depth_dir / f'{filter_name}_{aperture_diameter}as_gridDepths_300_200.fits')
@@ -269,16 +336,12 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         # Find the depth at this x and y
         depths_here = grid_depths(depth_table, x, y)
 
-        # If the object is in the footprint, it may not have a depth (e.g. edge of a tile).
-        # But if it does not have a depth, it is definitely not in the footprint.
-        #? Add some way of removing -99s
-
         # x, y must be array-like
         x = np.array(x)
         y = np.array(y)
 
         # Use sep to measure flux of object
-        flux_counts, _, _ = sep.sum_circle(image, x, y, aperture_diameter/2.)
+        flux_counts, _, _ = sep.sum_circle(image, x, y, (aperture_diameter/2.) / pix_scale)
 
         # Convert counts to flux
         value = -(48.6 + zeropoint)/2.5
@@ -293,9 +356,8 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         aperture_table = aperture_table[aperture_table['apD'] == aperture_diameter]
 
         enclosed_flux = aperture_table['ef'][0]
-        print(enclosed_flux)
 
-        fluxFinal = np.array([f*100/enclosed_flux for f in fluxFinal])
+        fluxFinal = np.array([f/enclosed_flux for f in fluxFinal])
 
         # Wherever the depth is -99, set the error and flux to -99
         errors[depths_here == -99] = -99
@@ -316,30 +378,63 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
 #! REBELS sources
 t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
 t = t[t['RA'] > 140]
-ra = t['RA']
-dec = t['Dec']
+ra = t['RA'][3:4]
+dec = t['Dec'][3:4]
+
+#print(isCoordInSurveyFootprints(ra, dec))
+#exit()
+
 z = t['Redshift (z)']
 ID = t['Object Name']
 
 table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'])
-table_ground = measure_ground_fluxes(ra, dec, ['Y', 'J', 'H', 'K'])
+#table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'])
+
+# Save these tables
+#table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
+#table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
+
+# Open these tables
+#table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits')
+table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits')
 
 # Remove -99. from these astropy tables
 for filter_name in ['VIS', 'Y', 'J', 'H']:
     table_euclid = table_euclid[table_euclid[f'flux_{filter_name}'] != -99]
     table_euclid = table_euclid[table_euclid[f'err_{filter_name}'] != -99]
-for filter_name in ['Y', 'J', 'H', 'K']:
+for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
     table_ground = table_ground[table_ground[f'flux_{filter_name}'] != -99]
     table_ground = table_ground[table_ground[f'err_{filter_name}'] != -99]
 
-# Loop through euclid fluxes and plot with errors
-for filter_name in ['VIS', 'Y', 'J', 'H']:
-    plt.errorbar(table_euclid[f'flux_{filter_name}'], table_euclid[f'err_{filter_name}'], fmt='o', label=filter_name)
+# Loop through objects
+for i in range(len(table_euclid['flux_H'])):
 
-# And ground data
-for filter_name in ['Y', 'J', 'H', 'K']:
-    plt.errorbar(table_ground[f'flux_{filter_name}'], table_ground[f'err_{filter_name}'], fmt='o', label=filter_name)
+    plt.figure(figsize=(10, 6))
 
+    # Loop through euclid fluxes and plot with errors
+    for filter_name in ['VIS', 'Y', 'J', 'H']:
 
+        print(filter_name)
+
+        print('Flux: ', table_euclid[f'flux_{filter_name}'])
+        print('Error: ', table_euclid[f'err_{filter_name}'])
+
+        centre, width = filterCentreAndWidth(filter_name, 'euclid')
+        plt.errorbar(centre, table_euclid[f'flux_{filter_name}'][i], yerr=table_euclid[f'err_{filter_name}'][i], xerr=width/2, 
+                    fmt='o', label=filter_name, color='black', alpha=0.7)
+
+    # And ground data
+    for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
+
+        if filter_name[0:3] == 'HSC':
+            centre, width = filterCentreAndWidth(filter_name, 'HSC')
+        else:
+            centre, width = filterCentreAndWidth(filter_name, 'VISTA')
+        plt.errorbar(centre, table_ground[f'flux_{filter_name}'][i], yerr=table_ground[f'err_{filter_name}'][i], xerr=width/2, 
+                    fmt='o', label=filter_name, color='red', alpha=0.7)
+
+    #plt.yscale('log')
+    plt.show()
+    #plt.savefig(Path.cwd().parent.parent / 'plots' / 'seds' / 'REBELS_fluxes.png')
 
 

@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 
 
 def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float, depth_dir: Path,
-          ap_diametersAS: np.ndarray = np.array([0.2, 0.3, 0.5, 1.0, 1.8, 2.0, 3.0]),
+          ap_diametersAS: np.ndarray = np.array([0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]),
           wht_name: str = 'NONE', wht_type: str = 'NONE', seg_name: str = 'NONE',
           output_dir: str = 'none', overwrite: bool = False, overwrite_PSF: bool = False,
           input_sex: Path = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'config_files' / 'euclid_psfex.sex',
@@ -426,7 +426,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
 
     return
 
-def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_diametersAS: np.ndarray = np.array([1.8, 2.0, 3.0, 4.0, 5.0]), 
+def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_diametersAS: np.ndarray = np.array([0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]), 
             data_dir: Path = Path.home() / 'euclid', output_dir: str = 'none', overwrite: bool = False, stars_only: bool = False, use_cat: str = 'NONE') -> None:
     """
     Run PSF extraction on images for a given field and set of filters.
