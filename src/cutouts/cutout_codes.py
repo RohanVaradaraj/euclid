@@ -578,13 +578,13 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! REBELS sources
-    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    # t = t[t['RA'] > 148]
-    # ra = t['RA']
-    # dec = t['Dec']
-    # z = t['Redshift (z)']
-    # ID = t['Object Name']
-    # ID = [name.split('>')[1].split('<')[0] for name in ID]
+    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    t = t[t['RA'] > 148]
+    ra = t['RA']
+    dec = t['Dec']
+    z = t['Redshift (z)']
+    ID = t['Object Name']
+    ID = [name.split('>')[1].split('<')[0] for name in ID]
 
     #! Strong lens
     #ra = [150.00280406167596]
@@ -645,10 +645,17 @@ if __name__ == '__main__':
     # dec = [b1.dec.deg]
 
     #! Bad astrometry sources
-    stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
-    stars = ascii.read(stars_dir / f'H_outside_pixscale_vista_euclid_coords.ascii')
-    ra = stars['RA_euclid']
-    dec = stars['DEC_euclid']
+    # stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+    # stars = ascii.read(stars_dir / f'H_outside_pixscale_vista_euclid_coords.ascii')
+    # ra = stars['RA_euclid']
+    # dec = stars['DEC_euclid']
+
+    #! Normal stars
+    # stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+    # stars = ascii.read(stars_dir / f'Y_vista_euclid_coords.ascii')
+    # ra = stars['RA_euclid']
+    # dec = stars['DEC_euclid']
+
 
 
 
@@ -656,10 +663,11 @@ if __name__ == '__main__':
 
         #print(cat[i]['zBest'])
         #print(cat[i]['FIRST_CLASS'])
+        print(ID[i])
 
         #Cutout(ra[i], dec[i], size=6., plot_title=ID[i] + ', z=' + str(z[i]))
         #Cutout(ra[i], dec[i], size=10.)
-        Cutout(ra[i], dec[i], size=6., plot_title='Bad astrometry', add_centre_lines=True)
+        Cutout(ra[i], dec[i], size=6., plot_title=ID[i], add_centre_lines=True)
 
 
     

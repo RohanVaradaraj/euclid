@@ -13,11 +13,12 @@ import numpy as np
 import sep
 import matplotlib.pyplot as plt
 from astropy.io import fits, ascii
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy.wcs import WCS
 import sys
 sys.path.append(str(Path.cwd().parent))
 from astropy.nddata import Cutout2D
+from matplotlib.colors import LinearSegmentedColormap
 
 from cutouts.cutout_codes import isCoordInSurveyFootprints
 
@@ -147,7 +148,7 @@ def filterCentreAndWidth(filter_name: str, instrument: str) -> tuple[float, floa
 
 
 
-def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
+def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 1.2) -> tuple[np.ndarray, np.ndarray]:
     """
     Measure the fluxes of objects in the Euclid filters.
 
@@ -160,7 +161,7 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
     filters : list
         List of filters we want to measure fluxes in.
     aperture_diameter : float, optional
-        Diameter of the aperture, in arcseconds. Default is 1.0.
+        Diameter of the aperture, in arcseconds. Default is 1.2.
 
     Returns
     -------
@@ -225,13 +226,14 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         print((aperture_diameter/2.) * pix_scale)
         print(flux_counts)
 
-        # Get a quick cutout and plot
-        cutout = Cutout2D(image, (x[0], y[0]), (50, 50), wcs=w)
-        plt.imshow(cutout.data, origin='lower')
-        # Add a circle corresponding to aperture
-        circle = plt.Circle((25, 25), (aperture_diameter/2.) / pix_scale, color='red', fill=False)
-        plt.gca().add_artist(circle)
-        plt.show()
+        # # Get a quick cutout and plot
+        # if filter_name == 'J':
+        #     cutout = Cutout2D(image, (x[0], y[0]), (50, 50), wcs=w)
+        #     plt.imshow(cutout.data, origin='lower')
+        #     # Add a circle corresponding to aperture
+        #     circle = plt.Circle((25, 25), (aperture_diameter/2.) / pix_scale, color='red', fill=False)
+        #     plt.gca().add_artist(circle)
+        #     plt.show()
 
         # Convert counts to flux
         value = -(48.6 + zeropoint)/2.5
@@ -263,7 +265,7 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
     # Return the table
     return flux_table
 
-def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 1.8) -> tuple[np.ndarray, np.ndarray]:
+def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 2.0) -> tuple[np.ndarray, np.ndarray]:
     """
     Measure the fluxes of objects in the Euclid filters.
 
@@ -375,66 +377,98 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
 
     
 
-#! REBELS sources
-t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-t = t[t['RA'] > 140]
-ra = t['RA'][3:4]
-dec = t['Dec'][3:4]
 
-#print(isCoordInSurveyFootprints(ra, dec))
-#exit()
+if __name__ == '__main__':
 
-z = t['Redshift (z)']
-ID = t['Object Name']
+    #! REBELS sources
+    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    t = t[t['RA'] > 148]
+    ra = t['RA']
+    dec = t['Dec']
+    ID = t['Object Name']
+    ID = [name.split('>')[1].split('<')[0] for name in ID]
 
-table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'])
-#table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'])
+    #! Stars
+    # stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+    # stars = ascii.read(stars_dir / 'Y_vista_euclid_coords.ascii')
+    # ra = stars['RA_euclid']
+    # dec = stars['DEC_euclid']
 
-# Save these tables
-#table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
-#table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
+    #print(isCoordInSurveyFootprints(ra, dec))
+    #exit()
 
-# Open these tables
-#table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits')
-table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits')
+    z = t['Redshift (z)']
+    ID = t['Object Name']
 
-# Remove -99. from these astropy tables
-for filter_name in ['VIS', 'Y', 'J', 'H']:
-    table_euclid = table_euclid[table_euclid[f'flux_{filter_name}'] != -99]
-    table_euclid = table_euclid[table_euclid[f'err_{filter_name}'] != -99]
-for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
-    table_ground = table_ground[table_ground[f'flux_{filter_name}'] != -99]
-    table_ground = table_ground[table_ground[f'err_{filter_name}'] != -99]
+    # #! ############# Test aperture sizes #################
+    # apsizes = [0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
+    # tables = []
+    # for apsize in [0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]:
+    #     table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'], aperture_diameter=apsize)
+    #     table_euclid['ap_size'] = apsize
+    #     tables.append(table_euclid)
 
-# Loop through objects
-for i in range(len(table_euclid['flux_H'])):
+    # # Stack tables
+    # table_euclid = vstack(tables)
+    # #!##################################################
+    table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'], aperture_diameter=1.6)
+    table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'], aperture_diameter=1.8)
+
+    # Save these tables
+    table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
+    table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
+
+    # Open these tables
+    #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'star_fluxes.fits')
+    #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'star_ground_fluxes.fits')
+    #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits')
+    #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits')
+    #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'apSize_test_euclid.fits')
+    #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'apSize_test_ground.fits')
+
+    # cmap = plt.get_cmap('viridis')  # Choose your desired colormap
+    # norm = plt.Normalize(0, len(table_euclid['flux_H']) - 1)  # Normalize values of i
+    
+    # Remove -99. from these astropy tables
+    for filter_name in ['VIS', 'Y', 'J', 'H']:
+        table_euclid = table_euclid[table_euclid[f'flux_{filter_name}'] != -99]
+        table_euclid = table_euclid[table_euclid[f'err_{filter_name}'] != -99]
+    for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
+        table_ground = table_ground[table_ground[f'flux_{filter_name}'] != -99]
+        table_ground = table_ground[table_ground[f'err_{filter_name}'] != -99]
 
     plt.figure(figsize=(10, 6))
+    # Loop through objects
+    for i in range(len(table_euclid['flux_H'])):
 
-    # Loop through euclid fluxes and plot with errors
-    for filter_name in ['VIS', 'Y', 'J', 'H']:
+        print(ID[i])
 
-        print(filter_name)
+        # Loop through euclid fluxes and plot with errors
+        for filter_name in ['VIS', 'Y', 'J', 'H']:
 
-        print('Flux: ', table_euclid[f'flux_{filter_name}'])
-        print('Error: ', table_euclid[f'err_{filter_name}'])
+            centre, width = filterCentreAndWidth(filter_name, 'euclid')
 
-        centre, width = filterCentreAndWidth(filter_name, 'euclid')
-        plt.errorbar(centre, table_euclid[f'flux_{filter_name}'][i], yerr=table_euclid[f'err_{filter_name}'][i], xerr=width/2, 
-                    fmt='o', label=filter_name, color='black', alpha=0.7)
+            # color = cmap(norm(i))
+            plt.errorbar(centre+i*0.01, table_euclid[f'flux_{filter_name}'][i], yerr=table_euclid[f'err_{filter_name}'][i], xerr=width/2, 
+                         fmt='o', color='black', alpha=0.7)
+        #plt.errorbar([], [], yerr=0, xerr=0, fmt='o', label=f'apsize={apsizes[i]} as', alpha=0.7, color=color)
 
-    # And ground data
-    for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
+        # And ground data
+        for filter_name in ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']:
 
-        if filter_name[0:3] == 'HSC':
-            centre, width = filterCentreAndWidth(filter_name, 'HSC')
-        else:
-            centre, width = filterCentreAndWidth(filter_name, 'VISTA')
-        plt.errorbar(centre, table_ground[f'flux_{filter_name}'][i], yerr=table_ground[f'err_{filter_name}'][i], xerr=width/2, 
-                    fmt='o', label=filter_name, color='red', alpha=0.7)
+            if filter_name[0:3] == 'HSC':
+                centre, width = filterCentreAndWidth(filter_name, 'HSC')
+            else:
+                centre, width = filterCentreAndWidth(filter_name, 'VISTA')
+            plt.errorbar(centre, table_ground[f'flux_{filter_name}'][0], yerr=table_ground[f'err_{filter_name}'][0], xerr=width/2, 
+                        fmt='o', color='red', alpha=0.7)
+        
+        plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
+        plt.ylabel(r'flux (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')
+        plt.legend()
 
-    #plt.yscale('log')
-    plt.show()
-    #plt.savefig(Path.cwd().parent.parent / 'plots' / 'seds' / 'REBELS_fluxes.png')
+        #plt.yscale('log')
+        plt.show()
+        #plt.savefig(Path.cwd().parent.parent / 'plots' / 'seds' / 'REBELS_fluxes.png')
 
 
