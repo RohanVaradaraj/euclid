@@ -23,7 +23,7 @@ os.system('module load sextractor')
 fields = ['COSMOS']
 
 # required aperture diameter
-reqFilters = ['Y', 'J', 'H', 'VIS']
+reqFilters = ['Y'] #, 'J', 'H', 'VIS']
 
 # enter the prefered queue.
 queue = 'normal'

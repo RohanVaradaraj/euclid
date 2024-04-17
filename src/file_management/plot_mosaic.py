@@ -53,26 +53,32 @@ for i, image in enumerate(images):
 centroid_list.sort(key=lambda x: (-x[1], -x[0]), reverse=True)
 
 plt.figure(figsize=(10, 8))
+ax = plt.subplot()
 
-# Plot the images in sorted order
-for i, (centroid_x, centroid_y, image) in enumerate(centroid_list):
-    with fits.open(image) as hdul:
+# # Plot the images in sorted order
+# for i, (centroid_x, centroid_y, image) in enumerate(centroid_list):
+#     with fits.open(image) as hdul:
         
-        tile = image.split('TILE_')[-1].split('.fits')[0]
-        tile_index_map[tile] = i + 1
+#         tile = image.split('TILE_')[-1].split('.fits')[0]
+#         tile_index_map[tile] = i + 1
 
-        header = hdul[0].header
+#         header = hdul[0].header
 
-        wcs = WCS(header)
-        footprint = wcs.calc_footprint()
+#         wcs = WCS(header)
+#         footprint = wcs.calc_footprint()
 
-        ax = plt.subplot()
+#         ax = plt.subplot()
 
-        r = Polygon(np.array(footprint), closed=True, edgecolor='r', facecolor='none', lw=2.5, alpha=0.8)
-        ax.add_patch(r)
+#         r = Polygon(np.array(footprint), closed=True, edgecolor='black', facecolor='none', lw=2.5, alpha=0.2)
+#         ax.add_patch(r)
 
-        ax.text(centroid_x, centroid_y, str(i + 1), color='black', ha='center', va='center')
+# Euclid mosaic tiles
+#dummy = Polygon([[0,0],[0,0],[0,0],[0,0]], closed=True, edgecolor='gray', facecolor='none', lw=2.5, alpha=0.1, linestyle='dotted', label='OTF mosaic tiles')
+#ax.add_patch(dummy)
 
+#! Add the Euclid mask which is roughly the footprint
+e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.6063068,2.0034576], [150.4217294,1.7836002]]), closed=True, edgecolor='r', facecolor='none', lw=2.5, label='Euclid', alpha=0.8)
+ax.add_patch(e)
 
 # Save the tile_index_map dictionary
 np.save(Path.cwd().parent.parent / 'data' / 'mosaic' / 'tile_index_map.npy', tile_index_map)
@@ -89,11 +95,9 @@ with fits.open(primer) as hdu_primer:
     primer_footprint = wcs_primer.calc_footprint()
 
 r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
-p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
-dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='r', facecolor='none', lw=2.5, label='Euclid')
 ax.add_patch(r)
-ax.add_patch(dummy)
-ax.add_patch(p)
+#p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
+#ax.add_patch(p)
 
 #! Add the COSMOS-Web tiles
 jwst_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
@@ -115,7 +119,7 @@ with fits.open(dash) as hdu_dash:
     wcs_dash = WCS(hdu_dash[0].header)
     hubble_footprint = wcs_dash.calc_footprint()
 
-    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='3D-DASH', alpha=0.8, linestyle='--')
+    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='HST 3D-DASH', alpha=0.6, linestyle='dashed')
     ax.add_patch(r)
 
 
@@ -132,7 +136,7 @@ ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.2)
 ax.set_xlabel('RA (deg)')
 ax.set_ylabel('DEC (deg)')
-ax.legend(loc='upper right')
+ax.legend(loc='lower right')
 plt.gca().set_aspect('equal', adjustable='box')
 plt.tight_layout()
 plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic.png')

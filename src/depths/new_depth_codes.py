@@ -322,7 +322,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
                 f.close()
                 
                 # now execute this
-                command = "addqueue -c 'tmp_{0}' -m 9 -q {0} -d ./{1}".format(queue, tmpName)
+                command = "addqueue -c 'tmp_{0}' -m 20 -q {0} -d ./{1}".format(queue, tmpName)
                 #print(command)
                 os.system('chmod +x {0}'.format(tmpName))
                 os.system(command)
