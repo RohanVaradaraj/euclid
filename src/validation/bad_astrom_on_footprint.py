@@ -22,8 +22,10 @@ plt.rcParams['figure.dpi'] = 100
 euclid_dir = Path.home() / 'euclid' / 'Y' / 'COSMOS'
 stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
 
-
 images = glob.glob(str(euclid_dir / '*BGSUB-*'))
+
+# Compare against VISTA or JWST? If true, compare against VISTA
+vista = False
 
 # List to store centroid coordinates and corresponding image filenames
 centroid_list = []
@@ -59,20 +61,13 @@ ax = plt.subplot()
 # # Plot the images in sorted order
 # for i, (centroid_x, centroid_y, image) in enumerate(centroid_list):
 #     with fits.open(image) as hdul:
-        
 #         tile = image.split('TILE_')[-1].split('.fits')[0]
 #         tile_index_map[tile] = i + 1
-
 #         header = hdul[0].header
-
 #         wcs = WCS(header)
 #         footprint = wcs.calc_footprint()
-
-
-
 #         r = Polygon(np.array(footprint), closed=True, edgecolor='r', facecolor='none', lw=2.5, alpha=0.8)
 #         ax.add_patch(r)
-
 #         ax.text(centroid_x, centroid_y, str(i + 1), color='black', ha='center', va='center')
 
 
@@ -96,10 +91,15 @@ e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.606
 ax.add_patch(e)
 
 #! Plot positions of large offset stars
-filter_name = 'J'
-stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_vista_euclid_coords.ascii')
-stars_ra = stars['RA_vista']
-stars_dec = stars['DEC_vista']
+filter_name = 'Y'
+if vista:
+    stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_vista_euclid_coords.ascii')
+    stars_ra = stars['RA_vista']
+    stars_dec = stars['DEC_vista']
+else:
+    stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_jwst_euclid_coords.ascii')
+    stars_ra = stars['RA_jwst']
+    stars_dec = stars['DEC_jwst']
 
 #! Plot the ultra-deep stripes
 strip1 = Polygon(np.array([[150.43, 2.76], [150.57, 2.76], [150.57, 1.66], [150.43, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
