@@ -100,10 +100,10 @@ for f in os.listdir(sed_dir)[::10]:
             ascii.write(sed, lya_dir / lya_str, overwrite=True, format='no_header')
 
             # Plot
-            plt.plot(sed['col1'], sed['col2'], label='Continuum')
-            plt.plot(tmp['col1'], tmp['col2'], label='Lyman alpha')
-            plt.yscale('log')
-            plt.show()
+            # plt.plot(sed['col1'], sed['col2'], label='Continuum')
+            # plt.plot(tmp['col1'], tmp['col2'], label='Lyman alpha')
+            # plt.yscale('log')
+            # plt.show()
 
 #            f.append()
 
