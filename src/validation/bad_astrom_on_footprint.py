@@ -24,8 +24,14 @@ stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
 
 images = glob.glob(str(euclid_dir / '*BGSUB-*'))
 
-# Compare against VISTA or JWST? If true, compare against VISTA
+# Compare against VISTA...
 vista = False
+
+# Or JWST
+jwst = True
+
+# Or gaia
+gaia = False
 
 # List to store centroid coordinates and corresponding image filenames
 centroid_list = []
@@ -91,15 +97,19 @@ e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.606
 ax.add_patch(e)
 
 #! Plot positions of large offset stars
-filter_name = 'Y'
+filter_name = 'H'
 if vista:
     stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_vista_euclid_coords.ascii')
     stars_ra = stars['RA_vista']
     stars_dec = stars['DEC_vista']
-else:
+if jwst:
     stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_jwst_euclid_coords.ascii')
     stars_ra = stars['RA_jwst']
     stars_dec = stars['DEC_jwst']
+if gaia:
+    stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_euclid_gaia_coords.ascii')
+    stars_ra = stars['RA_Gaia']
+    stars_dec = stars['DEC_Gaia']
 
 #! Plot the ultra-deep stripes
 strip1 = Polygon(np.array([[150.43, 2.76], [150.57, 2.76], [150.57, 1.66], [150.43, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
@@ -124,7 +134,12 @@ ax.set_ylabel('DEC (deg)')
 ax.legend(loc='upper right')
 plt.gca().set_aspect('equal', adjustable='box')
 plt.tight_layout()
-plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint.png')
+if vista:
+    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_vista.png')
+if jwst:
+    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_jwst.png')
+if gaia:
+    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_gaia.png')
 plt.show()
 
 

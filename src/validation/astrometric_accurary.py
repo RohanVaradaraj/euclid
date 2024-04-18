@@ -22,13 +22,13 @@ stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'astrometry'
 
 # Run Gaia crossmatched stars?
-gaia = False
+gaia = True
 
 # Run VISTA crossmatches stars?
 vista = False
 
 # rUN JWST crossmatched stars?
-jwst = True
+jwst = False
 jwst_filter_dict = {
     'Y': 'f115w',
     'J': 'f150w',
@@ -45,8 +45,8 @@ for i, filter_name in enumerate(filter_names):
 
     # Read the commented header stars.ascii files
     if gaia:
-        stars_file = stars_dir / f'{filter_name}_euclid_gaia_coords.ascii' #! Stars used for PSFEx 
-        #stars_file = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii' #! Brighter stars (inc. saturated)
+        #stars_file = stars_dir / f'{filter_name}_euclid_gaia_coords.ascii' #! Stars used for PSFEx 
+        stars_file = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii' #! Brighter stars (inc. saturated)
     if vista:
         stars_file = stars_dir / f'{filter_name}_vista_euclid_coords.ascii'
     if jwst:
