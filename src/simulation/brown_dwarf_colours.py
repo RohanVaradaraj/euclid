@@ -13,6 +13,10 @@ from pathlib import Path
 import glob
 from astropy.constants import c
 from scipy.integrate import simps
+import bagpipes as pipes
+from typing import Union, Tuple
+from astropy.cosmology import FlatLambdaCDM
+import astropy.units as u
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -51,6 +55,16 @@ def flux_to_mag(flux):
         mag = -2.5*np.log10(flux)-48.6
     return mag
 
+
+
+def max_age_at_redshift(redshift: float) -> float:
+    # Define a cosmology
+    cosmo = FlatLambdaCDM(H0=70, Om0=0.3)  # Example cosmology, you can adjust parameters as needed
+
+    # Calculate the age of the universe at the given redshift
+    age_at_z = cosmo.age(redshift).to(u.Gyr).value
+
+    return age_at_z
 
 
 
@@ -144,8 +158,6 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
 
 
 
-
-
 def loadBrownDwarfTemplates(spectral_types: list[str]=['M', 'L', 'T'], sub_types: list[int] = None) -> dict:
 
     """
@@ -194,6 +206,7 @@ def loadBrownDwarfTemplates(spectral_types: list[str]=['M', 'L', 'T'], sub_types
             brown_dwarfs[f'{spectral_type}{sub_type}'] = (wavelength, flux)
 
     return brown_dwarfs
+
 
 
 def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
@@ -250,72 +263,271 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
 
 
 
+def makeLBG(redshift: float, SFH_component: str, 
+            age: Union[float, Tuple[float, float]] = None, tau: float = None, 
+            tmax: float = None, fwhm: float = None,
+            massformed: float = None, metallicity: float = None,
+            dust_type: str = None, Av: float = None,
+            nebular: bool=False, logU: float=None,
+            filter_list: Path = Path.cwd() / 'filter_list.txt') -> pipes.model_galaxy:
+    """
+    Create a model Lyman-break galaxy using BAGPIPES. Can specify different star formation histories.
+    Most arguments default to None, but certain ones are required for certain SFHs. These are:
+        burst: age.
+        constant: age = (age_min, age_max).
+        exponential: age, tau.
+        delayed: age, tau.
+        lognormal: tmax, fwhm.
+
+    Parameters:
+    -----------
+    redshift: float
+        The redshift of the galaxy.
+    SFH_component: str
+        The star formation history component to use. One of: 
+        'burst', 'constant', 'exponential' (e^-(t/tau)), 'delayed' (t*e^-(t/tau)), 'lognormal'.
+    age: Union[float, Tuple[float, float]], optional
+        The age of the galaxy in Gyr. If SFH is 'constant', provide a tuple (age_min, age_max) (= time since SF turned off/on).
+    tau: float, optional
+        The e-folding time in Gyr. Required for 'exponential' and 'delayed' SFHs.
+    tmax: float, optional
+        The time of maximum star formation in Gyr. Required for 'lognormal' SFH.
+    fwhm: float, optional
+        The full width at half maximum of the lognormal distribution in Gyr.
+    massformed: float, optional
+        The mass of the galaxy formed in log_10(M*/M_solar)
+    metallicity: float, optional
+        The metallicity of the galaxy in Z/Z_solar.
+    dust: str, optional
+        The dust attenuation law to use.
+    Av: float, optional
+        The dust attenuation in magnitudes.
+    nebular: bool, optional
+        Whether to include nebular emission.
+    logU: float, optional
+        The ionization parameter.
+    filter_list: Path, optional
+        The path to the filter list file. Default is in this directory, 'filter_list.txt'.
+
+    Returns:
+    --------
+    pipes.model_galaxy
+        The model galaxy object. 
+    """
+
+    # Load filter list
+    filter_list = np.loadtxt(filter_list, dtype="str")
+
+    # Ensure age or age_max is no more than age of the Universe at the given redshift
+    if age is not None:
+        if SFH_component == 'constant':
+            if age[1] > max_age_at_redshift(redshift):
+                age = (age[0], max_age_at_redshift(redshift))
+        elif age > max_age_at_redshift(redshift):
+            age = max_age_at_redshift(redshift)
+
+    # Create mandatory components of star formation history
+    sfh = {}
+    if SFH_component == 'burst':
+        sfh['age'] = age
+    elif SFH_component == 'constant':
+        sfh['age_min'] = age[0]
+        sfh['age_max'] = age[1]
+    elif SFH_component == 'exponential':
+        sfh['age'] = age
+        sfh['tau'] = tau
+    elif SFH_component == 'delayed':
+        sfh['age'] = age
+        sfh['tau'] = tau
+    elif SFH_component == 'lognormal':
+        sfh['tmax'] = tmax
+        sfh['fwhm'] = fwhm
+
+    # Add optional components
+    if massformed is not None:
+        sfh['massformed'] = massformed
+    if metallicity is not None:
+        sfh['metallicity'] = metallicity
+    
+    # Dust component
+    dust = {}
+    if dust is not None:
+        dust['type'] = dust_type
+        dust['Av'] = Av
+    
+    # Nebular component
+    nebular = {}
+    if nebular:
+        nebular['logU'] = logU
+
+    # Create model component dictionary
+    model_components = {}
+    model_components['redshift'] = redshift
+    if dust is not None:
+        model_components['dust'] = dust
+    if nebular:
+        model_components['nebular'] = nebular
+
+    # Add SFH
+    if SFH_component == 'burst':
+        model_components['burst'] = sfh
+    elif SFH_component == 'constant':
+        model_components['constant'] = sfh
+    elif SFH_component == 'exponential':
+        model_components['exponential'] = sfh
+    elif SFH_component == 'delayed':
+        model_components['delayed'] = sfh
+    elif SFH_component == 'lognormal':
+        model_components['lognormal'] = sfh
 
 
+    model = pipes.model_galaxy(model_components, filt_list=filter_list)
+
+    wlen = model.wavelengths
+    flux = model.spectrum_full
+
+    # Shift wavelength to observed frame
+    wlen *= (1 + redshift)
+
+    # Scale flux to ~ 1e-30 ergs/s/cm^2/A
+    #flux /= np.max(flux)
+    #flux *= 1e-30
+
+    return wlen, flux
+
+#? -----------------------------------
+#? Uncomment this to do some plotting
+
+#? -----------------------------------
+__name__ = '__none__'
 
 
-bds = loadBrownDwarfTemplates()
+#####################################################################################
+if __name__ == '__main__':
 
-# Plot BD templates
-for spectral_type, (wavelength, flux) in bds.items():
-    #plt.figure(figsize=(10, 6))
+    #! ----------------------------------------
+    #! Generate a bunch of brown dwarf colours
+    #! ----------------------------------------
+    bds = loadBrownDwarfTemplates()
 
-    print(spectral_type)
+    Y_mags_BD = []
+    J_mags_BD = []
+    Je_mags_BD = []
 
-    # Filters
-    euclid_filters = getFilters('euclid') #, plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'blue'})
-    vista_filters = getFilters('vista') #, plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'orange'})
+    # Plot BD templates
+    for spectral_type, (wavelength, flux) in bds.items():
 
-    # Get the magnitudes
-    mags = convolveFilters([vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
-    # Get the Y-Ye, J-Je, H-He colours
-    Ye = mags[spectral_type]['Ye']
-    Y = mags[spectral_type]['Y']
-    Je = mags[spectral_type]['Je']
-    J = mags[spectral_type]['J']
-    He = mags[spectral_type]['He']
-    H = mags[spectral_type]['H']
+        print(spectral_type)
 
-    # Print to 1dp
-    # print(f'Y - Ye: {Y-Ye:.1f}')
-    # print(f'J - Je: {J-Je:.1f}')
-    # print(f'H - He: {H-He:.1f}')
-    print(f'Y - J: {Y-J:.1f}')
+        # Filters
+        euclid_filters = getFilters('euclid')
+        vista_filters = getFilters('vista')
 
-    # # Dummy plots for filter labels
-    # plt.plot([], [], label='Euclid', color='blue', linewidth=2.5, alpha=0.6)
-    # plt.plot([], [], label='VISTA', color='orange', linewidth=2.5, alpha=0.6)
+        mags = convolveFilters([vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
 
-    # # Brown dwarf template
-    # plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.8, linewidth=2.5)
+        Y_mags_BD.append(mags[spectral_type]['Y'])
+        J_mags_BD.append(mags[spectral_type]['J'])
+        Je_mags_BD.append(mags[spectral_type]['Je'])
 
-    # plt.xlabel(r'$\lambda \ (\AA)$')
-    # plt.ylabel('Relative Transmission/Flux')
-    # plt.xlim(5000, 25000)
-    # plt.ylim(0, 1.15)
-    # plt.legend(loc='upper right')
-    # plt.tight_layout()
 
-    # plt.savefig(plot_dir / f'{spectral_type}_template.png')
-    # plt.close()
+    #! ----------------------------------------
+    #! Generate a bunch of LBG colours
+    #! ----------------------------------------
+    redshifts = np.arange(6., 7.5, 0.05)
 
-    #plt.show()
+    Y_mags_LBG = []
+    J_mags_LBG = []
+    Je_mags_LBG = []
 
-exit()
+    for redshift in redshifts:
 
-mags = convolveFilters([vista_filters, euclid_filters], loadBrownDwarfTemplates())
+        print(f'Generating LBG at z={redshift:.2f}...')
 
-# Plot the colours, Ye-Y vs Je - J
-plt.figure(figsize=(10, 8))
+        wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
+                        dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5)
+        
+        # Make a similar BD dictionary
+        lbg_dict = {redshift: (wlen, LBG_flux)}
 
-# Loop through the mags
-for spectral_type, mags in mags.items():
-        plt.plot(mags['Ye'] - mags['J'], mags['Ye'] - mags['Y'], 'o', label=spectral_type, color='black')
+        # Convolve
+        mags = convolveFilters([vista_filters, euclid_filters], lbg_dict)
 
-plt.xlabel('Ye - Y')
-plt.ylabel('Ye - J')
+        Y_mags_LBG.append(mags[redshift]['Y'])
+        J_mags_LBG.append(mags[redshift]['J'])
+        Je_mags_LBG.append(mags[redshift]['Je'])
 
-plt.show()
+        print(f'J-Je: {mags[redshift]["J"] - mags[redshift]["Je"]:.2f}, Y-J: {mags[redshift]["Y"] - mags[redshift]["J"]:.2f}')
+
+
+    # Convert all the mags lists into numpy arrays
+    Y_mags_BD = np.array(Y_mags_BD)
+    J_mags_BD = np.array(J_mags_BD)
+    Je_mags_BD = np.array(Je_mags_BD)
+
+    Y_mags_LBG = np.array(Y_mags_LBG)
+    J_mags_LBG = np.array(J_mags_LBG)
+    Je_mags_LBG = np.array(Je_mags_LBG)
+
+    # Plot J-Je vs Y-J
+    plt.figure(figsize=(8, 8))
+
+    plt.plot(Y_mags_BD - J_mags_BD, J_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='black')
+    plt.plot(J_mags_LBG - J_mags_LBG, J_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='red')
+
+    plt.ylabel('J - Je')
+    plt.xlabel('Y - J')
+    plt.show()
+
+
+if __name__ == '__none__':
+#! ----------------------------------------
+#! --------- PLOTTING -------------
+#! ----------------------------------------
+    bds = loadBrownDwarfTemplates(spectral_types=['M'], sub_types=[5])
+
+    # Plot BD templates
+    for spectral_type, (wavelength, flux) in bds.items():
+
+        for redshift in np.arange(6.5, 8.6, 0.1):
+
+            print(f'Making figure at z={redshift:.2f}')
+
+            # Make figure
+            plt.figure(figsize=(10, 6))
+
+            # Make LBG model
+            wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
+                dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5)
+
+            # Filters
+            euclid_filters = getFilters('euclid', plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'blue'})
+            vista_filters = getFilters('vista', plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'orange'})
+
+            # Get the magnitudes
+            mags = convolveFilters([vista_filters, euclid_filters], {redshift: (wlen, LBG_flux)})
+
+            # # Dummy plots for filter labels
+            plt.plot([], [], label='Euclid', color='blue', linewidth=2.5, alpha=0.6)
+            plt.plot([], [], label='VISTA', color='orange', linewidth=2.5, alpha=0.6)
+
+            # # Brown dwarf template
+            #plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.8, linewidth=2.5)
+            
+            # LBG model
+            plt.plot(wlen, LBG_flux/np.max(LBG_flux), label='LBG', color='red', alpha=0.8, linewidth=2.5)
+
+            plt.xlabel(r'$\lambda \ (\AA)$')
+            plt.ylabel('Relative Transmission/Flux')
+            plt.xlim(5000, 25000)
+            plt.ylim(0, 1.15)
+            plt.legend(loc='upper right')
+            plt.tight_layout()
+
+            plt.savefig(plot_dir.parent / 'LBG_models' / f'z{redshift:.2f}_LBG.png')
+            plt.close()
+
+            #plt.show()
+
 
 
 

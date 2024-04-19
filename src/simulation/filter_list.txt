@@ -1,0 +1,17 @@
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/g_HSC.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/r_HSC.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/i_HSC.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/hsc_nb816.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/z_HSC.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/hsc_nb921.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/HSC/y_HSC.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/VISTA/VISTA_Y.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/VISTA/VISTA_J.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/VISTA/VISTA_H.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/VISTA/VISTA_Ks.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/Euclid/Euclid_VIS.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/Euclid/Euclid_Y.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/Euclid/Euclid_J.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/Euclid/Euclid_H.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch1.txt
+#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch2.txt
