@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from astropy.io import ascii, fits
 from pathlib import Path
 import glob
+from astropy.constants import c
+from scipy.integrate import simps
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -28,15 +30,35 @@ def custom_sort(filename, order):
     for idx, substring in enumerate(order):
         if substring in filename:
             return idx
+        
+
+
+def mag_to_flux(m):
+	'''Convert mags and their errors to flux'''
+	flux = 10**(-0.4*(m+48.6))
+	return flux
+
+
+
+def flux_to_mag(flux):
+
+    '''Convert flux to mag'''
+    # Deal with negative flux case
+    if flux <= 0:
+        mag = np.nan
+        print('Negative flux')
+    else:
+        mag = -2.5*np.log10(flux)-48.6
+    return mag
 
 
 
 
 def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) -> dict:
     """
-    By specifying the instrument name, plot all of its photometric filters.
+    By specifying the instrument name, retrieve/plot all of its photometric filters.
 
-    Based on validation/filter_transmission_curves.py.
+    Based on src/validation/filter_transmission_curves.py.
 
     Parameters:
     -----------
@@ -81,6 +103,10 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
     # Sort the filters
     filter_names = sorted(filter_names, key=custom_sort(filter_names, order))
 
+    # Empty objects for transmission and wavelength
+    wavelengths = []
+    transmissions = []
+
     for i, filter_name in enumerate(filter_names):
         # Open filter in two column format
         with open(filter_name, 'r') as f:
@@ -95,22 +121,26 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
                 wavelength.append(float(values[0]))
                 transmission.append(float(values[1]))
 
-        # Convert wavelength to microns
-        wavelength = [w * 1e-4 for w in wavelength]
+        # If vista, divide transmission by 100
+        if instrument.lower() == 'vista':
+            transmission = [t / 100 for t in transmission] #! Makes no difference in convolution, just for plotting.
 
-        # Normalise
-        transmission = [t / max(transmission) for t in transmission]
 
-    if plot:
-        # Plot filter with customized plotting attributes
-        plt.plot(wavelength, transmission, **plot_kwargs)
+        # Add to empty lists
+        wavelengths.append(wavelength)
+        transmissions.append(transmission)
+
+
+        if plot:
+            # Plot filter with customized plotting attributes
+            plt.plot(wavelength, transmission, **plot_kwargs)
 
     # Modify labels for Euclid filters if necessary
     if instrument.lower() == 'euclid':
         order = ['VIS', 'Ye', 'Je', 'He']
 
     # Return a dictionary with the order name and the data
-    return {order[i]: (wavelength, transmission) for i, filter_name in enumerate(filter_names)}
+    return {order[i]: (wavelengths[i], transmissions[i]) for i, filter_name in enumerate(filter_names)}
 
 
 
@@ -145,6 +175,7 @@ def loadBrownDwarfTemplates(spectral_types: list[str]=['M', 'L', 'T'], sub_types
 
     # Load the brown dwarf templates
     brown_dwarfs = {}
+    
     for spectral_type in spectral_types:
         for sub_type in sub_types:
 
@@ -155,15 +186,14 @@ def loadBrownDwarfTemplates(spectral_types: list[str]=['M', 'L', 'T'], sub_types
 
             brown_dwarf_file = dwarf_dir / f'{spectral_type}{sub_type}_reformat2.txt_trim'
 
-            # Read uncommented two column file, no header
+            # Read data
             data = ascii.read(brown_dwarf_file, data_start=0)
-            wavelength = data['col1']
-            flux = data['col2']
+            wavelength = np.array(data['col1'])
+            flux = np.array(data['col2'])
 
             brown_dwarfs[f'{spectral_type}{sub_type}'] = (wavelength, flux)
 
     return brown_dwarfs
-
 
 
 def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
@@ -180,8 +210,8 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
 
     Returns:
     --------
-    dict
-        A dictionary with the filter names as keys and the flux as values.
+    dict{spectral_type_1: {filter1: mag1, filter2: mag2, ...}, spectral_type_2: {filter1: mag1, filter2: mag2, ...}, ...}
+        A dictionary with the spectral type as the key and a dictionary with the filter name and the resultant magnitude as the value.
     """
 
     # If there are multiple dicts in filter_set, turn it into one big dict
@@ -189,18 +219,104 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
     for filter_dict in filter_set:
         filters.update(filter_dict)
 
-    return filters
+    # Go through the brown dwarf templates and convolve them with the filters
+    convolved_fluxes = {}
+
+  # Loop through the dwarf templates
+    for spectral_type, (bd_wlen_grid, flux) in dwarf_templates.items():
+
+        # Loop through the filters
+        for filter_name, (filter_wlen_grid, transmission) in filters.items():
+
+            # Interpolate the BD SED grid to the filter
+            flux_interp = np.interp(filter_wlen_grid, bd_wlen_grid, flux)
+
+            # Normalise the BD sed to a flux of 1e-29 erg/s/cm^2/A, roughly 24-26 AB mag
+            flux_interp /= np.max(flux_interp)
+            flux_interp *= 1e-29
+
+            # Convert to frquency space (f = c/wlen)
+            filter_freq_grid = np.array([c.value / (wlen*1e-10) for wlen in filter_wlen_grid])
+
+            # Calculate the convolved flux, normalised by filter area under curve
+            convolved_flux = simps(flux_interp * transmission, filter_freq_grid) / simps(transmission, filter_freq_grid)
+
+            mag = flux_to_mag(convolved_flux)
+
+            # Store with keys for each BD corresponding to a dict with a key for each filter
+            convolved_fluxes.setdefault(spectral_type, {})[filter_name] = mag
+                
+    return convolved_fluxes
 
 
 
 
-euclid_filters = getFilters('euclid')
-vista_filters = getFilters('vista')
-hsc_filters = getFilters('hsc')
 
-filters = convolveFilters([hsc_filters, vista_filters, euclid_filters], loadBrownDwarfTemplates())
 
-print(filters.keys())
+
+bds = loadBrownDwarfTemplates()
+
+# Plot BD templates
+for spectral_type, (wavelength, flux) in bds.items():
+    #plt.figure(figsize=(10, 6))
+
+    print(spectral_type)
+
+    # Filters
+    euclid_filters = getFilters('euclid') #, plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'blue'})
+    vista_filters = getFilters('vista') #, plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'orange'})
+
+    # Get the magnitudes
+    mags = convolveFilters([vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
+    # Get the Y-Ye, J-Je, H-He colours
+    Ye = mags[spectral_type]['Ye']
+    Y = mags[spectral_type]['Y']
+    Je = mags[spectral_type]['Je']
+    J = mags[spectral_type]['J']
+    He = mags[spectral_type]['He']
+    H = mags[spectral_type]['H']
+
+    # Print to 1dp
+    # print(f'Y - Ye: {Y-Ye:.1f}')
+    # print(f'J - Je: {J-Je:.1f}')
+    # print(f'H - He: {H-He:.1f}')
+    print(f'Y - J: {Y-J:.1f}')
+
+    # # Dummy plots for filter labels
+    # plt.plot([], [], label='Euclid', color='blue', linewidth=2.5, alpha=0.6)
+    # plt.plot([], [], label='VISTA', color='orange', linewidth=2.5, alpha=0.6)
+
+    # # Brown dwarf template
+    # plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.8, linewidth=2.5)
+
+    # plt.xlabel(r'$\lambda \ (\AA)$')
+    # plt.ylabel('Relative Transmission/Flux')
+    # plt.xlim(5000, 25000)
+    # plt.ylim(0, 1.15)
+    # plt.legend(loc='upper right')
+    # plt.tight_layout()
+
+    # plt.savefig(plot_dir / f'{spectral_type}_template.png')
+    # plt.close()
+
+    #plt.show()
+
+exit()
+
+mags = convolveFilters([vista_filters, euclid_filters], loadBrownDwarfTemplates())
+
+# Plot the colours, Ye-Y vs Je - J
+plt.figure(figsize=(10, 8))
+
+# Loop through the mags
+for spectral_type, mags in mags.items():
+        plt.plot(mags['Ye'] - mags['J'], mags['Ye'] - mags['Y'], 'o', label=spectral_type, color='black')
+
+plt.xlabel('Ye - Y')
+plt.ylabel('Ye - J')
+
+plt.show()
+
 
 
 
