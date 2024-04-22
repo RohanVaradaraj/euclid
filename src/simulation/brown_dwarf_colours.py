@@ -17,6 +17,8 @@ import bagpipes as pipes
 from typing import Union, Tuple
 from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
+import re
+from collections import defaultdict
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -26,6 +28,7 @@ plt.rcParams['figure.dpi'] = 100
 filter_dir = Path().home() / 'lephare' / 'lephare_dev' / 'filt' / 'myfilters'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'brown_dwarfs'
 dwarf_dir = Path().home() / 'lephare' / 'lephare_dev' / 'sed' / 'STAR' / 'DWARFSTARS'
+spectra_dir = Path.cwd().parent.parent / 'data' / 'SEDs' / 'dwarfs'
 
 
 
@@ -50,18 +53,38 @@ def flux_to_mag(flux):
     # Deal with negative flux case
     if flux <= 0:
         mag = np.nan
-        print('Negative flux')
     else:
         mag = -2.5*np.log10(flux)-48.6
     return mag
 
 
 
-def max_age_at_redshift(redshift: float) -> float:
-    # Define a cosmology
-    cosmo = FlatLambdaCDM(H0=70, Om0=0.3)  # Example cosmology, you can adjust parameters as needed
+def flat_spectrum(wlen, target_flux):
+    """
+    Given a wavelength grid and a flux grid, return a flat spectrum.
+    """
+    return np.ones(len(wlen)) * target_flux
 
-    # Calculate the age of the universe at the given redshift
+
+
+def powerLawSpectrum(wlen, target_flux, power, redshift):
+    """
+    Given a wavelength grid, a target flux and a power, return a power law spectrum.
+    Then given a redshift, add the Lyman break by setting the flux to zero bluewards of (1+z)*1216 Angstroms
+    """
+
+    # Make the power law spectrum
+    flux = target_flux * (wlen) ** power
+
+    # Add the Lyman break
+    flux[wlen < 1216 * (1 + redshift)] = 0
+
+    return flux
+
+
+def max_age_at_redshift(redshift: float) -> float:
+
+    cosmo = FlatLambdaCDM(H0=70, Om0=0.3) 
     age_at_z = cosmo.age(redshift).to(u.Gyr).value
 
     return age_at_z
@@ -115,7 +138,10 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
         raise ValueError("Invalid instrument name")
 
     # Sort the filters
-    filter_names = sorted(filter_names, key=custom_sort(filter_names, order))
+    if instrument.lower() != 'hsc':
+        filter_names = sorted(filter_names, key=lambda x: order.index(x.split('/')[-1].split('_')[-1].split('.')[0]))
+    else:  
+        filter_names = sorted(filter_names, key=lambda x: order.index(x.split('/')[-1].split('_HSC.txt')[0]))
 
     # Empty objects for transmission and wavelength
     wavelengths = []
@@ -203,9 +229,71 @@ def loadBrownDwarfTemplates(spectral_types: list[str]=['M', 'L', 'T'], sub_types
             wavelength = np.array(data['col1'])
             flux = np.array(data['col2'])
 
+            # normalize to ~ 1e-29 erg/s/cm^2/A, roughly 24-26 AB mag
+            flux /= np.max(flux)
+            flux *= 1e-29
+
             brown_dwarfs[f'{spectral_type}{sub_type}'] = (wavelength, flux)
 
     return brown_dwarfs
+
+
+
+def loadBrownDwarfSpectra() -> dict:
+
+    """
+    Load brown dwarf spectra taken from https://cass.ucsd.edu/~ajb/browndwarfs/spexprism/library.html.
+
+    The commented header contains the reference for the object and the spectral type, which is extracted.
+
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    dict
+        A dictionary with the spectral type as the key and a list of wavelength and flux tuples as the values.
+    """
+
+    # Collect the brown dwarf spectra file names
+    spectra_files = glob.glob(str(spectra_dir / '*'))
+
+    # Use defaultdict to automatically create a list for each spectral type
+    brown_dwarfs = defaultdict(list)
+
+    for file in spectra_files:
+
+        # Get the spectral type from the file name
+        spectral_type = file.split('/')[-1].split('_')[0]
+
+        # Read data, commented out lines are skipped
+        data = ascii.read(file)
+
+        # Find the line containing "Near infrared spectral type:", and if not, search for "Optical spectral type:"
+        for line in data.meta['comments']:
+            if 'Near infrared spectral type:' in line:
+                spectral_type = line.split(':')[-1].strip()
+                break
+            elif 'Optical spectral type:' in line:
+                spectral_type = line.split(':')[-1].strip()
+                break
+            else:
+                spectral_type = 'Unknown'
+
+        wavelength = np.array(data['col1'])
+        flux = np.array(data['col2'])
+
+        # Convert wavelength from microns to angstroms
+        wavelength *= 1e4
+
+        brown_dwarfs[spectral_type].append((wavelength, flux))
+
+    # Convert defaultdict to regular dictionary
+    brown_dwarfs = dict(brown_dwarfs)
+
+    return brown_dwarfs
+
 
 
 
@@ -245,8 +333,8 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
             flux_interp = np.interp(filter_wlen_grid, bd_wlen_grid, flux)
 
             # Normalise the BD sed to a flux of 1e-29 erg/s/cm^2/A, roughly 24-26 AB mag
-            flux_interp /= np.max(flux_interp)
-            flux_interp *= 1e-29
+            #flux_interp /= np.max(flux_interp)
+            #flux_interp *= 1e-29
 
             # Convert to frquency space (f = c/wlen)
             filter_freq_grid = np.array([c.value / (wlen*1e-10) for wlen in filter_wlen_grid])
@@ -263,7 +351,7 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
 
 
 
-def makeLBG(redshift: float, SFH_component: str, 
+def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
             age: Union[float, Tuple[float, float]] = None, tau: float = None, 
             tmax: float = None, fwhm: float = None,
             massformed: float = None, metallicity: float = None,
@@ -286,6 +374,8 @@ def makeLBG(redshift: float, SFH_component: str,
     SFH_component: str
         The star formation history component to use. One of: 
         'burst', 'constant', 'exponential' (e^-(t/tau)), 'delayed' (t*e^-(t/tau)), 'lognormal'.
+    Muv: float, optional
+        The target absolute rest-UV magnitude of the galaxy. SED is scaled to this if provided.
     age: Union[float, Tuple[float, float]], optional
         The age of the galaxy in Gyr. If SFH is 'constant', provide a tuple (age_min, age_max) (= time since SF turned off/on).
     tau: float, optional
@@ -389,17 +479,46 @@ def makeLBG(redshift: float, SFH_component: str,
     # Shift wavelength to observed frame
     wlen *= (1 + redshift)
 
-    # Scale flux to ~ 1e-30 ergs/s/cm^2/A
-    #flux /= np.max(flux)
-    #flux *= 1e-30
+    # Scale to Muv
+    if Muv is not None:
+
+        # Set up a cosmology
+        cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+
+        # Need to convert flux from f_lambda to f_nu. # Conversion from Nathan, then into cgs
+        flux * (wlen**2)/(10**-29*2.9979*10**18) * 1e-19
+    
+        # Compute location of Lyman break
+        lyman_break = 1216 * (1+redshift) # Angstroms
+
+        # Get the distance modulus from the redshift.
+        DL = cosmo.luminosity_distance(redshift).value * 10 ** 6 # in pc
+
+        # Compute apparent magnitude from absolute magnitude.
+        m = Muv + 5*np.log10(DL/10) - 2.5*np.log10(1+redshift)
+
+        # Compute the observed wavelength of 1500A
+        uv_obs = 1500 * (1+redshift) # Angstroms
+
+        # Compute flux corresponding to apparent uv magnitude.
+        app_flux = mag_to_flux(m)
+
+        # Compute the ratio between this and the BAGPIPES flux at 1500 A
+        idx = np.abs(wlen - uv_obs).argmin()
+        ratio = app_flux / flux[idx]
+
+        # Match the model to our desired magnitude at 1500A
+        flux = flux * ratio
 
     return wlen, flux
 
-#? -----------------------------------
-#? Uncomment this to do some plotting
 
-#? -----------------------------------
-__name__ = '__none__'
+
+#? -----------------------------------------
+#? Uncomment this to do some plotting checks
+#__name__ = '__none__'
+#? -----------------------------------------
+
 
 
 #####################################################################################
@@ -408,96 +527,202 @@ if __name__ == '__main__':
     #! ----------------------------------------
     #! Generate a bunch of brown dwarf colours
     #! ----------------------------------------
-    bds = loadBrownDwarfTemplates()
+
+    #bds = loadBrownDwarfTemplates()
+    bds = loadBrownDwarfSpectra()
+
+    # Make empty lists for all the VISTA and Euclid filters
+
+    z_mags_BD = []
 
     Y_mags_BD = []
     J_mags_BD = []
+    H_mags_BD = []
+
+    Ye_mags_BD = []
     Je_mags_BD = []
+    He_mags_BD = []
 
     # Plot BD templates
-    for spectral_type, (wavelength, flux) in bds.items():
-
+    for spectral_type, (spectra_list) in bds.items(): ###! Spectral sample
+    #for spectral_type, (wavelength, flux) in bds.items(): ####! SpeX templates
+            
         print(spectral_type)
+        
+        #! Uncomment and tab this loop if reading the spectra
+        for spectrum in spectra_list:
+            wavelength, flux = spectrum
 
-        # Filters
-        euclid_filters = getFilters('euclid')
-        vista_filters = getFilters('vista')
+            # Filters
+            euclid_filters = getFilters('euclid')
+            vista_filters = getFilters('vista')
+            hsc_filters = getFilters('hsc')
 
-        mags = convolveFilters([vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
+            mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
 
-        Y_mags_BD.append(mags[spectral_type]['Y'])
-        J_mags_BD.append(mags[spectral_type]['J'])
-        Je_mags_BD.append(mags[spectral_type]['Je'])
+            z_mags_BD.append(mags[spectral_type]['z'])
+            Y_mags_BD.append(mags[spectral_type]['Y'])
+            J_mags_BD.append(mags[spectral_type]['J'])
+            H_mags_BD.append(mags[spectral_type]['H'])
+            Ye_mags_BD.append(mags[spectral_type]['Ye'])
+            Je_mags_BD.append(mags[spectral_type]['Je'])
+            He_mags_BD.append(mags[spectral_type]['He'])
 
+    # Convert all the mags lists into numpy arrays
+    z_mags_BD = np.array(z_mags_BD)
+    Ye_mags_BD = np.array(Ye_mags_BD)
+    Je_mags_BD = np.array(Je_mags_BD)
+    He_mags_BD = np.array(He_mags_BD)
+    Y_mags_BD = np.array(Y_mags_BD)
+    J_mags_BD = np.array(J_mags_BD)
+    H_mags_BD = np.array(H_mags_BD)
 
     #! ----------------------------------------
-    #! Generate a bunch of LBG colours
+    #!     Generate a bunch of LBG colours
     #! ----------------------------------------
     redshifts = np.arange(6., 7.5, 0.05)
+    Av_vals = np.arange(0, 0.6, 0.1)
+    ages = np.arange(0.05, 0.51, 0.01)
+    
+
+    # Make empty lists for all the VISTA and Euclid filters
+    z_mags_LBG = []
 
     Y_mags_LBG = []
     J_mags_LBG = []
+    H_mags_LBG = []
+
+    Ye_mags_LBG = []
     Je_mags_LBG = []
+    He_mags_LBG = []
+
+
 
     for redshift in redshifts:
+        for Av in Av_vals:
 
-        print(f'Generating LBG at z={redshift:.2f}...')
+            print(f'Generating LBG at z={redshift:.2f} for Av={Av:.2f}')
 
-        wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
-                        dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5)
-        
-        # Make a similar BD dictionary
-        lbg_dict = {redshift: (wlen, LBG_flux)}
+            wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10., metallicity=0.2, 
+                            dust_type='Calzetti', Av=Av, nebular=True, logU=-1.2, Muv=-22.)
+            
+            #LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+            
+            # Make a similar BD dictionary
+            lbg_dict = {redshift: (wlen, LBG_flux)}
 
-        # Convolve
-        mags = convolveFilters([vista_filters, euclid_filters], lbg_dict)
+            # Convolve
+            mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
 
-        Y_mags_LBG.append(mags[redshift]['Y'])
-        J_mags_LBG.append(mags[redshift]['J'])
-        Je_mags_LBG.append(mags[redshift]['Je'])
+            z_mags_LBG.append(mags[redshift]['z'])
+            Y_mags_LBG.append(mags[redshift]['Y'])
+            J_mags_LBG.append(mags[redshift]['J'])
+            H_mags_LBG.append(mags[redshift]['H'])
+            Je_mags_LBG.append(mags[redshift]['Je'])
+            Ye_mags_LBG.append(mags[redshift]['Ye'])
+            He_mags_LBG.append(mags[redshift]['He'])
 
-        print(f'J-Je: {mags[redshift]["J"] - mags[redshift]["Je"]:.2f}, Y-J: {mags[redshift]["Y"] - mags[redshift]["J"]:.2f}')
-
-
-    # Convert all the mags lists into numpy arrays
-    Y_mags_BD = np.array(Y_mags_BD)
-    J_mags_BD = np.array(J_mags_BD)
-    Je_mags_BD = np.array(Je_mags_BD)
-
+    # Convert to arrays
+    z_mags_LBG = np.array(z_mags_LBG)
     Y_mags_LBG = np.array(Y_mags_LBG)
     J_mags_LBG = np.array(J_mags_LBG)
+    H_mags_LBG = np.array(H_mags_LBG)
+    Ye_mags_LBG = np.array(Ye_mags_LBG)
     Je_mags_LBG = np.array(Je_mags_LBG)
+    He_mags_LBG = np.array(He_mags_LBG)
 
-    # Plot J-Je vs Y-J
+
+    #! Plot J-Je vs Y-J
     plt.figure(figsize=(8, 8))
-
     plt.plot(Y_mags_BD - J_mags_BD, J_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='black')
     plt.plot(J_mags_LBG - J_mags_LBG, J_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='red')
+    plt.xlabel(r'$Y_{\mathrm{e}} - J_{\mathrm{e}}$')
+    plt.xlabel(r'$J_{\mathrm{e}} - J_{\mathrm{e}}$')
+    plt.savefig(plot_dir / 'Y-J_vs_J-Je.png')
 
-    plt.ylabel('J - Je')
-    plt.xlabel('Y - J')
+    #! Plot Y-J vs z-Y
+    # plt.figure(figsize=(8, 8))
+    # plt.plot(Y_mags_BD - J_mags_BD, z_mags_BD - Y_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+    # plt.plot(Y_mags_LBG - J_mags_LBG, z_mags_LBG - Y_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+    # plt.xlabel('Y - J')
+    # plt.ylabel('z - Y')
+    # plt.xlim(-1, 1)
+    # plt.ylim(0, 5)
+    # plt.tight_layout()
+    # plt.savefig(plot_dir / 'Y-J_vs_z-Y.png')
+
+    #! Plot Y-J vs Ye-Je
+    # plt.figure(figsize=(8, 8))
+    # plt.plot(Y_mags_BD - J_mags_BD, Ye_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+    # plt.plot(Y_mags_LBG - J_mags_LBG, Ye_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+    # plt.xlabel('Y - J (VISTA)')
+    # plt.ylabel('Y - J (Euclid)')
+    # plt.savefig(plot_dir / 'Y-J_vs_Ye-Je.png')
+
+    #! Plot Ye-Je vs Je-He
+    # plt.figure(figsize=(8, 8))
+    # plt.plot(Ye_mags_BD - Je_mags_BD, Je_mags_BD - He_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+    # plt.plot(Ye_mags_LBG - Je_mags_LBG, Je_mags_LBG - He_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+    # plt.xlabel(r'$Y_{\mathrm{e}} - J_{\mathrm{e}}$')
+    # plt.ylabel(r'$J_{\mathrm{e}} - H_{\mathrm{e}}$')
+    # plt.savefig(plot_dir / 'Ye-Je_vs_Je-He.png')
+
+    #! Plot Y-Ye vs J-Je
+    # plt.figure(figsize=(8, 8))
+    # plt.plot(Y_mags_BD - Ye_mags_BD, J_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+    # plt.plot(Y_mags_LBG - Ye_mags_LBG, J_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+    # plt.xlabel(r'$Y- Y_{\mathrm{e}}$')
+    # plt.ylabel(r'$J - J_{\mathrm{e}}$')
+    # plt.savefig(plot_dir / 'Y-Ye_vs_J-Je.png')
+
+    #! Plot J-Je vs H-He
+    #plt.figure(figsize=(8, 8))
+    #plt.plot(J_mags_BD - Je_mags_BD, H_mags_BD - He_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+    #plt.plot(J_mags_LBG - Je_mags_LBG, H_mags_LBG - He_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+    #plt.xlabel(r'$J - J_{\mathrm{e}}$')
+    #plt.ylabel(r'$H - H_{\mathrm{e}}$')
+
+    # ! Add text
+    # On the LBGs add text of the redshift and Av
+    #for i, redshift in enumerate(redshifts):
+    #    for j, Av in enumerate(Av_vals):
+    #        plt.text(Y_mags_LBG[i*len(Av_vals) + j] - Ye_mags_LBG[i*len(Av_vals) + j], J_mags_LBG[i*len(Av_vals) + j] - Je_mags_LBG[i*len(Av_vals) + j], f'z={redshift:.2f}, Av={Av:.2f}', fontsize=8)
+    
+    # On the BDs add text of the spectral type
+    # for i, spectral_type in enumerate(bds.keys()):
+    #     plt.text(Y_mags_BD[i] - Ye_mags_BD[i], J_mags_BD[i] - Je_mags_BD[i], f'{spectral_type}', fontsize=8)
+
+    
+
     plt.show()
+    plt.close()
+
 
 
 if __name__ == '__none__':
 #! ----------------------------------------
-#! --------- PLOTTING -------------
+#! -------- PLOTTING ON FILTERS -----------
 #! ----------------------------------------
     bds = loadBrownDwarfTemplates(spectral_types=['M'], sub_types=[5])
 
     # Plot BD templates
     for spectral_type, (wavelength, flux) in bds.items():
 
-        for redshift in np.arange(6.5, 8.6, 0.1):
+        # Make figure
+        plt.figure(figsize=(10, 6))
+
+        for redshift in np.arange(6.5, 7.5, 0.1):
 
             print(f'Making figure at z={redshift:.2f}')
 
-            # Make figure
-            plt.figure(figsize=(10, 6))
-
             # Make LBG model
             wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
-                dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5)
+                dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5, Muv=-21.)
+            
+            LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+
+            wlen = np.array(wlen)
+            LBG_flux = np.array(LBG_flux)            
 
             # Filters
             euclid_filters = getFilters('euclid', plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'blue'})
@@ -520,13 +745,13 @@ if __name__ == '__none__':
             plt.ylabel('Relative Transmission/Flux')
             plt.xlim(5000, 25000)
             plt.ylim(0, 1.15)
-            plt.legend(loc='upper right')
+            #plt.legend(loc='upper right')
             plt.tight_layout()
 
-            plt.savefig(plot_dir.parent / 'LBG_models' / f'z{redshift:.2f}_LBG.png')
-            plt.close()
+            #plt.savefig(plot_dir.parent / 'LBG_models' / f'z{redshift:.2f}_LBG.png')
+            #plt.close()
 
-            #plt.show()
+        plt.show()
 
 
 
