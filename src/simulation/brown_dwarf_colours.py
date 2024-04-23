@@ -19,6 +19,7 @@ from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
 import re
 from collections import defaultdict
+from astropy.table import Table
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -29,6 +30,8 @@ filter_dir = Path().home() / 'lephare' / 'lephare_dev' / 'filt' / 'myfilters'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'brown_dwarfs'
 dwarf_dir = Path().home() / 'lephare' / 'lephare_dev' / 'sed' / 'STAR' / 'DWARFSTARS'
 spectra_dir = Path.cwd().parent.parent / 'data' / 'SEDs' / 'dwarfs'
+table_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'tables'
+rebels_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes'
 
 
 
@@ -50,11 +53,11 @@ def mag_to_flux(m):
 def flux_to_mag(flux):
 
     '''Convert flux to mag'''
-    # Deal with negative flux case
-    if flux <= 0:
-        mag = np.nan
-    else:
-        mag = -2.5*np.log10(flux)-48.6
+    # # Deal with negative flux case
+    # if flux <= 0:
+    #     mag = np.nan
+    # else:
+    mag = -2.5*np.log10(flux)-48.6
     return mag
 
 
@@ -80,6 +83,7 @@ def powerLawSpectrum(wlen, target_flux, power, redshift):
     flux[wlen < 1216 * (1 + redshift)] = 0
 
     return flux
+
 
 
 def max_age_at_redshift(redshift: float) -> float:
@@ -287,13 +291,16 @@ def loadBrownDwarfSpectra() -> dict:
         # Convert wavelength from microns to angstroms
         wavelength *= 1e4
 
+        # Normalise to ~1e-29 ergs, around 24-26 AB mag. Only interested in relative colours.
+        flux /= np.max(flux)
+        flux *= 1e-29
+
         brown_dwarfs[spectral_type].append((wavelength, flux))
 
     # Convert defaultdict to regular dictionary
     brown_dwarfs = dict(brown_dwarfs)
 
     return brown_dwarfs
-
 
 
 
@@ -331,10 +338,6 @@ def convolveFilters(filter_set: list[dict], dwarf_templates: dict) -> dict:
 
             # Interpolate the BD SED grid to the filter
             flux_interp = np.interp(filter_wlen_grid, bd_wlen_grid, flux)
-
-            # Normalise the BD sed to a flux of 1e-29 erg/s/cm^2/A, roughly 24-26 AB mag
-            #flux_interp /= np.max(flux_interp)
-            #flux_interp *= 1e-29
 
             # Convert to frquency space (f = c/wlen)
             filter_freq_grid = np.array([c.value / (wlen*1e-10) for wlen in filter_wlen_grid])
@@ -514,173 +517,577 @@ def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
 
 
 
-#? -----------------------------------------
-#? Uncomment this to do some plotting checks
+#? --------------------------------------------------------------------------
+#? Uncomment this to do some plotting checks on top of filter response curves
 #__name__ = '__none__'
-#? -----------------------------------------
+#? --------------------------------------------------------------------------
 
 
 
 #####################################################################################
 if __name__ == '__main__':
 
-    #! ----------------------------------------
-    #! Generate a bunch of brown dwarf colours
-    #! ----------------------------------------
+    #! ------------------------------------------------------
+    #! Generate a bunch of brown dwarf colours, save to table
+    #! ------------------------------------------------------
 
-    #bds = loadBrownDwarfTemplates()
-    bds = loadBrownDwarfSpectra()
+    # #bds = loadBrownDwarfTemplates()
+    # bds = loadBrownDwarfSpectra()
 
-    # Make empty lists for all the VISTA and Euclid filters
+    # # Make empty lists for all the VISTA and Euclid filters
 
-    z_mags_BD = []
+    # spec_type = []
 
-    Y_mags_BD = []
-    J_mags_BD = []
-    H_mags_BD = []
+    # z_mags_BD = []
+    # y_mags_BD = []
 
-    Ye_mags_BD = []
-    Je_mags_BD = []
-    He_mags_BD = []
+    # Y_mags_BD = []
+    # J_mags_BD = []
+    # H_mags_BD = []
+    # Ks_mags_BD = []
 
-    # Plot BD templates
-    for spectral_type, (spectra_list) in bds.items(): ###! Spectral sample
-    #for spectral_type, (wavelength, flux) in bds.items(): ####! SpeX templates
-            
-        print(spectral_type)
+    # Ye_mags_BD = []
+    # Je_mags_BD = []
+    # He_mags_BD = []
+
+    # # Plot BD templates
+    # for spectral_type, (spectra_list) in bds.items(): ###! Spectral sample
+    # #for spectral_type, (wavelength, flux) in bds.items(): ####! SpeX templates
         
-        #! Uncomment and tab this loop if reading the spectra
-        for spectrum in spectra_list:
-            wavelength, flux = spectrum
+    # #! Uncomment and tab this loop if reading the spectra
+    #     for spectrum in spectra_list:
+    #         wavelength, flux = spectrum
 
-            # Filters
-            euclid_filters = getFilters('euclid')
-            vista_filters = getFilters('vista')
-            hsc_filters = getFilters('hsc')
+    #         spec_type.append(spectral_type)
 
-            mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
+    #         # Filters
+    #         euclid_filters = getFilters('euclid')
+    #         vista_filters = getFilters('vista')
+    #         hsc_filters = getFilters('hsc')
 
-            z_mags_BD.append(mags[spectral_type]['z'])
-            Y_mags_BD.append(mags[spectral_type]['Y'])
-            J_mags_BD.append(mags[spectral_type]['J'])
-            H_mags_BD.append(mags[spectral_type]['H'])
-            Ye_mags_BD.append(mags[spectral_type]['Ye'])
-            Je_mags_BD.append(mags[spectral_type]['Je'])
-            He_mags_BD.append(mags[spectral_type]['He'])
+    #         mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], {spectral_type: (wavelength, flux)})
 
-    # Convert all the mags lists into numpy arrays
-    z_mags_BD = np.array(z_mags_BD)
-    Ye_mags_BD = np.array(Ye_mags_BD)
-    Je_mags_BD = np.array(Je_mags_BD)
-    He_mags_BD = np.array(He_mags_BD)
-    Y_mags_BD = np.array(Y_mags_BD)
-    J_mags_BD = np.array(J_mags_BD)
-    H_mags_BD = np.array(H_mags_BD)
+    #         z_mags_BD.append(mags[spectral_type]['z'])
+    #         y_mags_BD.append(mags[spectral_type]['y'])
 
-    #! ----------------------------------------
-    #!     Generate a bunch of LBG colours
-    #! ----------------------------------------
-    redshifts = np.arange(6., 7.5, 0.05)
-    Av_vals = np.arange(0, 0.6, 0.1)
-    ages = np.arange(0.05, 0.51, 0.01)
+    #         Y_mags_BD.append(mags[spectral_type]['Y'])
+    #         J_mags_BD.append(mags[spectral_type]['J'])
+    #         H_mags_BD.append(mags[spectral_type]['H'])
+    #         Ks_mags_BD.append(mags[spectral_type]['Ks'])
+
+    #         Ye_mags_BD.append(mags[spectral_type]['Ye'])
+    #         Je_mags_BD.append(mags[spectral_type]['Je'])
+    #         He_mags_BD.append(mags[spectral_type]['He'])
+
+    # # Convert all the mags lists into numpy arrays
+    # z_mags_BD = np.array(z_mags_BD)
+    # y_mags_BD = np.array(y_mags_BD)
+
+    # Ye_mags_BD = np.array(Ye_mags_BD)
+    # Je_mags_BD = np.array(Je_mags_BD)
+    # He_mags_BD = np.array(He_mags_BD)
+
+    # Y_mags_BD = np.array(Y_mags_BD)
+    # J_mags_BD = np.array(J_mags_BD)
+    # H_mags_BD = np.array(H_mags_BD)
+    # Ks_mags_BD = np.array(Ks_mags_BD)
+
+    # flux_table = Table([z_mags_BD, y_mags_BD, Y_mags_BD, J_mags_BD, H_mags_BD, Ks_mags_BD, Ye_mags_BD, Je_mags_BD, He_mags_BD], names=['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He'])
+    # flux_table.add_column(Table.Column(name='Spectral Type', data=spec_type), index=0)
+    # flux_table.write(table_dir / 'dwarf_spectra_mags.fits', overwrite=True)
+    # exit()
+
+    #! --------------------------------------------------
+    #!     Generate a bunch of LBG colours, save to table
+    #! --------------------------------------------------
+
+    # redshifts = np.arange(6., 9.55, 0.05)
+    # Av_vals = np.arange(0, 0.6, 0.1)
+    # ages = np.arange(0.05, 0.51, 0.05)
     
 
-    # Make empty lists for all the VISTA and Euclid filters
-    z_mags_LBG = []
+    # # Make empty lists for all the VISTA and Euclid filters
+    # z_mags_LBG = []
+    # y_mags_LBG = []
 
-    Y_mags_LBG = []
-    J_mags_LBG = []
-    H_mags_LBG = []
+    # Y_mags_LBG = []
+    # J_mags_LBG = []
+    # H_mags_LBG = []
+    # Ks_mags_LBG = []
 
-    Ye_mags_LBG = []
-    Je_mags_LBG = []
-    He_mags_LBG = []
+    # Ye_mags_LBG = []
+    # Je_mags_LBG = []
+    # He_mags_LBG = []
+
+    # redshift_array = []
+    # Av_array = []
+    # age_array = []
 
 
+    # euclid_filters = getFilters('euclid')
+    # vista_filters = getFilters('vista')
+    # hsc_filters = getFilters('hsc')
 
-    for redshift in redshifts:
-        for Av in Av_vals:
+    # for redshift in redshifts:
+    #     for Av in Av_vals:
+    #         for age in ages:
+    #             print(f'Generating LBG at z={redshift:.2f} for Av={Av:.2f} and age={age:.2f} Gyr.')
 
-            print(f'Generating LBG at z={redshift:.2f} for Av={Av:.2f}')
+    #             redshift_array.append(redshift)
+    #             Av_array.append(Av)
+    #             age_array.append(age)
 
-            wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10., metallicity=0.2, 
-                            dust_type='Calzetti', Av=Av, nebular=True, logU=-1.2, Muv=-22.)
-            
-            #LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
-            
-            # Make a similar BD dictionary
-            lbg_dict = {redshift: (wlen, LBG_flux)}
+    #             wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, age), massformed=10., metallicity=0.2, 
+    #                             dust_type='Calzetti', Av=Av, nebular=True, logU=-2., Muv=-22.)
+                
+    #             #LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+                
+    #             # Make a similar BD dictionary
+    #             lbg_dict = {redshift: (wlen, LBG_flux)}
 
-            # Convolve
-            mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
+    #             # Convolve
+    #             mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
 
-            z_mags_LBG.append(mags[redshift]['z'])
-            Y_mags_LBG.append(mags[redshift]['Y'])
-            J_mags_LBG.append(mags[redshift]['J'])
-            H_mags_LBG.append(mags[redshift]['H'])
-            Je_mags_LBG.append(mags[redshift]['Je'])
-            Ye_mags_LBG.append(mags[redshift]['Ye'])
-            He_mags_LBG.append(mags[redshift]['He'])
+    #             z_mags_LBG.append(mags[redshift]['z'])
+    #             y_mags_LBG.append(mags[redshift]['y'])
+    #             Y_mags_LBG.append(mags[redshift]['Y'])
+    #             J_mags_LBG.append(mags[redshift]['J'])
+    #             H_mags_LBG.append(mags[redshift]['H'])
+    #             Ks_mags_LBG.append(mags[redshift]['Ks'])
+    #             Je_mags_LBG.append(mags[redshift]['Je'])
+    #             Ye_mags_LBG.append(mags[redshift]['Ye'])
+    #             He_mags_LBG.append(mags[redshift]['He'])
 
-    # Convert to arrays
-    z_mags_LBG = np.array(z_mags_LBG)
-    Y_mags_LBG = np.array(Y_mags_LBG)
-    J_mags_LBG = np.array(J_mags_LBG)
-    H_mags_LBG = np.array(H_mags_LBG)
-    Ye_mags_LBG = np.array(Ye_mags_LBG)
-    Je_mags_LBG = np.array(Je_mags_LBG)
-    He_mags_LBG = np.array(He_mags_LBG)
+    # # Convert to arrays
+    # z_mags_LBG = np.array(z_mags_LBG)
+    # y_mags_LBG = np.array(y_mags_LBG)
+    # Y_mags_LBG = np.array(Y_mags_LBG)
+    # J_mags_LBG = np.array(J_mags_LBG)
+    # H_mags_LBG = np.array(H_mags_LBG)
+    # Ks_mags_LBG = np.array(Ks_mags_LBG)
+    # Ye_mags_LBG = np.array(Ye_mags_LBG)
+    # Je_mags_LBG = np.array(Je_mags_LBG)
+    # He_mags_LBG = np.array(He_mags_LBG)
+
+    # # Save to astropy table
+    # flux_table = Table([z_mags_LBG, y_mags_LBG, Y_mags_LBG, J_mags_LBG, H_mags_LBG, Ks_mags_LBG, Ye_mags_LBG, Je_mags_LBG, He_mags_LBG], names=['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He'])
+    # flux_table.add_column(Table.Column(name='Redshift', data=redshift_array), index=0)
+    # flux_table.add_column(Table.Column(name='Av', data=Av_array), index=1)
+    # flux_table.add_column(Table.Column(name='Age', data=age_array), index=2)
+    # flux_table.write(table_dir / 'lbg_spectra_mags.fits', overwrite=True)
+    # exit()
+
+    #! ########################################################################
+    #! ------------------------------------------------------------------------
+
+    #! PLOT COLOURS OF BROWN DWARFS AND LBGs
+
+    #! ------------------------------------------------------------------------
+    #! ########################################################################
+
+    # Define the list of magnitudes to extract
+    magnitudes = ['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He']
+
+    # Read in the tables
+    bd_table = Table.read(table_dir / 'dwarf_spectra_mags.fits') #! Spectra
+    spex_table = Table.read(table_dir / 'spex_template_mags.fits') #! Templates
+    lbg_table = Table.read(table_dir / 'lbg_spectra_mags.fits')
+
+    # Restrict lbg table to certain redshift range
+    #lbg_table = lbg_table[lbg_table['Redshift'] < 7.55]
+    #lbg_table = lbg_table[lbg_table['Redshift'] > 6.45]
+    lbg_table = lbg_table[lbg_table['Redshift'] > 6.]
+    lbg_table = lbg_table[lbg_table['Redshift'] < 8.5]
+    # Modify plot dir accordingly
+    plot_dir = Path.cwd().parent.parent / 'plots' / 'brown_dwarfs'
+
+    lbg_table = lbg_table[lbg_table['Age'] == 0.5]
+
+    # Create dictionaries to store magnitudes for brown dwarfs and LBGs
+    bd_mags = {}
+    spex_mags = {}
+    lbg_mags = {}
+
+    # Add spectral type to bd_mags
+    bd_mags['Spectral Type'] = np.array(bd_table['Spectral Type'])
+    spex_mags['Spectral Type'] = np.array(spex_table['Spectral Type'])
+
+    # Add redshift, Av and age to lbg_mags
+    lbg_mags['Redshift'] = np.array(lbg_table['Redshift'])
+    lbg_mags['Av'] = np.array(lbg_table['Av'])
+    lbg_mags['Age'] = np.array(lbg_table['Age'])
+
+    # Extract magnitudes for brown dwarfs
+    for mag in magnitudes:
+        bd_mags[f"{mag}"] = np.array(bd_table[mag])
+
+    # Extract magnitudes for dwarf templates
+    for mag in magnitudes:
+        spex_mags[f"{mag}"] = np.array(spex_table[mag])
+
+
+    # Extract magnitudes for LBGs
+    for mag in magnitudes:
+        lbg_mags[f"{mag}"] = np.array(lbg_table[mag])
 
 
     #! Plot J-Je vs Y-J
     plt.figure(figsize=(8, 8))
-    plt.plot(Y_mags_BD - J_mags_BD, J_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='black')
-    plt.plot(J_mags_LBG - J_mags_LBG, J_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='red')
-    plt.xlabel(r'$Y_{\mathrm{e}} - J_{\mathrm{e}}$')
-    plt.xlabel(r'$J_{\mathrm{e}} - J_{\mathrm{e}}$')
+
+    plt.plot(bd_mags['Y'] - bd_mags['J'], bd_mags['J'] - bd_mags['Je'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # Do a LBG plot for each value of Av and age
+    for Av in np.unique(lbg_mags['Av']):
+        for age in np.unique(lbg_mags['Age']):
+            idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+            plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    plt.scatter(spex_mags['Y'] - spex_mags['J'], spex_mags['J'] - spex_mags['Je'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+        spec = str(spectral_type).split('b')[-1].replace("'", "")
+        plt.text(spex_mags['Y'][i] - spex_mags['J'][i]+0.01, spex_mags['J'][i] - spex_mags['Je'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    #Check to see where the z>7.5 LBGs are
+    for redshift in np.unique(lbg_mags['Redshift']):
+        if redshift >= 7.:
+            idx = lbg_mags['Redshift'] == redshift
+            if round(redshift, 2) == 7.50:
+                plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='blue')
+                #plt.text(lbg_mags['Y'][idx][-1] - lbg_mags['Ye'][idx][-1], lbg_mags['J'][idx][-1] - lbg_mags['Je'][idx][-1], f'z={redshift:.2f}', fontsize=12)
+            else:
+                plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.4, marker='none', lw=2.5, c='gray')
+
+
+    plt.xlabel(r'$Y - J$')
+    plt.ylabel(r'$J - J_{\mathrm{e}}$')
+
+    plt.tight_layout()
+
+    # plt.xlim(-0.55, 2.)
+    plt.ylim(-0.67, 0.1)
+
     plt.savefig(plot_dir / 'Y-J_vs_J-Je.png')
+
+
+    #! Plot z-Y vs Y-Ye
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['z'] - bd_mags['Y'], bd_mags['Y'] - bd_mags['Ye'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['z'][idx] - lbg_mags['Y'][idx], lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.4, color='gray', marker='none', lw=0.5)
+
+    # plt.scatter(spex_mags['z'] - spex_mags['Y'], spex_mags['Y'] - spex_mags['Ye'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['z'][i] - spex_mags['Y'][i]+0.01, spex_mags['Y'][i] - spex_mags['Ye'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$z - Y$')
+    # plt.ylabel(r'$Y - Y_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # # plt.xlim(-1., 1.)
+    # # plt.ylim(-0., 5.)
+
+    # plt.savefig(plot_dir / 'z-Y_vs_Y-Ye.png')
 
     #! Plot Y-J vs z-Y
     # plt.figure(figsize=(8, 8))
-    # plt.plot(Y_mags_BD - J_mags_BD, z_mags_BD - Y_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
-    # plt.plot(Y_mags_LBG - J_mags_LBG, z_mags_LBG - Y_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
-    # plt.xlabel('Y - J')
-    # plt.ylabel('z - Y')
-    # plt.xlim(-1, 1)
-    # plt.ylim(0, 5)
+
+    # plt.plot(bd_mags['Y'] - bd_mags['J'], bd_mags['z'] - bd_mags['Y'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['z'][idx] - lbg_mags['Y'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['Y'] - spex_mags['J'], spex_mags['z'] - spex_mags['Y'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['Y'][i] - spex_mags['J'][i]+0.01, spex_mags['z'][i] - spex_mags['Y'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # #? Open and plot REBELS
+    # rebels_g = Table.read(rebels_dir / 'REBELS_ground_fluxes.fits')
+    # rebels_e = Table.read(rebels_dir / 'REBELS_euclid_fluxes.fits')
+
+    # rebels_z = flux_to_mag(rebels_g['flux_HSC-Z_DR3'])
+    # rebels_Y = flux_to_mag(rebels_g['flux_Y'])
+    # rebels_J = flux_to_mag(rebels_g['flux_J'])
+
+    # # Plot
+    # plt.plot(rebels_Y - rebels_J, rebels_z - rebels_Y, 'o', label='REBELS', color='green', alpha=0.8, marker='s')
+
+    # plt.xlabel(r'$Y - J$')
+    # plt.ylabel(r'$z - Y$')
+
     # plt.tight_layout()
+
+    # plt.xlim(-1., 1.)
+    # plt.ylim(-0., 5.)
+
     # plt.savefig(plot_dir / 'Y-J_vs_z-Y.png')
 
     #! Plot Y-J vs Ye-Je
+        
     # plt.figure(figsize=(8, 8))
-    # plt.plot(Y_mags_BD - J_mags_BD, Ye_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
-    # plt.plot(Y_mags_LBG - J_mags_LBG, Ye_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
-    # plt.xlabel('Y - J (VISTA)')
-    # plt.ylabel('Y - J (Euclid)')
+
+    # plt.plot(bd_mags['Y'] - bd_mags['J'], bd_mags['Ye'] - bd_mags['Je'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['Ye'][idx] - lbg_mags['Je'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['Y'] - spex_mags['J'], spex_mags['Ye'] - spex_mags['Je'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['Y'][i] - spex_mags['J'][i]+0.01, spex_mags['Ye'][i] - spex_mags['Je'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$Y - J$')
+    # plt.ylabel(r'$Y_{\mathrm{e}} - J_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # # plt.xlim(-0.55, 1.25)
+    # # plt.ylim(-0.6, 0.6)
+
     # plt.savefig(plot_dir / 'Y-J_vs_Ye-Je.png')
 
     #! Plot Ye-Je vs Je-He
+
     # plt.figure(figsize=(8, 8))
-    # plt.plot(Ye_mags_BD - Je_mags_BD, Je_mags_BD - He_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
-    # plt.plot(Ye_mags_LBG - Je_mags_LBG, Je_mags_LBG - He_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
+
+    # plt.plot(bd_mags['Ye'] - bd_mags['Je'], bd_mags['Je'] - bd_mags['He'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['Ye'][idx] - lbg_mags['Je'][idx], lbg_mags['Je'][idx] - lbg_mags['He'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['Ye'] - spex_mags['Je'], spex_mags['Je'] - spex_mags['He'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['Ye'][i] - spex_mags['Je'][i]+0.01, spex_mags['Je'][i] - spex_mags['He'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
     # plt.xlabel(r'$Y_{\mathrm{e}} - J_{\mathrm{e}}$')
     # plt.ylabel(r'$J_{\mathrm{e}} - H_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # plt.xlim(-0.6, 0.6)
+    # plt.ylim(-1.2, 0.4)
+
     # plt.savefig(plot_dir / 'Ye-Je_vs_Je-He.png')
 
     #! Plot Y-Ye vs J-Je
+
     # plt.figure(figsize=(8, 8))
-    # plt.plot(Y_mags_BD - Ye_mags_BD, J_mags_BD - Je_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
-    # plt.plot(Y_mags_LBG - Ye_mags_LBG, J_mags_LBG - Je_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
-    # plt.xlabel(r'$Y- Y_{\mathrm{e}}$')
+
+    # plt.plot(bd_mags['Y'] - bd_mags['Ye'], bd_mags['J'] - bd_mags['Je'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # #Check to see where the z>7.5 LBGs are
+    # for redshift in np.unique(lbg_mags['Redshift']):
+    #     if redshift >= 7.:
+    #         idx = lbg_mags['Redshift'] == redshift
+    #         if round(redshift, 2) == 7.50:
+    #             plt.plot(lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='blue')
+    #             #plt.text(lbg_mags['Y'][idx][-1] - lbg_mags['Ye'][idx][-1], lbg_mags['J'][idx][-1] - lbg_mags['Je'][idx][-1], f'z={redshift:.2f}', fontsize=12)
+    #         else:
+    #             plt.plot(lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.4, marker='none', lw=2.5, c='gray')
+
+
+    # plt.scatter(spex_mags['Y'] - spex_mags['Ye'], spex_mags['J'] - spex_mags['Je'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['Y'][i] - spex_mags['Ye'][i]+0.01, spex_mags['J'][i] - spex_mags['Je'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+
+
+    # plt.xlabel(r'$Y - Y_{\mathrm{e}}$')
     # plt.ylabel(r'$J - J_{\mathrm{e}}$')
-    # plt.savefig(plot_dir / 'Y-Ye_vs_J-Je.png')
+
+    # plt.tight_layout()
+
+    # # plt.xlim(-0.5, 0.8)
+    # plt.ylim(-0.7, 0.0)
+
+    # plt.savefig(plot_dir / 'Y-Je_vs_J-Je.png')
 
     #! Plot J-Je vs H-He
-    #plt.figure(figsize=(8, 8))
-    #plt.plot(J_mags_BD - Je_mags_BD, H_mags_BD - He_mags_BD, 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
-    #plt.plot(J_mags_LBG - Je_mags_LBG, H_mags_LBG - He_mags_LBG, 'o', label='LBGs', color='deepskyblue', alpha=0.8)
-    #plt.xlabel(r'$J - J_{\mathrm{e}}$')
-    #plt.ylabel(r'$H - H_{\mathrm{e}}$')
+
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['J'] - bd_mags['Je'], bd_mags['H'] - bd_mags['He'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['J'][idx] - lbg_mags['Je'][idx], lbg_mags['H'][idx] - lbg_mags['He'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # # Plot a line at each LBG redshift value
+    # for redshift in np.unique(lbg_mags['Redshift']):
+    #     idx = lbg_mags['Redshift'] == redshift
+    #     plt.plot(lbg_mags['J'][idx] - lbg_mags['Je'][idx], lbg_mags['H'][idx] - lbg_mags['He'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='gray')
+
+    # plt.scatter(spex_mags['J'] - spex_mags['Je'], spex_mags['H'] - spex_mags['He'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['J'][i] - spex_mags['Je'][i]+0.01, spex_mags['H'][i] - spex_mags['He'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$J - J_{\mathrm{e}}$')
+    # plt.ylabel(r'$H - H_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # #plt.xlim(-0.6, 0.6)
+    # #plt.ylim(-1.2, 0.4)
+
+    # plt.savefig(plot_dir / 'J-Je_vs_H-He.png')
+
+    #! Y-Ye vs H-He
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['Y'] - bd_mags['Ye'], bd_mags['H'] - bd_mags['He'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], lbg_mags['H'][idx] - lbg_mags['He'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['Y'] - spex_mags['Ye'], spex_mags['H'] - spex_mags['He'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['Y'][i] - spex_mags['Ye'][i]+0.01, spex_mags['H'][i] - spex_mags['He'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$Y - Y_{\mathrm{e}}$')
+    # plt.ylabel(r'$H - H_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    #plt.xlim(-0.6, 0.6)
+    #plt.ylim(-1.2, 0.4)
+
+    # plt.savefig(plot_dir / 'Y-Ye_vs_H-He.png') 
+
+    #! J-Je vs Je - He
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['J'] - bd_mags['Je'], bd_mags['Je'] - bd_mags['He'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['J'][idx] - lbg_mags['Je'][idx], lbg_mags['Je'][idx] - lbg_mags['He'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['J'] - spex_mags['Je'], spex_mags['Je'] - spex_mags['He'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['J'][i] - spex_mags['Je'][i]+0.01, spex_mags['Je'][i] - spex_mags['He'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$J - J_{\mathrm{e}}$')
+    # plt.ylabel(r'$J{\mathrm{e}} - H_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # # plt.xlim(-0.6, 0.6)
+    # # plt.ylim(-1.2, 0.4)
+
+    # plt.savefig(plot_dir / 'J-Je_vs_Je-He.png') 
+
+    #! y-Y vs Y-Ye
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['y'] - bd_mags['Y'], bd_mags['Y'] - bd_mags['Ye'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['y'][idx] - lbg_mags['Y'][idx], lbg_mags['Y'][idx] - lbg_mags['Ye'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # plt.scatter(spex_mags['y'] - spex_mags['Y'], spex_mags['Y'] - spex_mags['Ye'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['y'][i] - spex_mags['Y'][i]+0.01, spex_mags['Y'][i] - spex_mags['Ye'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$y_{\mathrm{HSC}} - Y_{\mathrm{VISTA}}$')
+    # plt.ylabel(r'$Y_{\mathrm{VISTA}} - Y_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # # plt.xlim(-0.6, 0.6)
+    # # plt.ylim(-1.2, 0.4)
+
+    # #? Open and plot REBELS
+    # rebels_g = Table.read(rebels_dir / 'REBELS_ground_fluxes.fits')
+    # rebels_e = Table.read(rebels_dir / 'REBELS_euclid_fluxes.fits')
+
+    # rebels_y = flux_to_mag(rebels_g['flux_HSC-Y_DR3'])
+    # rebels_Y = flux_to_mag(rebels_g['flux_Y'])
+    # rebels_Ye = flux_to_mag(rebels_e['flux_Y'])
+
+    # # Plot
+    # plt.plot(rebels_y - rebels_Y, rebels_Y - rebels_Ye, 'o', label='REBELS', color='green', alpha=0.8, marker='s')
+
+    # plt.savefig(plot_dir / 'y-Y_vs_Y-Ye.png')
+        
+    #! J - H vs Je - He
+    # plt.figure(figsize=(8, 8))
+
+    # plt.plot(bd_mags['J'] - bd_mags['H'], bd_mags['Je'] - bd_mags['He'], 'o', label='Brown Dwarfs', color='red', alpha=0.8, marker='*')
+
+    # # Do a LBG plot for each value of Av and age
+    # for Av in np.unique(lbg_mags['Av']):
+    #     for age in np.unique(lbg_mags['Age']):
+    #         idx = np.logical_and(lbg_mags['Av'] == Av, lbg_mags['Age'] == age)
+    #         plt.plot(lbg_mags['J'][idx] - lbg_mags['H'][idx], lbg_mags['Je'][idx] - lbg_mags['He'][idx], label=f'LBGs, Av={Av}, Age={age}', alpha=0.6, color='gray', marker='none', lw=2.5)
+
+    # # Plot a line at each LBG redshift value
+    # for redshift in np.unique(lbg_mags['Redshift']):
+    #     idx = lbg_mags['Redshift'] == redshift
+    #     plt.plot(lbg_mags['J'][idx] - lbg_mags['H'][idx], lbg_mags['Je'][idx] - lbg_mags['He'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='gray')
+
+    # plt.scatter(spex_mags['J'] - spex_mags['H'], spex_mags['Je'] - spex_mags['He'], label='SpeX Templates', color='black', alpha=0.8, marker='*', s=20, zorder=10)
+
+    # for i, spectral_type in enumerate(spex_mags['Spectral Type']):
+    #     spec = str(spectral_type).split('b')[-1].replace("'", "")
+    #     plt.text(spex_mags['J'][i] - spex_mags['H'][i]+0.01, spex_mags['Je'][i] - spex_mags['He'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
+
+    # plt.xlabel(r'$J - J_{\mathrm{e}}$')
+    # plt.ylabel(r'$H - H_{\mathrm{e}}$')
+
+    # plt.tight_layout()
+
+    # #plt.xlim(-0.6, 0.6)
+    # #plt.ylim(-1.2, 0.4)
+
+    # plt.savefig(plot_dir / 'J-H_vs_Je-He.png')
 
     # ! Add text
     # On the LBGs add text of the redshift and Av
@@ -688,9 +1095,9 @@ if __name__ == '__main__':
     #    for j, Av in enumerate(Av_vals):
     #        plt.text(Y_mags_LBG[i*len(Av_vals) + j] - Ye_mags_LBG[i*len(Av_vals) + j], J_mags_LBG[i*len(Av_vals) + j] - Je_mags_LBG[i*len(Av_vals) + j], f'z={redshift:.2f}, Av={Av:.2f}', fontsize=8)
     
-    # On the BDs add text of the spectral type
-    # for i, spectral_type in enumerate(bds.keys()):
-    #     plt.text(Y_mags_BD[i] - Ye_mags_BD[i], J_mags_BD[i] - Je_mags_BD[i], f'{spectral_type}', fontsize=8)
+    #On the BDs add text of the spectral type
+    # for i, spectral_type in enumerate(bd_mags.keys):
+    #    plt.text(J_mags_BD[i] - Je_mags_BD[i], H_mags_BD[i] - He_mags_BD[i], f'{spectral_type}', fontsize=8)
 
     
 
