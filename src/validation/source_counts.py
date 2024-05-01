@@ -42,6 +42,10 @@ for filter_name in filter_names:
     hist_e, bins = np.histogram(mags_e, bins=bins)
     hist_g, bins = np.histogram(mags_g, bins=bins)
 
+    # Normalise by area
+    hist_e = np.array([x/0.7142966578578375 for x in hist_e])
+    hist_g = np.array([x/1.5 for x in hist_g])
+
     # Plot
     plt.figure(figsize=(8, 8))
     plt.scatter(bins[:-1], hist_e, label=f'Euclid {filter_name}', color='black', marker='v', s=100)
@@ -52,12 +56,12 @@ for filter_name in filter_names:
     # Find the maximum value and draw vertical lines, with labels of the mag value here
     max_e = np.max(hist_e)
     max_g = np.max(hist_g)
-    plt.axvline(x=bins[np.argmax(hist_e)], color='black', linestyle='--', label=f'VISTA max = {bins[np.argmax(hist_e)]:.1f}')
+    plt.axvline(x=bins[np.argmax(hist_e)], color='black', linestyle='--', label=f'Euclid max = {bins[np.argmax(hist_e)]:.1f}')
     plt.axvline(x=bins[np.argmax(hist_g)], color='blue', linestyle='--', label=f'VISTA max = {bins[np.argmax(hist_g)]:.1f}')
 
     plt.legend()
     plt.xlabel('MAG_AUTO')
-    plt.ylabel('N / 0.5 mag')
+    plt.ylabel(r'N / deg$^{2}$ / 0.5mag')
     plt.yscale('log')
     plt.tight_layout()
 

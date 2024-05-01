@@ -32,8 +32,8 @@ from new_psf_codes import psfex
 print("Running STUPID PSF")
 print(imageName)
 
-#segseg = whtName.split('.')
-#segName = segseg[0] + '_seg.fits'
+# segseg = whtName.split('.')
+# segName = segseg[0] + '_seg.fits'
 #psfex(imageName, filterName, fieldName, zeropoint, depthDir, wht_name = whtName, wht_type = whtType, output_dir = outputDir, overwrite = overwrite, stars_only = starsOnly)
 
 # Print the command: psfex seems to fail on queue. So run this in python3 on command line!

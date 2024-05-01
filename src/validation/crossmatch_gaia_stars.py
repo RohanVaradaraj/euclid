@@ -22,7 +22,7 @@ logging.getLogger('astroquery').setLevel(logging.ERROR)
 stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
 save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues'
 
-filter_names = ['H']
+filter_names = ['Y']
 
 for filter_name in filter_names:
 
@@ -62,7 +62,7 @@ for filter_name in filter_names:
 
             # Query Gaia for the star
             euclid_coord = SkyCoord(ra=ra, dec=dec, unit=(u.degree, u.degree), frame='icrs')
-            job = Gaia.cone_search_async(euclid_coord, radius=u.Quantity(2.0, u.arcsec))
+            job = Gaia.cone_search_async(euclid_coord, radius=u.Quantity(1.0, u.arcsec))
             r = job.get_results()
 
             if len(r) > 0:
@@ -70,7 +70,7 @@ for filter_name in filter_names:
                 print('Match found!')
 
                 # Write to file
-                f.write(f'{ra} {dec} {r["ra"][0]} {r["dec"][0]}\n')
+                f.write(f'{ra} {dec} {r["ra"][0]} {r["dec"][0]} {r["radial_velocity"][0]}\n')
 
     
 

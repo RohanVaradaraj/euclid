@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 
 
 def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float, depth_dir: Path,
-          ap_diametersAS: np.ndarray = np.array([0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]),
+          ap_diametersAS: np.ndarray = np.array([0.1, 0.2, 0.3, 0.6, 1.0, 1.2, 1.5, 2.0]),
           wht_name: str = 'NONE', wht_type: str = 'NONE', seg_name: str = 'NONE',
           output_dir: str = 'none', overwrite: bool = False, overwrite_PSF: bool = False,
           input_sex: Path = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'config_files' / 'euclid_psfex.sex',
@@ -34,7 +34,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     - field_name (str): The name of the field.
     - zeropoint (float): The zeropoint of the image.
     - depth_dir (str): The directory containing depth information.
-    - ap_diametersAS (np.ndarray, optional): Array of aperture diameters in arcseconds. Default is [0.2, 0.3, 0.5, 1.0, 1.8, 2.0, 3.0].
+    - ap_diametersAS (np.ndarray, optional): Array of aperture diameters in arcseconds. Default is [0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6].
     - wht_name (str, optional): The name of the weight file. Default is 'NONE'.
     - wht_type (str, optional): The type of weight. Default is 'NONE'.
     - seg_name (str, optional): The name of the segmentation map file. Default is 'NONE'.
@@ -426,7 +426,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
 
     return
 
-def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_diametersAS: np.ndarray = np.array([0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]), 
+def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_diametersAS: np.ndarray = np.array([0.1, 0.2, 0.3, 0.6, 1.0, 1.2, 1.5, 2.0]), 
             data_dir: Path = Path.home() / 'euclid', output_dir: str = 'none', overwrite: bool = False, stars_only: bool = False, use_cat: str = 'NONE') -> None:
     """
     Run PSF extraction on images for a given field and set of filters.
@@ -528,9 +528,11 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
     expectedSize = np.median(pssize)
     print('Expected size is ', expectedSize*pix_scale)
 
-    #minSize = 0.1*expectedSize*pix_scale     #! IF FILTER IS VIS, SET LOWER MIN SIZE
-    minSize = 0.5*expectedSize*pix_scale 
-    maxSize = 1.5*expectedSize*pix_scale # arcseconds
+    minSize = 0.05*expectedSize*pix_scale              #! IF FILTER IS VIS, SET LOWER MIN SIZE
+    maxSize = 0.8*expectedSize*pix_scale # arcseconds #! IF FILTER IS VIS, SET UPPER MAX SIZE
+    
+    #minSize = 0.5*expectedSize*pix_scale 
+    #maxSize = 1.5*expectedSize*pix_scale # arcseconds
     
     apMag = tbdata['MAG_APER'][:,0]
     apMag = tbdata['MAG_AUTO']

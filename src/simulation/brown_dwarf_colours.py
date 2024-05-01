@@ -697,7 +697,7 @@ if __name__ == '__main__':
     #lbg_table = lbg_table[lbg_table['Redshift'] < 7.55]
     #lbg_table = lbg_table[lbg_table['Redshift'] > 6.45]
     lbg_table = lbg_table[lbg_table['Redshift'] > 6.]
-    lbg_table = lbg_table[lbg_table['Redshift'] < 8.5]
+    lbg_table = lbg_table[lbg_table['Redshift'] < 7.5]
     # Modify plot dir accordingly
     plot_dir = Path.cwd().parent.parent / 'plots' / 'brown_dwarfs'
 
@@ -749,14 +749,14 @@ if __name__ == '__main__':
         plt.text(spex_mags['Y'][i] - spex_mags['J'][i]+0.01, spex_mags['J'][i] - spex_mags['Je'][i]+0.01, f'{spec}', fontsize=12, zorder=10)
 
     #Check to see where the z>7.5 LBGs are
-    for redshift in np.unique(lbg_mags['Redshift']):
-        if redshift >= 7.:
-            idx = lbg_mags['Redshift'] == redshift
-            if round(redshift, 2) == 7.50:
-                plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='blue')
-                #plt.text(lbg_mags['Y'][idx][-1] - lbg_mags['Ye'][idx][-1], lbg_mags['J'][idx][-1] - lbg_mags['Je'][idx][-1], f'z={redshift:.2f}', fontsize=12)
-            else:
-                plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.4, marker='none', lw=2.5, c='gray')
+    # for redshift in np.unique(lbg_mags['Redshift']):
+    #     if redshift >= 7.:
+    #         idx = lbg_mags['Redshift'] == redshift
+    #         if round(redshift, 2) == 7.50:
+    #             plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.6, marker='none', lw=2.5, c='blue')
+    #             #plt.text(lbg_mags['Y'][idx][-1] - lbg_mags['Ye'][idx][-1], lbg_mags['J'][idx][-1] - lbg_mags['Je'][idx][-1], f'z={redshift:.2f}', fontsize=12)
+    #         else:
+    #             plt.plot(lbg_mags['Y'][idx] - lbg_mags['J'][idx], lbg_mags['J'][idx] - lbg_mags['Je'][idx], label=f'LBGs, z={redshift}', alpha=0.4, marker='none', lw=2.5, c='gray')
 
 
     plt.xlabel(r'$Y - J$')
@@ -764,7 +764,7 @@ if __name__ == '__main__':
 
     plt.tight_layout()
 
-    # plt.xlim(-0.55, 2.)
+    plt.xlim(-0.55, 1.76)
     plt.ylim(-0.67, 0.1)
 
     plt.savefig(plot_dir / 'Y-J_vs_J-Je.png')

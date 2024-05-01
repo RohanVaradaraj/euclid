@@ -29,10 +29,10 @@ from shapely.geometry import Point, Polygon
 from pathlib import Path
 
 # Run the binary image creation?
-make_binary = True
+make_binary = False
 
 # Calculate the total area?
-area_calc = False
+area_calc = True
 
 dataDir = Path.home() / 'euclid' / 'COSMOS'
 
@@ -63,15 +63,6 @@ pixSizeDeg = abs(header['CD1_1'])
 wsci = WCS(header)
 print('pixel size in degrees: ', pixSizeDeg)
 
-
-if area_calc:
-    #! ---------- COMPUTE FINAL AREA!!! -------------
-    Npix = np.sum(image)
-
-    area = pixSizeDeg * pixSizeDeg * Npix
-
-    print('AREA IS {0} SQUARE DEGREES'.format(area))
-    exit()
 
 #! ------ APPLY EUCLID FOOTPRINT -------
 
@@ -145,6 +136,8 @@ if make_binary:
 
     for ii, reg in enumerate(mask):
 
+        print(reg)
+
         shape = str(reg)[8:11]
 
         if shape == 'Pol':
@@ -195,7 +188,7 @@ if make_binary:
 
             del X, Y, cond
 
-        if shape == 'Box':
+        if shape == 'Rec':
 
             print('This region is a rectangle')
             #continue
@@ -208,12 +201,15 @@ if make_binary:
 
             Hw = reg.width.value/2
 
-
+            # Convert from arcsec to pixels
+            Hw = Hw / (pixSizeDeg * 3600)
             print('half width: ', Hw)
 
             # Half height
             Hh = reg.height.value/2
-#                Hh = reg.height/2 # FOR CDFS
+
+            # Convert from arcsec to pixels
+            Hh = Hh / (pixSizeDeg * 3600)
             print('half height: ', Hh)
 
             # Convert to pixels in the mosaic
@@ -238,5 +234,12 @@ if make_binary:
     hdu.writeto(dataDir / 'junk' / 'COSMOS_BINARY_MOSAIC.fits', overwrite=True)
 
 
+if area_calc:
+    #! ---------- COMPUTE FINAL AREA!!! -------------
+    Npix = np.sum(image)
 
+    area = pixSizeDeg * pixSizeDeg * Npix
+
+    print('AREA IS {0} SQUARE DEGREES'.format(area))
+    exit()
 
