@@ -20,7 +20,7 @@ logging.getLogger('astroquery').setLevel(logging.ERROR)
 
 
 stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
-save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues'
+save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
 
 filter_names = ['Y']
 
@@ -30,11 +30,11 @@ for filter_name in filter_names:
 
     # Open empty file to star the euclid coords and Gaia coords if there is a match
     #euclid_gaia_coords = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii'
-    euclid_gaia_coords = stars_dir / f'{filter_name}_euclid_gaia_coords.ascii'
+    euclid_gaia_coords = save_dir / f'{filter_name}_euclid_gaia_coords.ascii'
     with open(euclid_gaia_coords, 'w') as f:
 
         # Add header for RA_euclid, DEC_euclid, RA_Gaia, DEC_Gaia
-        f.write('# RA_euclid DEC_euclid RA_Gaia DEC_Gaia\n')
+        f.write('# RA_euclid DEC_euclid RA_Gaia DEC_Gaia pmra pmdec pm\n')
 
         #! Option 1) Read the commented header stars.ascii files. Same as used to determine PSF.
         stars_file = stars_dir / f'{filter_name}_stars.ascii'
@@ -70,7 +70,9 @@ for filter_name in filter_names:
                 print('Match found!')
 
                 # Write to file
-                f.write(f'{ra} {dec} {r["ra"][0]} {r["dec"][0]} {r["radial_velocity"][0]}\n')
+                f.write(f'{ra} {dec} {r["ra"][0]} {r["dec"][0]} {r["pmra"][0]} {r["pmdec"][0]} {r["pm"][0]}\n')
+
+    print('File saved.')
 
     
 
