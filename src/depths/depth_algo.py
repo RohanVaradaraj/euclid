@@ -39,15 +39,15 @@ def smooth(y, box_pts):
 
 #! control the field and filter here
 fieldName = 'COSMOS'
-filterName = 'Y'
+filterName = 'VIS'
 
 # Size of apertures we put down.
-apSize = 2.0 # arcsec
+apSize = 0.3 # arcsec
 
 # Number of chunks, I am using 61 (=50*(28/23)) or 50 depending on orientation of the image.
 n_chunks = 100
 # Arcsec speacing between each centre of each 2'' aperture in the grid.
-asSpacing = 3.0
+asSpacing = 0.6
 
 # Write results files
 write = True
