@@ -7,6 +7,7 @@ Created: Wednesday 17th April 2024.
 """
 
 from astropy.io import fits, ascii
+from astropy.table import Table
 import matplotlib.pyplot as plt
 from pathlib import Path
 import glob
@@ -21,6 +22,8 @@ plt.rcParams['figure.dpi'] = 100
 
 euclid_dir = Path.home() / 'euclid' / 'Y' / 'COSMOS'
 stars_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+detector_dir = Path.home() / 'euclid' / 'DETECTOR_LAYERING'
+
 
 images = glob.glob(str(euclid_dir / '*BGSUB-*'))
 
@@ -28,10 +31,10 @@ images = glob.glob(str(euclid_dir / '*BGSUB-*'))
 vista = False
 
 # Or JWST
-jwst = True
+jwst = False
 
 # Or gaia
-gaia = False
+gaia = True
 
 # List to store centroid coordinates and corresponding image filenames
 centroid_list = []
@@ -97,19 +100,49 @@ e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.606
 ax.add_patch(e)
 
 #! Plot positions of large offset stars
-filter_name = 'H'
+filter_name = 'Y'
 if vista:
     stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_vista_euclid_coords.ascii')
     stars_ra = stars['RA_vista']
     stars_dec = stars['DEC_vista']
 if jwst:
-    stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_jwst_euclid_coords.ascii')
+    stars = ascii.read(stars_dir / f'{filter_name}_outside_fwhm_jwst_euclid_coords.ascii')
     stars_ra = stars['RA_jwst']
     stars_dec = stars['DEC_jwst']
 if gaia:
-    stars = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_euclid_gaia_coords.ascii')
+    stars = ascii.read(stars_dir / f'{filter_name}_outside_fwhm_euclid_gaia_coords.ascii') #! Outside fwhm
     stars_ra = stars['RA_Gaia']
     stars_dec = stars['DEC_Gaia']
+    stars_pmra = stars['pmra']
+    stars_pmdec = stars['pmdec']
+    stars_pm = stars['pm']
+
+    # for pm values, replace '--' with 0
+    stars_pmra = np.array([0 if x == '--' else x for x in stars_pmra])
+    stars_pmdec = np.array([0 if x == '--' else x for x in stars_pmdec])
+    stars_pm = np.array([0 if x == '--' else x for x in stars_pm])
+
+    # Convert the values in the arrays to floats
+    stars_pmra = stars_pmra.astype(float)
+    stars_pmdec = stars_pmdec.astype(float)
+    stars_pm = stars_pm.astype(float)
+
+    stars_pix = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_euclid_gaia_coords.ascii') #! Outside pixel scale
+    stars_ra_pix = stars_pix['RA_Gaia']
+    stars_dec_pix = stars_pix['DEC_Gaia']
+    stars_pmra_pix = stars_pix['pmra']
+    stars_pmdec_pix = stars_pix['pmdec']
+    stars_pm_pix = stars_pix['pm']
+
+    # for pm values, replace '--' with 0
+    stars_pmra_pix = np.array([0 if x == '--' else x for x in stars_pmra_pix])
+    stars_pmdec_pix = np.array([0 if x == '--' else x for x in stars_pmdec_pix])
+    stars_pm_pix = np.array([0 if x == '--' else x for x in stars_pm_pix])
+
+    # Convert the values in the arrays to floats
+    stars_pmra_pix = stars_pmra_pix.astype(float)
+    stars_pmdec_pix = stars_pmdec_pix.astype(float)
+    stars_pm_pix = stars_pm_pix.astype(float)
 
 #! Plot the ultra-deep stripes
 strip1 = Polygon(np.array([[150.43, 2.76], [150.57, 2.76], [150.57, 1.66], [150.43, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
@@ -123,8 +156,42 @@ ax.add_patch(strip3)
 ax.add_patch(strip4)
                  
 
+#! Add euclid detector layering
+
+files = glob.glob(str(detector_dir / '*fits'))
+
+
+counter = 0
+
+for i, file_name in enumerate(files):
+
+    print(file_name)
+
+    t = Table.read(detector_dir / file_name)
+    counter += len(t)
+
+    for j, row in enumerate(t):
+
+        # Get polygon from 'POLYGON' column
+        polygon = row['POLYGON']
+
+        # Convert from radians to degrees
+        polygon = np.degrees(polygon)
+
+        # Now it is in form [x1, y1, x2, y2, x3, y3, x4, y4]. Plot as polygon
+        p = Polygon(np.array(polygon).reshape(4, 2), closed=True, edgecolor='gray', facecolor='none', lw=1, alpha=0.002)
+        ax.add_patch(p)
+
+print('Number of exposures: ', counter)
+
+
 # Plot the bad stars
 ax.scatter(stars_ra, stars_dec, marker='x', color='black', s=10, label=f'astrom. offset > {filter_name} PSF FWHM')
+
+if gaia:
+    ax.scatter(stars_ra_pix, stars_dec_pix, marker='x', color='red', s=10, label=f'astrom. offset > {filter_name} pix scale (0.1\")', zorder=10)
+    factor = 1e-3
+    ax.quiver(stars_ra_pix, stars_dec_pix, stars_pmra_pix*factor, stars_pmdec_pix*factor, color='black', scale=1, width=0.002, headwidth=3, headlength=3, headaxislength=3)
 
 # Set axis limits and labels
 ax.set_xlim(150.9, 149.1)
@@ -134,12 +201,12 @@ ax.set_ylabel('DEC (deg)')
 ax.legend(loc='upper right')
 plt.gca().set_aspect('equal', adjustable='box')
 plt.tight_layout()
-if vista:
-    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_vista.png')
-if jwst:
-    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_jwst.png')
-if gaia:
-    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_gaia.png')
+# if vista:
+#     plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_vista.png')
+# if jwst:
+#     plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_jwst.png')
+#if gaia:
+#    plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / f'{filter_name}_bad_astrom_on_footprint_gaia.png')
 plt.show()
 
 

@@ -578,17 +578,17 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! REBELS sources
-    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    t = t[t['RA'] > 148]
+    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    # t = t[t['RA'] > 148]
 
-    # Skip first few
-    #t = t[:]
+    # # Skip first few
+    # #t = t[:]
 
-    ra = t['RA']
-    dec = t['Dec']
-    z = t['Redshift (z)']
-    ID = t['Object Name']
-    ID = [name.split('>')[1].split('<')[0] for name in ID]
+    # ra = t['RA']
+    # dec = t['Dec']
+    # z = t['Redshift (z)']
+    # ID = t['Object Name']
+    # ID = [name.split('>')[1].split('<')[0] for name in ID]
 
     #! Strong lens
     #ra = [150.00280406167596]
@@ -666,6 +666,11 @@ if __name__ == '__main__':
     # ra = stars['RA_euclid']
     # dec = stars['DEC_euclid'] 
 
+    #! Spectra from Vincent!
+    ra = [150.21552279971348, 149.98832200622317, 150.26771198215147, 150.24988047861532]
+    dec = [2.02579740958649, 2.2070238197331493, 2.6213922569606107, 2.4663986583043647]
+
+    ID = [1502155319020257969, 1499883241022070278, 1502677115026213801, 1502498770024664099]
 
 
 
@@ -675,9 +680,10 @@ if __name__ == '__main__':
         #print(cat[i]['FIRST_CLASS'])
         #print(ID[i])
 
-        Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]))
-        #Cutout(ra[i], dec[i], size=10.)
+        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]))
+        #Cutout(ra[i], dec[i], size=12.)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
+        Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
 
 
     

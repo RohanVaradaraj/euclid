@@ -18,9 +18,12 @@ from astropy.coordinates import SkyCoord
 import logging
 logging.getLogger('astroquery').setLevel(logging.ERROR)
 
-
 stars_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
 save_dir = Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'stars'
+vista_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'psf' / 'COSMOS' / 'catalogues'
+
+# If the connection times out, continue writing from this value and change with open from 'w' to 'a'
+continue_val = 0
 
 filter_names = ['Y']
 
@@ -28,13 +31,19 @@ for filter_name in filter_names:
 
     print(f'Processing filter {filter_name}')
 
-    # Open empty file to star the euclid coords and Gaia coords if there is a match
+    # Open empty file to star the euclid coords and Gaia coords if there is a match #! Euclid
     #euclid_gaia_coords = stars_dir / f'{filter_name}_brightEuclid_gaia_coords.ascii'
     euclid_gaia_coords = save_dir / f'{filter_name}_euclid_gaia_coords.ascii'
-    with open(euclid_gaia_coords, 'w') as f:
+
+    # Open file to crossmatch VISTA stars with Gaia #! VISTA
+    vista_gaia_coords = save_dir / f'{filter_name}_vista_gaia_coords.ascii'
+
+    #with open(euclid_gaia_coords, 'a') as f:
+    with open(vista_gaia_coords, 'w') as f:
 
         # Add header for RA_euclid, DEC_euclid, RA_Gaia, DEC_Gaia
-        f.write('# RA_euclid DEC_euclid RA_Gaia DEC_Gaia pmra pmdec pm\n')
+        #f.write('# RA_euclid DEC_euclid RA_Gaia DEC_Gaia pmra pmdec pm\n') #! Euclid
+        f.write('# RA_vista DEC_vista RA_Gaia DEC_Gaia pmra pmdec pm\n') #! VISTA
 
         #! Option 1) Read the commented header stars.ascii files. Same as used to determine PSF.
         stars_file = stars_dir / f'{filter_name}_stars.ascii'
@@ -55,8 +64,8 @@ for filter_name in filter_names:
 
 
         # Loop through each row
-        for i, star in enumerate(stars):
-            print(f'{i+1} of {len(stars)}')
+        for i, star in enumerate(stars[continue_val:]):
+            print(f'{i+1+continue_val} of {len(stars)}')
             ra = star['RA']
             dec = star['DEC']
 
