@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 brown_dwarf_colours.py
 
@@ -489,7 +491,7 @@ def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
         cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
         # Need to convert flux from f_lambda to f_nu. # Conversion from Nathan, then into cgs
-        flux * (wlen**2)/(10**-29*2.9979*10**18) * 1e-19
+        flux = flux * (wlen**2)/(10**-29*2.9979*10**18) * 1e-19
     
         # Compute location of Lyman break
         lyman_break = 1216 * (1+redshift) # Angstroms
@@ -512,6 +514,10 @@ def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
 
         # Match the model to our desired magnitude at 1500A
         flux = flux * ratio
+
+        model.line_fluxes["H  1  1215.67A"] = 1e-29
+
+    print(model.line_fluxes["H  1  1215.67A"])
 
     return wlen, flux
 
@@ -601,81 +607,81 @@ if __name__ == '__main__':
     #!     Generate a bunch of LBG colours, save to table
     #! --------------------------------------------------
 
-    # redshifts = np.arange(6., 9.55, 0.05)
-    # Av_vals = np.arange(0, 0.6, 0.1)
-    # ages = np.arange(0.05, 0.51, 0.05)
+    redshifts = np.arange(6., 9.55, 0.05)
+    Av_vals = np.arange(0, 0.6, 0.1)
+    ages = np.arange(0.05, 0.51, 0.05)
     
 
-    # # Make empty lists for all the VISTA and Euclid filters
-    # z_mags_LBG = []
-    # y_mags_LBG = []
+    # Make empty lists for all the VISTA and Euclid filters
+    z_mags_LBG = []
+    y_mags_LBG = []
 
-    # Y_mags_LBG = []
-    # J_mags_LBG = []
-    # H_mags_LBG = []
-    # Ks_mags_LBG = []
+    Y_mags_LBG = []
+    J_mags_LBG = []
+    H_mags_LBG = []
+    Ks_mags_LBG = []
 
-    # Ye_mags_LBG = []
-    # Je_mags_LBG = []
-    # He_mags_LBG = []
+    Ye_mags_LBG = []
+    Je_mags_LBG = []
+    He_mags_LBG = []
 
-    # redshift_array = []
-    # Av_array = []
-    # age_array = []
+    redshift_array = []
+    Av_array = []
+    age_array = []
 
 
-    # euclid_filters = getFilters('euclid')
-    # vista_filters = getFilters('vista')
-    # hsc_filters = getFilters('hsc')
+    euclid_filters = getFilters('euclid')
+    vista_filters = getFilters('vista')
+    hsc_filters = getFilters('hsc')
 
-    # for redshift in redshifts:
-    #     for Av in Av_vals:
-    #         for age in ages:
-    #             print(f'Generating LBG at z={redshift:.2f} for Av={Av:.2f} and age={age:.2f} Gyr.')
+    for redshift in redshifts:
+        for Av in Av_vals:
+            for age in ages:
+                print(f'Generating LBG at z={redshift:.2f} for Av={Av:.2f} and age={age:.2f} Gyr.')
 
-    #             redshift_array.append(redshift)
-    #             Av_array.append(Av)
-    #             age_array.append(age)
+                redshift_array.append(redshift)
+                Av_array.append(Av)
+                age_array.append(age)
 
-    #             wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, age), massformed=10., metallicity=0.2, 
-    #                             dust_type='Calzetti', Av=Av, nebular=True, logU=-2., Muv=-22.)
+                wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, age), massformed=10., metallicity=0.2, 
+                                dust_type='Calzetti', Av=Av, nebular=True, logU=-2., Muv=-22.)
                 
-    #             #LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+                #LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
                 
-    #             # Make a similar BD dictionary
-    #             lbg_dict = {redshift: (wlen, LBG_flux)}
+                # Make a similar BD dictionary
+                lbg_dict = {redshift: (wlen, LBG_flux)}
 
-    #             # Convolve
-    #             mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
+                # Convolve
+                mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
 
-    #             z_mags_LBG.append(mags[redshift]['z'])
-    #             y_mags_LBG.append(mags[redshift]['y'])
-    #             Y_mags_LBG.append(mags[redshift]['Y'])
-    #             J_mags_LBG.append(mags[redshift]['J'])
-    #             H_mags_LBG.append(mags[redshift]['H'])
-    #             Ks_mags_LBG.append(mags[redshift]['Ks'])
-    #             Je_mags_LBG.append(mags[redshift]['Je'])
-    #             Ye_mags_LBG.append(mags[redshift]['Ye'])
-    #             He_mags_LBG.append(mags[redshift]['He'])
+                z_mags_LBG.append(mags[redshift]['z'])
+                y_mags_LBG.append(mags[redshift]['y'])
+                Y_mags_LBG.append(mags[redshift]['Y'])
+                J_mags_LBG.append(mags[redshift]['J'])
+                H_mags_LBG.append(mags[redshift]['H'])
+                Ks_mags_LBG.append(mags[redshift]['Ks'])
+                Je_mags_LBG.append(mags[redshift]['Je'])
+                Ye_mags_LBG.append(mags[redshift]['Ye'])
+                He_mags_LBG.append(mags[redshift]['He'])
 
-    # # Convert to arrays
-    # z_mags_LBG = np.array(z_mags_LBG)
-    # y_mags_LBG = np.array(y_mags_LBG)
-    # Y_mags_LBG = np.array(Y_mags_LBG)
-    # J_mags_LBG = np.array(J_mags_LBG)
-    # H_mags_LBG = np.array(H_mags_LBG)
-    # Ks_mags_LBG = np.array(Ks_mags_LBG)
-    # Ye_mags_LBG = np.array(Ye_mags_LBG)
-    # Je_mags_LBG = np.array(Je_mags_LBG)
-    # He_mags_LBG = np.array(He_mags_LBG)
+    # Convert to arrays
+    z_mags_LBG = np.array(z_mags_LBG)
+    y_mags_LBG = np.array(y_mags_LBG)
+    Y_mags_LBG = np.array(Y_mags_LBG)
+    J_mags_LBG = np.array(J_mags_LBG)
+    H_mags_LBG = np.array(H_mags_LBG)
+    Ks_mags_LBG = np.array(Ks_mags_LBG)
+    Ye_mags_LBG = np.array(Ye_mags_LBG)
+    Je_mags_LBG = np.array(Je_mags_LBG)
+    He_mags_LBG = np.array(He_mags_LBG)
 
-    # # Save to astropy table
-    # flux_table = Table([z_mags_LBG, y_mags_LBG, Y_mags_LBG, J_mags_LBG, H_mags_LBG, Ks_mags_LBG, Ye_mags_LBG, Je_mags_LBG, He_mags_LBG], names=['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He'])
-    # flux_table.add_column(Table.Column(name='Redshift', data=redshift_array), index=0)
-    # flux_table.add_column(Table.Column(name='Av', data=Av_array), index=1)
-    # flux_table.add_column(Table.Column(name='Age', data=age_array), index=2)
-    # flux_table.write(table_dir / 'lbg_spectra_mags.fits', overwrite=True)
-    # exit()
+    # Save to astropy table
+    flux_table = Table([z_mags_LBG, y_mags_LBG, Y_mags_LBG, J_mags_LBG, H_mags_LBG, Ks_mags_LBG, Ye_mags_LBG, Je_mags_LBG, He_mags_LBG], names=['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He'])
+    flux_table.add_column(Table.Column(name='Redshift', data=redshift_array), index=0)
+    flux_table.add_column(Table.Column(name='Av', data=Av_array), index=1)
+    flux_table.add_column(Table.Column(name='Age', data=age_array), index=2)
+    flux_table.write(table_dir / 'lbg_spectra_mags_2.fits', overwrite=True)
+    exit()
 
     #! ########################################################################
     #! ------------------------------------------------------------------------

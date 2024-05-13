@@ -116,6 +116,14 @@ if gaia:
     stars_pmra = stars['pmra']
     stars_pmdec = stars['pmdec']
     stars_pm = stars['pm']
+    stars = Table.read(stars_dir / 'Y_all_gaia_euclid_outside_pixScale.fits') #! Outside pixel scale
+
+    stars_ra_pix = stars['RA_1']
+    stars_dec_pix = stars['DEC_1']
+    stars_pmra_pix = stars['pmra']
+    stars_pmdec_pix = stars['pmdec']
+    stars_pm_pix = np.array([np.sqrt(x**2 + y**2) for x, y in zip(stars_pmra_pix, stars_pmdec_pix)])
+
 
     # for pm values, replace '--' with 0
     stars_pmra = np.array([0 if x == '--' else x for x in stars_pmra])
@@ -127,22 +135,22 @@ if gaia:
     stars_pmdec = stars_pmdec.astype(float)
     stars_pm = stars_pm.astype(float)
 
-    stars_pix = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_euclid_gaia_coords.ascii') #! Outside pixel scale
-    stars_ra_pix = stars_pix['RA_Gaia']
-    stars_dec_pix = stars_pix['DEC_Gaia']
-    stars_pmra_pix = stars_pix['pmra']
-    stars_pmdec_pix = stars_pix['pmdec']
-    stars_pm_pix = stars_pix['pm']
+    # stars_pix = ascii.read(stars_dir / f'{filter_name}_outside_pixscale_euclid_gaia_coords.ascii') #! Outside pixel scale
+    # stars_ra_pix = stars_pix['RA_Gaia']
+    # stars_dec_pix = stars_pix['DEC_Gaia']
+    # stars_pmra_pix = stars_pix['pmra']
+    # stars_pmdec_pix = stars_pix['pmdec']
+    # stars_pm_pix = stars_pix['pm']
 
-    # for pm values, replace '--' with 0
-    stars_pmra_pix = np.array([0 if x == '--' else x for x in stars_pmra_pix])
-    stars_pmdec_pix = np.array([0 if x == '--' else x for x in stars_pmdec_pix])
-    stars_pm_pix = np.array([0 if x == '--' else x for x in stars_pm_pix])
+    # # for pm values, replace '--' with 0
+    # stars_pmra_pix = np.array([0 if x == '--' else x for x in stars_pmra_pix])
+    # stars_pmdec_pix = np.array([0 if x == '--' else x for x in stars_pmdec_pix])
+    # stars_pm_pix = np.array([0 if x == '--' else x for x in stars_pm_pix])
 
-    # Convert the values in the arrays to floats
-    stars_pmra_pix = stars_pmra_pix.astype(float)
-    stars_pmdec_pix = stars_pmdec_pix.astype(float)
-    stars_pm_pix = stars_pm_pix.astype(float)
+    # # Convert the values in the arrays to floats
+    # stars_pmra_pix = stars_pmra_pix.astype(float)
+    # stars_pmdec_pix = stars_pmdec_pix.astype(float)
+    # stars_pm_pix = stars_pm_pix.astype(float)
 
 #! Plot the ultra-deep stripes
 strip1 = Polygon(np.array([[150.43, 2.76], [150.57, 2.76], [150.57, 1.66], [150.43, 1.66]]), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
@@ -186,7 +194,7 @@ print('Number of exposures: ', counter)
 
 
 # Plot the bad stars
-ax.scatter(stars_ra, stars_dec, marker='x', color='black', s=10, label=f'astrom. offset > {filter_name} PSF FWHM')
+#ax.scatter(stars_ra, stars_dec, marker='x', color='black', s=10, label=f'astrom. offset > {filter_name} PSF FWHM')
 
 if gaia:
     ax.scatter(stars_ra_pix, stars_dec_pix, marker='x', color='red', s=10, label=f'astrom. offset > {filter_name} pix scale (0.1\")', zorder=10)
