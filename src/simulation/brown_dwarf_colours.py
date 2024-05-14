@@ -515,9 +515,8 @@ def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
         # Match the model to our desired magnitude at 1500A
         flux = flux * ratio
 
-        model.line_fluxes["H  1  1215.67A"] = 1e-29
+        #model.line_fluxes["H  1  1215.67A"] = 1e-29
 
-    print(model.line_fluxes["H  1  1215.67A"])
 
     return wlen, flux
 
