@@ -26,7 +26,7 @@ import matplotlib as mpl
 from typing import Union, Tuple
 
 sys.path.append(str(Path.cwd()))
-from brown_dwarf_colours import mag_to_flux, flux_to_mag, max_age_at_redshift, getFilters, makeLBG
+from brown_dwarf_colours import *
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -687,6 +687,10 @@ def update_plot(redshift, Muv, EW):
     """
     Update the plot with the new redshift and EW values, in order to make an animation! This is at fixed muv
     """
+
+    euclid_filters = getFilters('Euclid')
+    vista_filters = getFilters('VISTA')
+    hsc_filters = getFilters('HSC')
 
     plt.clf()  # Clear the previous plot
     plt.rcParams['figure.dpi'] = 75
