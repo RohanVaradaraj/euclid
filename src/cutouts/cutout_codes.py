@@ -672,6 +672,40 @@ if __name__ == '__main__':
 
     ID = [1502155319020257969, 1499883241022070278, 1502677115026213801, 1502498770024664099]
 
+    #! Casey CWEB z>10 sources
+
+    # # Super bright 10<z<12 sources
+    # ra = ['10:01:26.00', '09:58:55.21', '09:59:59.91', '09:59:49.04']
+    # dec = ['01:55:59.70', '02:07:16.77', '02:06:59.90', '01:53:26.19']
+    # z = [10.27, 12.54, 11.92, 12.03]
+    # Muv = [-21.53, -22.19, -21.89, -21.58]
+    # ID = ['COS-z10-1', 'COS-z12-1', 'COS-z12-2', 'COS-z12-3']
+
+    # # Bright 10<z<12 sources
+    # ra = ['09:59:51.77', '09:59:57.50', '10:00:37.96', '09:59:52.53', '10:01:34.80']
+    # dec = ['2:07:15.02', '02:06:20.06', '01:49:32.43', '02:00:23.53', '02:05:41.48']
+    # z = [10.06, 10.17, 11.07, 11.70, 11.50]
+    # Muv = [-20.62, -20.97, -20.85, -21.13, -20.77]
+    # ID = ['COS-z10-2', 'COS-z10-3', 'COS-z11-1', 'COS-z11-2', 'COS-z11-3']
+
+    # # # z>13
+    # ra = ['09:59:05.75', '10:00:04.24', '10:01:31.17']
+    # dec = ['02:04:04.39', '02:02:11.19', '01:58:45.00']
+    # z = [13.10, 12.50, 14.7]
+    # Muv = [-21.27, -21.03, -20.75]
+    # ID = ['COS-z13-1', 'COS-z13-2', 'COS-z14-1']
+
+    # Probable contaminants
+    ra = ['09:59:30.49', '09:59:31.30', '10:00:20.38']
+    dec = ['02:14:44.10', '02:08:33.85', '01:49:58.33']
+    z = [12.63, 13.8, 14.7]
+    Muv = [-21.90, -20.97, -21.32]
+    ID = ['COS-z12-4', 'COS-z13-3', 'COS-z14-2']
+
+
+    # Convert ra, dec to degrees
+    ra = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).ra.deg for r, d in zip(ra, dec)]
+    dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
 
 
     for i in range(len(ra)):
@@ -683,7 +717,8 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]))
         #Cutout(ra[i], dec[i], size=12.)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
+        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
+        Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 
 
     
