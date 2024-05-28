@@ -25,6 +25,10 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', category=AstropyWarning)
 
+# plt.rcParams['axes.linewidth'] = 2.5
+# plt.rcParams.update({'font.size': 15})
+# plt.rcParams['figure.dpi'] = 100
+
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home() / 'euclid'
 cweb_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
@@ -156,7 +160,7 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
-           save_cutout: bool = False, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
+           save_cutout: bool = True, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
            plot_title: Optional[str] = None,
            add_centre_lines: Optional[bool] = False) -> None:
 
@@ -562,16 +566,18 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
                 ax[1,5].plot(center_x, center_y, 'r+', markersize=20)
 
 
-
-
-    #plt.savefig(plot_dir / f'cutout_test.png')
-            
     # Set title if we pass a name
     if plot_title is not None:
         plt.suptitle(plot_title)
-    plt.tight_layout()
-    plt.show()
 
+    plt.tight_layout()
+
+    if save_cutout:
+        save_name = plot_title.split(',')[0]
+        plt.savefig(plot_dir / f'{save_name}.png')
+
+    #plt.show()
+    plt.close()
     return None
 
 
@@ -581,8 +587,8 @@ if __name__ == '__main__':
     # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
     # t = t[t['RA'] > 148]
 
-    # # Skip first few
-    # #t = t[:]
+    # # # Skip first few
+    # # #t = t[:]
 
     # ra = t['RA']
     # dec = t['Dec']
@@ -620,15 +626,17 @@ if __name__ == '__main__':
     # dec = cat['DECcen']
 
     #! Harikane z=12-16 sources
-    # hd1 = '10:01:51.31 02:32:50.0'
-    # hd2 = '02:18:52.44 -05:08:36.1'
+    hd1 = '10:01:51.31 02:32:50.0'
+    hd2 = '02:18:52.44 -05:08:36.1'
 
-    # # Use skycoord to convert these coordinates to degrees
-    # c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
-    # c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
+    # Use skycoord to convert these coordinates to degrees
+    c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
+    c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
 
-    # ra = [c1.ra.deg, c2.ra.deg]
-    # dec = [c1.dec.deg, c2.dec.deg]
+    ra = [c1.ra.deg, c2.ra.deg]
+    dec = [c1.dec.deg, c2.dec.deg]
+
+    ID = ['HD1', 'HD2']
 
     #! Rebecca's z>8.5 sources
     # uvista_1212 = '10:02:31.81 02:31:17.10'
@@ -640,7 +648,7 @@ if __name__ == '__main__':
     # ra = [c1.ra.deg, c2.ra.deg]
     # dec = [c1.dec.deg, c2.dec.deg]
 
-    # names = ['uvista_1212', 'uvista_237']
+    # ID = ['uvista_1212', 'uvista_237']
 
     #! Big three dragons
     # b1 = '10:01:40.69 01:54:52.42'
@@ -667,21 +675,21 @@ if __name__ == '__main__':
     # dec = stars['DEC_euclid'] 
 
     #! Spectra from Vincent!
-    ra = [150.21552279971348, 149.98832200622317, 150.26771198215147, 150.24988047861532]
-    dec = [2.02579740958649, 2.2070238197331493, 2.6213922569606107, 2.4663986583043647]
+    #ra = [150.21552279971348, 149.98832200622317, 150.26771198215147, 150.24988047861532]
+    #dec = [2.02579740958649, 2.2070238197331493, 2.6213922569606107, 2.4663986583043647]
 
-    ID = [1502155319020257969, 1499883241022070278, 1502677115026213801, 1502498770024664099]
+    #ID = [1502155319020257969, 1499883241022070278, 1502677115026213801, 1502498770024664099]
 
     #! Casey CWEB z>10 sources
 
-    # # Super bright 10<z<12 sources
+    # Super bright 10<z<12 sources
     # ra = ['10:01:26.00', '09:58:55.21', '09:59:59.91', '09:59:49.04']
     # dec = ['01:55:59.70', '02:07:16.77', '02:06:59.90', '01:53:26.19']
     # z = [10.27, 12.54, 11.92, 12.03]
     # Muv = [-21.53, -22.19, -21.89, -21.58]
     # ID = ['COS-z10-1', 'COS-z12-1', 'COS-z12-2', 'COS-z12-3']
 
-    # # Bright 10<z<12 sources
+    # # # Bright 10<z<12 sources
     # ra = ['09:59:51.77', '09:59:57.50', '10:00:37.96', '09:59:52.53', '10:01:34.80']
     # dec = ['2:07:15.02', '02:06:20.06', '01:49:32.43', '02:00:23.53', '02:05:41.48']
     # z = [10.06, 10.17, 11.07, 11.70, 11.50]
@@ -696,16 +704,23 @@ if __name__ == '__main__':
     # ID = ['COS-z13-1', 'COS-z13-2', 'COS-z14-1']
 
     # Probable contaminants
-    ra = ['09:59:30.49', '09:59:31.30', '10:00:20.38']
-    dec = ['02:14:44.10', '02:08:33.85', '01:49:58.33']
-    z = [12.63, 13.8, 14.7]
-    Muv = [-21.90, -20.97, -21.32]
-    ID = ['COS-z12-4', 'COS-z13-3', 'COS-z14-2']
+    #ra = ['09:59:30.49', '09:59:31.30', '10:00:20.38']
+    #dec = ['02:14:44.10', '02:08:33.85', '01:49:58.33']
+    #z = [12.63, 13.8, 14.7]
+    #Muv = [-21.90, -20.97, -21.32]
+    #ID = ['COS-z12-4', 'COS-z13-3', 'COS-z14-2']
 
+    #Convert ra, dec to degrees
+    #ra = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).ra.deg for r, d in zip(ra, dec)]
+    #dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
 
-    # Convert ra, dec to degrees
-    ra = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).ra.deg for r, d in zip(ra, dec)]
-    dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
+    #! CR7
+    cr7 = '10:00:58.005 01:48:15.251'
+    cr7 = SkyCoord(cr7, unit=(u.hourangle, u.deg))
+
+    ra = [cr7.ra.deg]
+    dec = [cr7.dec.deg]
+    ID = ['CR7']
 
 
     for i in range(len(ra)):
@@ -717,8 +732,9 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]))
         #Cutout(ra[i], dec[i], size=12.)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
-        Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
+        Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
+        #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
+        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 
 
     

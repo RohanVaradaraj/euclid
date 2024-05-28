@@ -95,6 +95,8 @@ with fits.open(primer) as hdu_primer:
     primer_footprint = wcs_primer.calc_footprint()
 
 r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
+#r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='none', facecolor='darkgray', lw=2.5, label='UltraVISTA', alpha=0.8, zorder=-1) # Gray for Rebecca
+
 ax.add_patch(r)
 #p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
 #ax.add_patch(p)

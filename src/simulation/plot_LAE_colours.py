@@ -28,7 +28,7 @@ plot_z_vs_EW = False
 plot_colour_colour = True
 
 # If colour colour, what redshift range? 7 or 8?
-z_LAE = 6
+z_LAE = 8
 
 # Set up the grid
 redshifts = np.arange(5.5, 10.01, 0.01)
@@ -82,9 +82,9 @@ if plot_z_vs_EW:
     plt.imshow(colour, origin='lower', aspect='auto', extent=[zmin, zmax, EWmin, EWmax], cmap='coolwarm')
 
     # Limit the colourbar 
-    plt.clim(-0.5, 1.5)
+    plt.clim(-1.0, 5)
 
-    #plt.colorbar(label=r'$J - J_{E}$')
+    plt.colorbar(label=r'$y - Y_{E}$')
     plt.xlabel(r'$z$')
     plt.ylabel(r'$\mathrm{EW}_{o} (\AA)$')
     plt.show()
@@ -186,6 +186,10 @@ if plot_colour_colour:
 
         plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
 
+        # Add text of spectral type next to the templates
+        for i in range(len(spectral_type)):
+            plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
+
         #? ------ Draw typical LBG evolution tracks ------
         # lbg_table = Table.read(dwarf_dir / 'lbg_spectra_mags.fits')
 
@@ -270,6 +274,10 @@ if plot_colour_colour:
         plt.scatter(c1_dwarf, c2_dwarf, c='red', s=10, marker='*', label='Brown dwarfs', alpha=0.7)
 
         plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
+
+        # Add text of spectral type next to the templates
+        for i in range(len(spectral_type)):
+            plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
 
         #! Plotting commands
         plt.xlabel(r'$J_{E} - J_{\mathrm{VISTA}}$')

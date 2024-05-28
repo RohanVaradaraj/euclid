@@ -131,7 +131,7 @@ plt.legend()
 
 # Full filter set
 plt.xlim(0.2, 2.55)
-plt.savefig(plot_dir / 'filter_transmission_curves.png', bbox_inches='tight')
+#plt.savefig(plot_dir / 'filter_transmission_curves.png', bbox_inches='tight')
 
 # Zoomed in around Y
 #plt.xlim(0.7, 1.7)
