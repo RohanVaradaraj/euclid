@@ -34,6 +34,27 @@ euclid_dir = Path.home() / 'euclid'
 cweb_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
 primer_dir = Path.home() / 'JWST'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
+refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
+
+
+def readAllCOSMOSGalaxies() -> Table:
+
+    """
+    Read in all crossmatched objects found from NED from the text file to an astropy table.
+    """
+
+    # Read in the file
+    cosmos_file = refcat_dir / 'all_COSMOS_highz.txt'
+    cosmos = np.loadtxt(cosmos_file, dtype=str, delimiter='|', skiprows=21)
+
+    # Convert to astropy table
+    cosmos_colnames = cosmos[0]
+    cosmos_data = cosmos[1:]
+    cosmos_table = Table(cosmos_data, names=cosmos_colnames)
+
+    cosmos_table.write(refcat_dir / 'all_COSMOS_highz.fits', format='fits', overwrite=True)
+
+
 
 
 def findPlotLimits(data: np.ndarray) -> tuple:
@@ -316,6 +337,12 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
         cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
 
+    # If all of the Euclid cutouts are zero, then the cutout is empty so return none
+    if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
+        print("Euclid cutouts are empty")
+        return None
+
+
     #! Next check for and get the Hubble cutouts
     hubble_tile = contained_in[0][3]
 
@@ -576,9 +603,10 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         save_name = plot_title.split(',')[0]
         plt.savefig(plot_dir / f'{save_name}.png')
 
-    #plt.show()
+    plt.show()
     plt.close()
     return None
+
 
 
 if __name__ == '__main__':
@@ -626,17 +654,17 @@ if __name__ == '__main__':
     # dec = cat['DECcen']
 
     #! Harikane z=12-16 sources
-    hd1 = '10:01:51.31 02:32:50.0'
-    hd2 = '02:18:52.44 -05:08:36.1'
+    # hd1 = '10:01:51.31 02:32:50.0'
+    # hd2 = '02:18:52.44 -05:08:36.1'
 
-    # Use skycoord to convert these coordinates to degrees
-    c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
-    c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
+    # # Use skycoord to convert these coordinates to degrees
+    # c1 = SkyCoord(hd1, unit=(u.hourangle, u.deg))
+    # c2 = SkyCoord(hd2, unit=(u.hourangle, u.deg))
 
-    ra = [c1.ra.deg, c2.ra.deg]
-    dec = [c1.dec.deg, c2.dec.deg]
+    # ra = [c1.ra.deg, c2.ra.deg]
+    # dec = [c1.dec.deg, c2.dec.deg]
 
-    ID = ['HD1', 'HD2']
+    # ID = ['HD1', 'HD2']
 
     #! Rebecca's z>8.5 sources
     # uvista_1212 = '10:02:31.81 02:31:17.10'
@@ -715,24 +743,41 @@ if __name__ == '__main__':
     #dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
 
     #! CR7
-    cr7 = '10:00:58.005 01:48:15.251'
-    cr7 = SkyCoord(cr7, unit=(u.hourangle, u.deg))
+    # cr7 = '10:00:58.005 01:48:15.251'
+    # cr7 = SkyCoord(cr7, unit=(u.hourangle, u.deg))
 
-    ra = [cr7.ra.deg]
-    dec = [cr7.dec.deg]
-    ID = ['CR7']
+    # ra = [cr7.ra.deg]
+    # dec = [cr7.dec.deg]
+    # ID = ['CR7']
 
+    #! All COSMOS crossmatched sources
+    t = Table.read(refcat_dir / 'all_COSMOS_highz.fits')
+
+    # Sort by decreasing redshift
+    t.sort('Redshift')
+
+    # Flip
+    t = t[::-1]
+
+
+    ra = t['RA']
+    dec = t['DEC']
+
+    z = t['Redshift']
+    ID = t['Object Name']
 
     for i in range(len(ra)):
+
+        print(f'Object number {i+1} of {len(ra)}')
 
         #print(cat[i]['zBest'])
         #print(cat[i]['FIRST_CLASS'])
         #print(ID[i])
 
-        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]))
+        Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]), save_cutout=False)
         #Cutout(ra[i], dec[i], size=12.)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
+        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

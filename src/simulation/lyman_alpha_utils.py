@@ -770,7 +770,7 @@ def update_plot(redshift, Muv, EW):
 
 
 
-def runLymanAlphaEmitter_vectorised(redshift, Muv, EW) -> dict:
+def runLymanAlphaEmitter_vectorised(redshift, Muv, EW, Av, age) -> dict:
 
     """
     Run the Lyman-alpha emitter simulation.
@@ -797,8 +797,8 @@ def runLymanAlphaEmitter_vectorised(redshift, Muv, EW) -> dict:
     hsc_filters = getFilters('HSC')
 
     # Make a Lyman-break galaxy
-    wlen, flux_sed = makeLBG_vectorised(redshifts=redshift, SFH_component='constant', age=(0, 13.8), massformed=11., metallicity=0.2, 
-                                dust_type='Calzetti', Av=0.2, nebular=True, logU=-1.)
+    wlen, flux_sed = makeLBG_vectorised(redshifts=redshift, SFH_component='constant', age=(0, age), massformed=11., metallicity=0.2, 
+                                dust_type='Calzetti', Av=Av, nebular=True, logU=-2.)
 
     # Set the absolute magnitude
     wlen, flux_sed = set_Muv_vectorised(redshifts=redshift, Muv_target=Muv, wlen=wlen, flux=flux_sed)
@@ -824,7 +824,7 @@ def runLymanAlphaEmitter_vectorised(redshift, Muv, EW) -> dict:
 
 
 
-def runLymanAlphaEmitter(redshift, Muv, EW) -> dict:
+def runLymanAlphaEmitter(redshift, Muv, EW, Av, age) -> dict:
 
     """
     Run the Lyman-alpha emitter simulation.
@@ -851,8 +851,8 @@ def runLymanAlphaEmitter(redshift, Muv, EW) -> dict:
     hsc_filters = getFilters('HSC')
 
     # Make a Lyman-break galaxy
-    wlen, flux_sed = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=11., metallicity=0.2, 
-                                dust_type='Calzetti', Av=0.2, nebular=True, logU=-1.)
+    wlen, flux_sed = makeLBG(redshift=redshift, SFH_component='constant', age=age, massformed=11., metallicity=0.2, 
+                                dust_type='Calzetti', Av=age, nebular=True, logU=-1.)
 
     # Set the absolute magnitude
     wlen, flux_sed = set_Muv(z=redshift, Muv_target=Muv, wlen=wlen, flux=flux_sed)

@@ -53,7 +53,13 @@ for i, image in enumerate(images):
 centroid_list.sort(key=lambda x: (-x[1], -x[0]), reverse=True)
 
 plt.figure(figsize=(10, 8))
+
 ax = plt.subplot()
+
+# Modify shape so that one degree is the same on both axes
+#plt.gca().set_aspect('equal', adjustable='box')
+#ax.set_aspect(aspect='equal', adjustable='box')
+plt.axis('equal')
 
 # # Plot the images in sorted order
 # for i, (centroid_x, centroid_y, image) in enumerate(centroid_list):
@@ -85,6 +91,7 @@ np.save(Path.cwd().parent.parent / 'data' / 'mosaic' / 'tile_index_map.npy', til
 
 #! Also add the UltraVISTA tile and PRIMER tile
 uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_DR6_cropped.fits'
+uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_dr5_rc1.fits'
 with fits.open(uvista_Y) as hdu_uvista:
     wcs_uvista = WCS(hdu_uvista[0].header)
     uvista_footprint = wcs_uvista.calc_footprint()
@@ -94,8 +101,8 @@ with fits.open(primer) as hdu_primer:
     wcs_primer = WCS(hdu_primer[0].header)
     primer_footprint = wcs_primer.calc_footprint()
 
-r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
-#r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='none', facecolor='darkgray', lw=2.5, label='UltraVISTA', alpha=0.8, zorder=-1) # Gray for Rebecca
+r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='none', facecolor='darkgray', lw=2.5, label='UltraVISTA', alpha=0.8, zorder=-1) # Gray for Rebecca
+#r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
 
 ax.add_patch(r)
 #p = Polygon(np.array(primer_footprint), closed=True, edgecolor='g', facecolor='none', lw=2.5, label='PRIMER', alpha=0.8)
@@ -121,8 +128,8 @@ with fits.open(dash) as hdu_dash:
     wcs_dash = WCS(hdu_dash[0].header)
     hubble_footprint = wcs_dash.calc_footprint()
 
-    r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='HST 3D-DASH', alpha=0.6, linestyle='dashed')
-    ax.add_patch(r)
+    #r = Polygon(np.array(hubble_footprint), closed=True, edgecolor='deepskyblue', facecolor='none', lw=2.5, label='HST 3D-DASH', alpha=0.6, linestyle='dashed')
+    #ax.add_patch(r)
 
 
 #! Plot positions of REBELS galaxies
@@ -133,15 +140,20 @@ rebels_dec = rebels['Dec']
 # Plot the REBELS galaxies
 ax.scatter(rebels_ra, rebels_dec, marker='x', color='black', s=10, label='REBELS')
 
+
 # Set axis limits and labels
 ax.set_xlim(150.9, 149.1)
-ax.set_ylim(1.5, 3.2)
+ax.set_ylim(1.5, 3.0)
+
+# Squish ra axis by np.cos(dec) to account for declination
+
+
 ax.set_xlabel('RA (deg)')
 ax.set_ylabel('DEC (deg)')
-ax.legend(loc='lower right')
-plt.gca().set_aspect('equal', adjustable='box')
+ax.legend(loc='upper right')
+
 plt.tight_layout()
-plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic.png')
+plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_gray.png')
 plt.show()
 
 
