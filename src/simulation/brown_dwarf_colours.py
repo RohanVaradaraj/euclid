@@ -106,7 +106,7 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
     Parameters:
     -----------
     instrument: str
-        The name of the instrument. One of 'Euclid', 'VISTA', 'HSC', 'Spitzer'
+        The name of the instrument. One of 'Euclid', 'VISTA', 'HSC', 'Spitzer', 'JWST.
     plot: bool, optional
         Whether to plot the filters. Default is False.
     plot_kwargs: dict, optional
@@ -140,6 +140,10 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
     elif instrument.upper() == 'SPITZER':
         filter_names = glob.glob(str(filter_dir / 'SPITZER' / 'irac_*'))
         order = ['ch1', 'ch2']
+    elif instrument.lower() == 'jwst':
+        filter_names = glob.glob(str(filter_dir / 'JWST' / '*'))
+        filter_names = [f for f in cweb_filters if 'f115w' in f or 'f150w' in f or 'f277w' in f or 'f444w' in f]
+        order = ['f115w', 'f150w', 'f277w', 'f444w']
     else:
         raise ValueError("Invalid instrument name")
 

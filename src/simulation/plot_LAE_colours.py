@@ -27,268 +27,284 @@ plot_z_vs_EW = False
 # Plot colour colour diagrams?
 plot_colour_colour = True
 
-# If colour colour, what redshift range? 7 or 8?
-z_LAE = 8
+# If colour-colour, what redshift range? 7 or 8?
+z_LAE = 7
 
 # Set up the grid
 redshifts = np.arange(5.5, 10.01, 0.01)
 EWs = np.arange(0, 250, 10)
 
+Avs = np.arange(0, 0.7, 0.1)
+ages = np.array([50,100,150,200,300,400,500])
+
 table_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'LAEs' / 'tables'
 dwarf_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'tables'
 
-# Read in the tables
-fluxes = Table.read(table_dir / 'LAE_fluxes.fits')
-errors = Table.read(table_dir / 'LAE_errors.fits')
+plt.figure(figsize=(10, 8))
 
-# get Ye and Je
-Ye = fluxes['Ye']
-Je = fluxes['Je']
-y = fluxes['y']
-Y = fluxes['Y']
-J = fluxes['J']
-Je = fluxes['Je']
-He = fluxes['He']
-VIS = fluxes['VIS']
-z = fluxes['z']
+for Av in Avs:
+    for age in ages:
 
-# Get magnitudes
-mag_Ye = flux_to_mag(Ye)
-mag_Je = flux_to_mag(Je)
-mag_y = flux_to_mag(y)
-mag_Y = flux_to_mag(Y)
-mag_J = flux_to_mag(J)
-mag_Je = flux_to_mag(Je)
-mag_He = flux_to_mag(He)
-mag_VIS = flux_to_mag(VIS)
-mag_z = flux_to_mag(z)
+        # Read in the tables
+        fluxes = Table.read(table_dir / f'LAE_fluxes_Av_{round(Av, 1)}_age_{age}Myr.fits')
+        errors = Table.read(table_dir / f'LAE_error_Av_{round(Av, 1)}_age_{age}Myr.fits')
 
-# Plot Ye-Je on imshow as a function of redshift and EW
-zmin = np.min(fluxes['redshift'])
-zmax = np.max(fluxes['redshift'])
-EWmin = np.min(fluxes['EW'])
-EWmax = np.max(fluxes['EW'])
+        # get Ye and Je
+        Ye = fluxes['Ye']
+        Je = fluxes['Je']
+        y = fluxes['y']
+        Y = fluxes['Y']
+        J = fluxes['J']
+        Je = fluxes['Je']
+        He = fluxes['He']
+        VIS = fluxes['VIS']
+        z = fluxes['z']
 
-colour = mag_y - mag_Ye
+        # Get magnitudes
+        mag_Ye = flux_to_mag(Ye)
+        mag_Je = flux_to_mag(Je)
+        mag_y = flux_to_mag(y)
+        mag_Y = flux_to_mag(Y)
+        mag_J = flux_to_mag(J)
+        mag_Je = flux_to_mag(Je)
+        mag_He = flux_to_mag(He)
+        mag_VIS = flux_to_mag(VIS)
+        mag_z = flux_to_mag(z)
 
+        # Plot Ye-Je on imshow as a function of redshift and EW
+        zmin = np.min(fluxes['redshift'])
+        zmax = np.max(fluxes['redshift'])
+        EWmin = np.min(fluxes['EW'])
+        EWmax = np.max(fluxes['EW'])
 
-###########################! Plot filter-filter colours as a function of redshift and EW ###########################
-if plot_z_vs_EW:
-        
-    # Reshape colour to match the grid shape
-    colour = colour.reshape(len(EWs), len(redshifts))
+        colour = mag_y - mag_Ye
 
-    plt.figure(figsize=(10, 10))
-    plt.imshow(colour, origin='lower', aspect='auto', extent=[zmin, zmax, EWmin, EWmax], cmap='coolwarm')
 
-    # Limit the colourbar 
-    plt.clim(-1.0, 5)
+        ###########################! Plot filter-filter colours as a function of redshift and EW ###########################
+        if plot_z_vs_EW:
+                
+            # Reshape colour to match the grid shape
+            colour = colour.reshape(len(EWs), len(redshifts))
 
-    plt.colorbar(label=r'$y - Y_{E}$')
-    plt.xlabel(r'$z$')
-    plt.ylabel(r'$\mathrm{EW}_{o} (\AA)$')
-    plt.show()
+            #plt.figure(figsize=(10, 10))
+            plt.imshow(colour, origin='lower', aspect='auto', extent=[zmin, zmax, EWmin, EWmax], cmap='coolwarm')
 
-###########################! Plot colour-colour diagrams ###########################
-if plot_colour_colour:
+            # Limit the colourbar 
+            plt.clim(-1.0, 5)
 
-    if z_LAE == 6:
+            plt.colorbar(label=r'$y - Y_{E}$')
+            plt.xlabel(r'$z$')
+            plt.ylabel(r'$\mathrm{EW}_{o} (\AA)$')
+            plt.show()
 
-        c1 = mag_z-mag_y
-        c2 = mag_VIS-mag_z
+        ###########################! Plot colour-colour diagrams ###########################
+        if plot_colour_colour:
 
-        # Limit the redshift
-        z_lower = 6.2
-        z_upper = 6.6
-        mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
+            if z_LAE == 6:
 
-        # Apply mask
-        c1 = c1[mask]
-        c2 = c2[mask]
+                c1 = mag_z-mag_y
+                c2 = mag_VIS-mag_z
 
-        # Scale redshifts to map to size
-        scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
+                # Limit the redshift
+                z_lower = 6.2
+                z_upper = 6.6
+                mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
-        plt.figure(figsize=(10, 8))
+                # Apply mask
+                c1 = c1[mask]
+                c2 = c2[mask]
 
-        plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
-        plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
-        #plt.clim(0, 70)
+                # Scale redshifts to map to size
+                scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
 
-        #! Plotting commands
-        plt.xlabel(r'$z_{\mathrm{HSC}} - y_{\mathrm{HSC}}$')
-        plt.ylabel(r'$I_{E} - z_{\mathrm{HSC}}$')
+                #plt.figure(figsize=(10, 8))
 
+                plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
+                plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
+                #plt.clim(0, 70)
 
-        #plt.xlim(-0.5, 0.7)
-        #plt.ylim(-0.9, 6)
+                #! Plotting commands
+                plt.xlabel(r'$z_{\mathrm{HSC}} - y_{\mathrm{HSC}}$')
+                plt.ylabel(r'$I_{E} - z_{\mathrm{HSC}}$')
 
-        plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
 
-        plt.show()
+                #plt.xlim(-0.5, 0.7)
+                #plt.ylim(-0.9, 6)
 
-    if z_LAE == 7:
+                plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
 
-        c1 = mag_Ye-mag_Y
-        c2 = mag_y-mag_Ye
+                plt.show()
 
-        # Limit to where redshift is less than 7.3
-        z_lower = 7.1
-        z_upper = 7.5
-        mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
+            if z_LAE == 7:
 
-        # Apply mask
-        c1 = c1[mask]
-        c2 = c2[mask]
+                c1 = mag_Ye-mag_Y
+                c2 = mag_y-mag_Ye
 
-        # Scale redshifts to map to size
-        scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
+                # Limit to where redshift is less than 7.3
+                z_lower = 7.1
+                z_upper = 7.5
+                mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
-        plt.figure(figsize=(10, 8))
+                # Apply mask
+                c1 = c1[mask]
+                c2 = c2[mask]
 
-        plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
-        plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
-        plt.clim(0, 70)
+                # Scale redshifts to map to size
+                scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
 
-        #! Draw the selection function
-        x = [0.3, 0.3]
-        y = [-2, 2]
-        plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)
+                #plt.figure(figsize=(10, 8))
 
-        x = [0.3, 1.]
-        y = [2, 2]
-        plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)  
+                plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
+                #plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
+                #plt.clim(0, 150)
 
+                #! Draw the selection function
+                x = [0.3, 0.3]
+                y = [-2, 2]
+                plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)
 
-        #? ----- Load brown dwarf spectra ------
-        bd_table = Table.read(dwarf_dir / 'dwarf_spectra_mags.fits') #! Spectra
-        spex_table = Table.read(dwarf_dir / 'spex_template_mags.fits') #! Templates
+                x = [0.3, 1.]
+                y = [2, 2]
+                plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)  
 
-        # Get the colours from spectra
-        mag_y_dwarf = bd_table['y']
-        mag_Ye_dwarf = bd_table['Ye']
-        mag_Y_dwarf = bd_table['Y']
 
-        # Get colours from templates
-        mag_Ye_dwarf_template = spex_table['Ye']
-        mag_Y_dwarf_template = spex_table['Y']
-        mag_y_dwarf_template = spex_table['y']
-        spectral_type = spex_table['Spectral Type']
+                #? ----- Load brown dwarf spectra ------
+                bd_table = Table.read(dwarf_dir / 'dwarf_spectra_mags.fits') #! Spectra
+                spex_table = Table.read(dwarf_dir / 'spex_template_mags.fits') #! Templates
 
-        # Calculate the colours
-        c1_dwarf = mag_Ye_dwarf - mag_Y_dwarf
-        c2_dwarf = mag_y_dwarf - mag_Ye_dwarf
-        c1_dwarf_template = mag_Ye_dwarf_template - mag_Y_dwarf_template
-        c2_dwarf_template = mag_y_dwarf_template - mag_Ye_dwarf_template
+                # Get the colours from spectra
+                mag_y_dwarf = bd_table['y']
+                mag_Ye_dwarf = bd_table['Ye']
+                mag_Y_dwarf = bd_table['Y']
 
-        # Plot the brown dwarf colours
-        plt.scatter(c1_dwarf, c2_dwarf, c='red', s=10, marker='*', label='Brown dwarfs', alpha=0.7)
+                # Get colours from templates
+                mag_Ye_dwarf_template = spex_table['Ye']
+                mag_Y_dwarf_template = spex_table['Y']
+                mag_y_dwarf_template = spex_table['y']
+                spectral_type = spex_table['Spectral Type']
 
-        plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
+                # Calculate the colours
+                c1_dwarf = mag_Ye_dwarf - mag_Y_dwarf
+                c2_dwarf = mag_y_dwarf - mag_Ye_dwarf
+                c1_dwarf_template = mag_Ye_dwarf_template - mag_Y_dwarf_template
+                c2_dwarf_template = mag_y_dwarf_template - mag_Ye_dwarf_template
 
-        # Add text of spectral type next to the templates
-        for i in range(len(spectral_type)):
-            plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
+                # Plot the brown dwarf colours
+                plt.scatter(c1_dwarf, c2_dwarf, c='red', s=10, marker='*', label='Brown dwarfs', alpha=0.7)
 
-        #? ------ Draw typical LBG evolution tracks ------
-        # lbg_table = Table.read(dwarf_dir / 'lbg_spectra_mags.fits')
+                plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
 
-        # # Apply redshift mask
-        # lbg_table = lbg_table[(lbg_table['Redshift'] > z_lower) & (lbg_table['Redshift'] < z_upper)]
+                # Add text of spectral type next to the templates
+                for i in range(len(spectral_type)):
+                    plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
 
-        # # Get the colours
-        # mag_y_lbg = lbg_table['y']
-        # mag_Ye_lbg = lbg_table['Ye']
-        # mag_Y_lbg = lbg_table['Y']
+                #? ------ Draw typical LBG evolution tracks ------
+                # lbg_table = Table.read(dwarf_dir / 'lbg_spectra_mags.fits')
 
-        # # Calculate the colours
-        # c1_lbg = mag_Ye_lbg - mag_Y_lbg
-        # c2_lbg = mag_y_lbg - mag_Ye_lbg
+                # # Apply redshift mask
+                # lbg_table = lbg_table[(lbg_table['Redshift'] > z_lower) & (lbg_table['Redshift'] < z_upper)]
 
-        # # Plot the LBG colours
-        # plt.scatter(c1_lbg, c2_lbg, c='deepskyblue', s=14, marker='o', label='LBGs', alpha=0.7)
+                # # Get the colours
+                # mag_y_lbg = lbg_table['y']
+                # mag_Ye_lbg = lbg_table['Ye']
+                # mag_Y_lbg = lbg_table['Y']
 
-        #! Plotting commands
-        plt.xlabel(r'$y_{\mathrm{HSC}} - Y_{E}$')
-        plt.ylabel(r'$Y_{E} - Y_{\mathrm{VISTA}}$')
+                # # Calculate the colours
+                # c1_lbg = mag_Ye_lbg - mag_Y_lbg
+                # c2_lbg = mag_y_lbg - mag_Ye_lbg
 
+                # # Plot the LBG colours
+                # plt.scatter(c1_lbg, c2_lbg, c='deepskyblue', s=14, marker='o', label='LBGs', alpha=0.7)
 
-        plt.xlim(-0.5, 0.7)
-        plt.ylim(-0.9, 6)
+                #! Plotting commands
+                plt.xlabel(r'$y_{\mathrm{HSC}} - Y_{E}$')
+                plt.ylabel(r'$Y_{E} - Y_{\mathrm{VISTA}}$')
 
-        plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
 
-        plt.show()
+                plt.xlim(-0.5, 0.7)
+                plt.ylim(-0.9, 6)
 
-    if z_LAE == 8:
-        c1 = mag_Je-mag_J
-        c2 = mag_Ye-mag_Je
+                plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
 
-        # Limit to where redshift is less than 7.3
-        z_lower = 8.3
-        z_upper = 8.5
-        mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
+                #plt.show()
+                #plt.close()
 
-        # Apply mask
-        c1 = c1[mask]
-        c2 = c2[mask]
+            if z_LAE == 8:
+                c1 = mag_Je-mag_J
+                c2 = mag_Ye-mag_Je
 
-        # Scale redshifts to map to size
-        scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
+                # Limit to where redshift is less than 7.3
+                z_lower = 8.3
+                z_upper = 8.5
+                mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
-        plt.figure(figsize=(10, 8))
-        plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
+                # Apply mask
+                c1 = c1[mask]
+                c2 = c2[mask]
 
-        #! Draw the selection function
-        # x = [0.3, 0.3]
-        # y = [-2, 2]
-        # plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)
+                # Scale redshifts to map to size
+                scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
 
-        # x = [0.3, 1.]
-        # y = [2, 2]
-        # plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)  
+                #plt.figure(figsize=(10, 8))
+                plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
 
+                #! Draw the selection function
+                # x = [0.3, 0.3]
+                # y = [-2, 2]
+                # plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)
 
-        #? ----- Load brown dwarf spectra ------
-        bd_table = Table.read(dwarf_dir / 'dwarf_spectra_mags.fits') #! Spectra
-        spex_table = Table.read(dwarf_dir / 'spex_template_mags.fits') #! Templates
+                # x = [0.3, 1.]
+                # y = [2, 2]
+                # plt.plot(x, y, marker='none', linestyle='--', color='black', lw=2.5, alpha=0.8)  
 
-        # Get the colours from spectra
-        mag_Ye_dwarf = bd_table['Ye']
-        mag_J_dwarf = bd_table['J']
-        mag_Je_dwarf = bd_table['Je']
 
-        # Get colours from templates
-        mag_Ye_dwarf_template = spex_table['Ye']
-        mag_J_dwarf_template = spex_table['J']
-        mag_Je_dwarf_template = spex_table['Je']
-        spectral_type = spex_table['Spectral Type']
+                #? ----- Load brown dwarf spectra ------
+                bd_table = Table.read(dwarf_dir / 'dwarf_spectra_mags.fits') #! Spectra
+                spex_table = Table.read(dwarf_dir / 'spex_template_mags.fits') #! Templates
 
-        # Calculate the colours
-        c1_dwarf = mag_Je_dwarf - mag_J_dwarf
-        c2_dwarf = mag_Ye_dwarf - mag_Je_dwarf
-        c1_dwarf_template = mag_Je_dwarf_template - mag_J_dwarf_template
-        c2_dwarf_template = mag_Ye_dwarf_template - mag_Je_dwarf_template
+                # Get the colours from spectra
+                mag_Ye_dwarf = bd_table['Ye']
+                mag_J_dwarf = bd_table['J']
+                mag_Je_dwarf = bd_table['Je']
 
-        # Plot the brown dwarf colours
-        plt.scatter(c1_dwarf, c2_dwarf, c='red', s=10, marker='*', label='Brown dwarfs', alpha=0.7)
+                # Get colours from templates
+                mag_Ye_dwarf_template = spex_table['Ye']
+                mag_J_dwarf_template = spex_table['J']
+                mag_Je_dwarf_template = spex_table['Je']
+                spectral_type = spex_table['Spectral Type']
 
-        plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
+                # Calculate the colours
+                c1_dwarf = mag_Je_dwarf - mag_J_dwarf
+                c2_dwarf = mag_Ye_dwarf - mag_Je_dwarf
+                c1_dwarf_template = mag_Je_dwarf_template - mag_J_dwarf_template
+                c2_dwarf_template = mag_Ye_dwarf_template - mag_Je_dwarf_template
 
-        # Add text of spectral type next to the templates
-        for i in range(len(spectral_type)):
-            plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
+                # Plot the brown dwarf colours
+                plt.scatter(c1_dwarf, c2_dwarf, c='red', s=10, marker='*', label='Brown dwarfs', alpha=0.7)
 
-        #! Plotting commands
-        plt.xlabel(r'$J_{E} - J_{\mathrm{VISTA}}$')
-        plt.ylabel(r'$Y_{E} - J_{E}$')
+                plt.scatter(c1_dwarf_template, c2_dwarf_template, c='black', s=13, marker='*', label='Spex templates', alpha=0.7)
 
-        plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
-        plt.clim(0, 240)
+                # Add text of spectral type next to the templates
+                for i in range(len(spectral_type)):
+                    plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
 
-        # plt.xlim(-0.5, 0.7)
-        # plt.ylim(-0.9, 6)
+                #! Plotting commands
+                plt.xlabel(r'$J_{E} - J_{\mathrm{VISTA}}$')
+                plt.ylabel(r'$Y_{E} - J_{E}$')
 
-        plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
+                plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
+                plt.clim(0, 240)
 
-        plt.show()   
+                # plt.xlim(-0.5, 0.7)
+                # plt.ylim(-0.9, 6)
+
+                plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
+
+                #plt.show()  
+
+
+
+
+plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
+plt.clim(0, 150)
+plt.show() 
