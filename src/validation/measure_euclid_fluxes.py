@@ -479,6 +479,14 @@ def measure_jwst_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, ape
             # Use sep to measure flux of object
             flux_counts, _, _ = sep.sum_circle(image, x, y, (aperture_diameter/2.) / pix_scale)
 
+            # First convert Mjy/sr to counts
+            # MJy/sr to Jy/pixel
+            # 1 MJy/sr = 1e6 Jy/sr
+            # 1 Jy = 1e-26 W/m^2/Hz
+            # 1 W/m^2/Hz = 1e-3 erg/s/cm^2/Hz
+            flux_counts = flux_counts * 1e6 * 1e-26 * 1e-3
+
+
             # Convert counts to flux
             value = -(48.6 + zeropoint)/2.5
             fluxFinal = (10**value)*flux_counts
@@ -556,12 +564,13 @@ def GetCWEBFootprints():
 
 if __name__ == '__main__':
 
-    t = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'all_COSMOS_highz.fits')
-    ra = t['RA']
-    dec = t['DEC']
+    #! ALL COSMOS objects
+    # t = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'all_COSMOS_highz.fits')
+    # ra = t['RA']
+    # dec = t['DEC']
 
-    measure_jwst_fluxes(ra, dec, filter_names=['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
-    exit()
+    # measure_jwst_fluxes(ra, dec, filter_names=['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
+    # exit()
 
     #! REBELS sources
     t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
@@ -594,20 +603,21 @@ if __name__ == '__main__':
     # # Stack tables
     # table_euclid = vstack(tables)
     # #!##################################################
-    table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'], aperture_diameter=1.6)
-    table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'], aperture_diameter=1.8)
-    table_jwst = measure_jwst_fluxes(ra, dec, ['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
+    #table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'], aperture_diameter=1.6)
+    #table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'], aperture_diameter=1.8)
+    #table_jwst = measure_jwst_fluxes(ra, dec, ['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
 
     # Save these tables
-    table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
-    table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
-    table_jwst.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_jwst_fluxes.fits', format='fits', overwrite=True)
+    #table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
+    #table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
+    #table_jwst.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_jwst_fluxes.fits', format='fits', overwrite=True)
 
     # Open these tables
     #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'star_fluxes.fits')
     #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'star_ground_fluxes.fits')
-    #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits')
-    #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits')
+    table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits')
+    table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits')
+    table_jwst = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_jwst_fluxes.fits')
     #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'apSize_test_euclid.fits')
     #table_ground = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'apSize_test_ground.fits')
 
@@ -634,8 +644,14 @@ if __name__ == '__main__':
             centre, width = filterCentreAndWidth(filter_name, 'euclid')
 
             # color = cmap(norm(i))
-            plt.errorbar(centre+i*0.01, table_euclid[f'flux_{filter_name}'][i], yerr=table_euclid[f'err_{filter_name}'][i], xerr=width/2, 
-                         fmt='o', color='black', alpha=0.7)
+            if table_euclid[f'flux_{filter_name}'][i] / table_euclid[f'err_{filter_name}'][i] > 2:
+                plt.errorbar(centre, table_euclid[f'flux_{filter_name}'][i], yerr=table_euclid[f'err_{filter_name}'][i], xerr=width/2, 
+                            fmt='o', color='black', alpha=0.7)
+            else:
+                # Upper limit at 2sigma
+                plt.errorbar(centre, 2*table_euclid[f'err_{filter_name}'][i], yerr=0, 
+                            color='black', alpha=0.7, uplims=True)
+
         #plt.errorbar([], [], yerr=0, xerr=0, fmt='o', label=f'apsize={apsizes[i]} as', alpha=0.7, color=color)
 
         # And ground data
@@ -645,14 +661,25 @@ if __name__ == '__main__':
                 centre, width = filterCentreAndWidth(filter_name, 'HSC')
             else:
                 centre, width = filterCentreAndWidth(filter_name, 'VISTA')
-            plt.errorbar(centre, table_ground[f'flux_{filter_name}'][0], yerr=table_ground[f'err_{filter_name}'][0], xerr=width/2, 
-                        fmt='o', color='red', alpha=0.7)
+            
+            if table_ground[f'flux_{filter_name}'][0] / table_ground[f'err_{filter_name}'][0] > 2:
+                plt.errorbar(centre, table_ground[f'flux_{filter_name}'][i], yerr=table_ground[f'err_{filter_name}'][i], xerr=width/2, 
+                            fmt='o', color='red', alpha=0.7)
+            else:
+                # Upper limit at 2sigma
+                plt.errorbar(centre, 2*table_ground[f'err_{filter_name}'][i], yerr=0, 
+                            color='red', alpha=0.7, uplims=True)
 
         # And the JWST data
         for filter_name in ['F115W', 'F150W', 'F277W', 'F444W']:
             centre, width = filterCentreAndWidth(filter_name, 'JWST')
-            plt.errorbar(centre, table_jwst[f'flux_{filter_name}'][0], yerr=table_jwst[f'err_{filter_name}'][0], xerr=width/2, 
-                        fmt='o', color='blue', alpha=0.7)
+            if table_jwst[f'flux_{filter_name}'][0] / table_jwst[f'err_{filter_name}'][0] > 2:
+                plt.errorbar(centre, table_jwst[f'flux_{filter_name}'][i], yerr=table_jwst[f'err_{filter_name}'][i], xerr=width/2, 
+                            fmt='o', color='blue', alpha=0.7)
+            else:
+                # Upper limit at 2sigma
+                plt.errorbar(centre, 2*table_jwst[f'err_{filter_name}'][i], yerr=0, xerr=0, 
+                            color='blue', alpha=0.7, uplims=True)
         
         plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
         plt.ylabel(r'flux (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')

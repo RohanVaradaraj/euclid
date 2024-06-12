@@ -1,0 +1,141 @@
+"""
+colour_redshift_diagrams.py
+
+plot how colour changes with redshift
+"""
+
+import matplotlib.pyplot as plt
+from astropy.table import Table
+from pathlib import Path
+import numpy as np
+from brown_dwarf_colours import *
+
+# Set up the grid
+redshifts = np.arange(5.5, 10.01, 0.01)
+EWs = np.arange(0, 250, 10)
+
+Avs = np.arange(0, 0.7, 0.1)
+ages = np.array([50, 100, 150, 200, 300, 400, 500])
+
+# Broad redshift range of interest
+redshift = '7'
+
+z_lower = 4.9
+z_upper = 10.0
+
+table_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'LAEs' / 'tables'
+
+# Subplots to do colour1 and colour2 under the same figure
+fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+
+# Use common shared x axis
+fig.subplots_adjust(hspace=0)
+plt.setp(ax[0].get_xticklabels(), visible=False)
+
+# Define color maps
+cmap = plt.get_cmap('viridis')
+
+for Av in Avs:
+    for age in ages:
+
+        # Read in the tables
+        fluxes = Table.read(table_dir / f'LAE_fluxes_Av_{round(Av, 1)}_age_{age}Myr.fits')
+
+        # Get magnitudes
+        mag_Ye = flux_to_mag(fluxes['Ye'])
+        mag_Je = flux_to_mag(fluxes['Je'])
+        mag_y = flux_to_mag(fluxes['y'])
+        mag_Y = flux_to_mag(fluxes['Y'])
+        mag_J = flux_to_mag(fluxes['J'])
+        mag_Je = flux_to_mag(fluxes['Je'])
+        mag_He = flux_to_mag(fluxes['He'])
+        mag_VIS = flux_to_mag(fluxes['VIS'])
+        mag_z = flux_to_mag(fluxes['z'])
+        mag_nb921 = flux_to_mag(fluxes['nb921'])    
+
+        # Calculate colors
+        if redshift == '7':
+            y_colour_1 = mag_y - mag_Ye
+            y_colour_2 = mag_Y - mag_Ye
+
+        if redshift == '6':
+            y_colour_1 = mag_z - mag_VIS
+            y_colour_2 = mag_z - mag_nb921
+
+        if redshift == '8':
+            y_colour_1 = mag_Ye - mag_Je
+            y_colour_2 = mag_J - mag_Je
+
+        ###########! HIGH EW LAEs ###########
+        # Limit to desired redshift range and EW
+        redshift_mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
+        high_EW = redshift_mask & (fluxes['EW'] > 80)
+
+        # Find the most extreme values at each redshift
+        unique_redshifts = np.unique(fluxes['redshift'][high_EW])
+        max_y_colour_1 = np.zeros_like(unique_redshifts)
+        min_y_colour_1 = np.zeros_like(unique_redshifts)
+        max_y_colour_2 = np.zeros_like(unique_redshifts)
+        min_y_colour_2 = np.zeros_like(unique_redshifts)
+
+        for i, z in enumerate(unique_redshifts):
+            idx = fluxes['redshift'][high_EW] == z
+            max_y_colour_1[i] = np.max(y_colour_1[high_EW][idx])
+            min_y_colour_1[i] = np.min(y_colour_1[high_EW][idx])
+            max_y_colour_2[i] = np.max(y_colour_2[high_EW][idx])
+            min_y_colour_2[i] = np.min(y_colour_2[high_EW][idx])
+
+        # Plot filled areas
+        ax[0].fill_between(unique_redshifts, min_y_colour_1, max_y_colour_1, color='deepskyblue', alpha=0.7)
+        ax[1].fill_between(unique_redshifts, min_y_colour_2, max_y_colour_2, color='deepskyblue', alpha=0.7)
+
+        ###########! NON-EMITTING LBGs ###########
+        non_emit = redshift_mask & (fluxes['EW'] < 5)
+
+        # Find the most extreme values at each redshift
+        unique_redshifts = np.unique(fluxes['redshift'][non_emit])
+        max_y_colour_1 = np.zeros_like(unique_redshifts)
+        min_y_colour_1 = np.zeros_like(unique_redshifts)
+        max_y_colour_2 = np.zeros_like(unique_redshifts)
+        min_y_colour_2 = np.zeros_like(unique_redshifts)
+
+        for i, z in enumerate(unique_redshifts):
+            idx = fluxes['redshift'][non_emit] == z
+            max_y_colour_1[i] = np.max(y_colour_1[non_emit][idx])
+            min_y_colour_1[i] = np.min(y_colour_1[non_emit][idx])
+            max_y_colour_2[i] = np.max(y_colour_2[non_emit][idx])
+            min_y_colour_2[i] = np.min(y_colour_2[non_emit][idx])
+
+        # Plot filled areas
+        ax[0].fill_between(unique_redshifts, min_y_colour_1, max_y_colour_1, color='gray', alpha=0.7)
+        ax[1].fill_between(unique_redshifts, min_y_colour_2, max_y_colour_2, color='gray', alpha=0.7)
+
+# Set plot limits and labels
+for i in range(2):
+
+    if redshift == '8':
+        ax[i].set_xlim(6.75, 9.8)
+        ax[i].set_ylim(-2, 4)
+    if redshift == '7':
+        ax[i].set_xlim(6.5, 7.6)
+        ax[i].set_ylim(-2, 2)
+    if redshift == '6':
+        ax[i].set_xlim(5., 6.5)
+        ax[i].set_ylim(-2, 2)
+
+
+
+    ax[i].set_xlabel(r'$z$')
+
+    if redshift == '8':
+        ax[i].set_ylabel(['$Y_{E} - J_{E}$', '$J_{\mathrm{VISTA}} - J_{E}$'][i])
+    if redshift == '7':
+        ax[i].set_ylabel(['$y_{\mathrm{HSC}} - Y_{E}$', '$Y_{\mathrm{VISTA}} - Y_{E}$'][i])
+    if redshift == '6':
+        ax[i].set_ylabel(['$z_{\mathrm{HSC}} - VIS$', '$z - NB921$'][i])
+
+  
+ax[0].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$')
+ax[0].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission')
+ax[0].legend(loc='upper left')
+plt.show()

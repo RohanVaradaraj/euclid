@@ -25,7 +25,12 @@ def scale_values(values, min_old, max_old, min_new, max_new):
 plot_z_vs_EW = False
 
 # Plot colour colour diagrams?
-plot_colour_colour = True
+plot_colour_colour = False
+
+# Plot colour vs redshift diagrams?
+plot_colour_redshift = True
+# If colour-redshift, then which of two different colours to plot?
+colour_plot = 'colour_2'
 
 # If colour-colour, what redshift range? 7 or 8?
 z_LAE = 7
@@ -40,7 +45,20 @@ ages = np.array([50,100,150,200,300,400,500])
 table_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'LAEs' / 'tables'
 dwarf_dir = Path.cwd().parent.parent / 'data' / 'simulations' / 'tables'
 
-plt.figure(figsize=(10, 8))
+#plt.figure(figsize=(10, 8))
+
+if plot_colour_redshift:
+
+    colour_vals = []
+
+    # Subplots to do colour1 and colour2 under the same figure
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+
+    # Use common shared x axis
+    fig.subplots_adjust(hspace=0)
+    plt.setp(ax[0].get_xticklabels(), visible=False)
+
+
 
 for Av in Avs:
     for age in ages:
@@ -141,8 +159,8 @@ for Av in Avs:
                 c2 = mag_y-mag_Ye
 
                 # Limit to where redshift is less than 7.3
-                z_lower = 7.1
-                z_upper = 7.5
+                z_lower = 6.7
+                z_upper = 7.2
                 mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
                 # Apply mask
@@ -302,9 +320,7 @@ for Av in Avs:
 
                 #plt.show()  
 
-
-
-
-plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
-plt.clim(0, 150)
-plt.show() 
+if plot_colour_colour:
+    plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
+    plt.clim(0, 150)
+    plt.show() 

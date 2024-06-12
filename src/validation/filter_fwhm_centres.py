@@ -148,4 +148,5 @@ jwst_filters = glob.glob(str(filter_dir / 'JWST' / '*angstroms.txt'))
 order = ['f115w', 'f150w', 'f277w', 'f444w']
 jwst_filters = sorted(jwst_filters, key=custom_sort)
 
-
+for jwst_filter in jwst_filters:
+    

@@ -100,68 +100,69 @@ plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
 #!################################## MAKE AN ANIMATION OF THE REDSHIFTING SED #################
 
 # Get filter sets
-# euclid_filters = getFilters('Euclid')
-# vista_filters = getFilters('VISTA')
-# hsc_filters = getFilters('HSC')
-
-# redshifts = np.arange(7.0, 7.5, 0.01)
-# plt.figure(figsize=(10, 6))
-
-# Muv=-23
-# EW=0
-
-# # Create the animation
-# ani = FuncAnimation(plt.gcf(), update_plot, fargs=(Muv, EW), frames=redshifts, interval=200)
-
-# # Save the animation as a GIF
-# ani.save(plot_dir / f'redshifting_lyman_alpha_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
-
-# # Show the animation
-# plt.show()
-
-#####################! INDIVIDUAL SEDs ############################
-
-redshift = 7.0
-EW = 100
-Muv = -21.5
-
 euclid_filters = getFilters('Euclid')
 vista_filters = getFilters('VISTA')
 hsc_filters = getFilters('HSC')
 
-for Av in np.arange(0, 0.7, 0.1):
+redshifts = np.arange(6.6, 7.5, 0.01)
+plt.figure(figsize=(10, 6))
 
-    wlen, flux_sed = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10., metallicity=0.2, 
-                                dust_type='Calzetti', Av=Av, nebular=True, logU=-2.)
+Muv=-23
+EW=200
 
-    wlen, flux_sed = set_Muv(z=redshift, Muv_target=Muv, wlen=wlen, flux=flux_sed)
+# Create the animation
+ani = FuncAnimation(plt.gcf(), update_plot, fargs=(Muv, EW), frames=redshifts, interval=200)
 
-    wlen, flux_sed = add_emission_line(EW=EW, z=redshift, wlen=wlen, flux=flux_sed)
+# Save the animation as a GIF
+#ani.save(plot_dir / f'redshifting_lyman_alpha_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
+ani.save(plot_dir / f'LAE_z7_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
 
-    fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters], (wlen, flux_sed), magnitudes=False)
-
-    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters])
-
-    errors = getErrors(depths)
-
-    signal_to_noise = getSignalToNoise(fluxes, errors)
-
-    scattered_fluxes = scatterFluxes(fluxes, depths)
-
-    # Plotting
-    #plt.figure(figsize=(10, 6))
-    plt.plot(wlen, flux_sed, color='deepskyblue', lw=2.5, alpha=0.8)
-
-plt.xlabel(r'Wavelength ($\AA$)')
-plt.ylabel('Flux')
-plt.legend()
-plt.xlim(5000, 30000)
-plt.yscale('log')
-plt.ylim(3e-32, 1e-27)
-plt.tight_layout()
-
+# Show the animation
 plt.show()
-exit()
+
+#####################! INDIVIDUAL SEDs ############################
+
+# redshift = 7.0
+# EW = 100
+# Muv = -21.5
+
+# euclid_filters = getFilters('Euclid')
+# vista_filters = getFilters('VISTA')
+# hsc_filters = getFilters('HSC')
+
+# for Av in np.arange(0, 0.7, 0.1):
+
+#     wlen, flux_sed = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10., metallicity=0.2, 
+#                                 dust_type='Calzetti', Av=Av, nebular=True, logU=-2.)
+
+#     wlen, flux_sed = set_Muv(z=redshift, Muv_target=Muv, wlen=wlen, flux=flux_sed)
+
+#     wlen, flux_sed = add_emission_line(EW=EW, z=redshift, wlen=wlen, flux=flux_sed)
+
+#     fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters], (wlen, flux_sed), magnitudes=False)
+
+#     depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters])
+
+#     errors = getErrors(depths)
+
+#     signal_to_noise = getSignalToNoise(fluxes, errors)
+
+#     scattered_fluxes = scatterFluxes(fluxes, depths)
+
+#     # Plotting
+#     #plt.figure(figsize=(10, 6))
+#     plt.plot(wlen, flux_sed, color='deepskyblue', lw=2.5, alpha=0.8)
+
+# plt.xlabel(r'Wavelength ($\AA$)')
+# plt.ylabel('Flux')
+# plt.legend()
+# plt.xlim(5000, 30000)
+# plt.yscale('log')
+# plt.ylim(3e-32, 1e-27)
+# plt.tight_layout()
+
+# plt.show()
+# exit()
 
 
     # # Get the centre of the Euclid, VISTA and HSC filters and then put into one big dictionary
