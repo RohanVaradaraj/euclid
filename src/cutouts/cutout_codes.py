@@ -31,7 +31,7 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home() / 'euclid'
-cweb_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
+cweb_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
 primer_dir = Path.home() / 'JWST'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
 refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
@@ -177,6 +177,73 @@ def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
     hubble_mask = np.array(points_in_hubble)
 
     return np.column_stack((euclid_mask, cweb_mask, primer_mask, hubble_mask))
+
+
+def isCoordInCWEB(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
+    """
+    Check if a coordinate lies in the footprints of CWEB.
+
+    If it doesn't, return zero for the coord, else return the mosaic string.
+
+    Parameters
+    ----------
+    ra : np.array
+        Right ascension of the coordinate in degrees.
+    dec : np.array
+        Declination of the coordinate in degrees.
+    
+    Returns
+    -------
+    np.ndarray
+        Array with rows corresponding to the input coordinates and columns corresponding to the footprints.
+        The value is '0' if it is not in the footprint.
+        If it is in the footprint then it takes a numeric string value of the tile label Nathan has assigned (4A, 5A, 5B, 6A, etc.)
+
+    """
+
+    # Check if ra and dec are arrays
+    ra = np.array(ra)
+    dec = np.array(dec)
+
+    # Reshape ra and dec to make sure they are at least one-dimensional arrays
+    ra = np.atleast_1d(ra)
+    dec = np.atleast_1d(dec)
+
+    assert ra.shape == dec.shape, "ra and dec arrays must have the same shape"
+
+    points = [Point(x, y) for x, y in zip(ra, dec)]
+
+    mosaics = ['0A', '0B', '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B']
+
+    polygons = []
+
+    for mosaic in mosaics:
+        footprint = np.load(Path.cwd().parent.parent / 'data' / 'mosaic' / f'CWEB_footprint_{mosaic}.npy')
+
+        # Create shapely polygons
+        cweb_polygon = Polygon(footprint)
+        polygons.append(cweb_polygon)
+
+    points_in_cweb = []
+    for point in points:
+
+        # 0 if not in footprint, else the tile label
+        in_cweb = '0'
+
+        #! Check if the point lies in any of the COSMOS-Web polygons
+        for i, polygon in enumerate(polygons):
+            if polygon.contains(point):
+                in_cweb = mosaics[i]
+                break
+
+        # Append results of search to lists
+        points_in_cweb.append(in_cweb)
+
+    # Convert lists to numpy arrays
+    points_in_cweb = np.array(points_in_cweb)
+
+    return points_in_cweb
+
 
 
 
@@ -363,12 +430,35 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     #! Next check for and get the JWST cutouts
     
     #### CWEB ####
-    cweb_tile = contained_in[0][1]
+    #cweb_tile = contained_in[0][1]
+    cweb_tile = isCoordInCWEB(ra, dec)[0] # Updated version for full CWEB
 
     if cweb_tile != '0':
 
-        tile_f277w = glob.glob(str(cweb_dir / f'*F277W*{cweb_tile}*'))[0]
-        tile_f444w = glob.glob(str(cweb_dir / f'*F444W*{cweb_tile}*'))[0]
+        tile_f115w = glob.glob(str(cweb_dir / f'mosaic_{cweb_tile}' / f'CWEB-F115W-{cweb_tile}_i2dnobg_small.fits'))[0]
+        tile_f150w = glob.glob(str(cweb_dir / f'mosaic_{cweb_tile}' / f'CWEB-F150W-{cweb_tile}_i2dnobg_small.fits'))[0]
+        tile_f277w = glob.glob(str(cweb_dir / f'mosaic_{cweb_tile}' / f'CWEB-F277W-{cweb_tile}_i2dnobg_small.fits'))[0]
+        tile_f444w = glob.glob(str(cweb_dir / f'mosaic_{cweb_tile}' / f'CWEB-F444W-{cweb_tile}_i2dnobg_small.fits'))[0]
+
+        #### F115W ####
+        with fits.open(tile_f115w) as hdu_CWEB:
+
+            data_CWEB = hdu_CWEB[1].data
+            hdr_CWEB = hdu_CWEB[1].header
+            pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
+            wcs_CWEB = WCS(hdr_CWEB)
+
+            cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+
+        #### F150W ####
+        with fits.open(tile_f150w) as hdu_CWEB:
+
+            data_CWEB = hdu_CWEB[1].data
+            hdr_CWEB = hdu_CWEB[1].header
+            pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
+            wcs_CWEB = WCS(hdr_CWEB)
+
+            cutout_f150w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
 
         #### F277W ####
         with fits.open(tile_f277w) as hdu_CWEB:
@@ -428,6 +518,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     plot_cutout = lambda ax, data, lims, title: ax.imshow(data, origin='lower', cmap='gist_yarg', vmin=lims[0], vmax=lims[1]) and ax.set_title(title)
 
     #? There must be a better way of doing the if statements below, but I can't think of it right now.
+
     # Only in Euclid
     if footprint_bools[0] and not footprint_bools[1] and not footprint_bools[2] and not footprint_bools[3]:
 
@@ -449,9 +540,9 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[1, i], data, lims, title)
 
     # In Euclid and CWEB
-    elif footprint_bools[0] and footprint_bools[1] and not footprint_bools[2] and not footprint_bools[3]: 
+    elif footprint_bools[0] and cweb_tile != '0' and not footprint_bools[2] and not footprint_bools[3]: 
 
-        fig, ax = plt.subplots(2, 5, figsize=(15, 10))
+        fig, ax = plt.subplots(2, 6, figsize=(15, 10))
 
         # Turn off axis labels and ticks
         for axis in ax.flat:
@@ -471,10 +562,17 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 
         # CWEB cutouts in final column. Reproject to Euclid WCS
-        for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
+        for i, (data, title) in enumerate(zip([cutout_f115w_cweb.data, cutout_f150w_cweb.data, cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F115W', 'F150W', 'F277W', 'F444W'])):
             data = rotate(data, -pa, reshape=False)
             lims = findPlotLimits(data)
-            plot_cutout(ax[0, 4], data, lims, title) if i == 0 else plot_cutout(ax[1, 4], data, lims, title)
+            if i == 0:
+                plot_cutout(ax[0, 4], data, lims, title)
+            if i == 1:
+                plot_cutout(ax[0, 5], data, lims, title)
+            if i == 2:
+                plot_cutout(ax[1, 4], data, lims, title)
+            if i == 3:
+                plot_cutout(ax[1, 5], data, lims, title)
 
     # In Euclid and CWEB and PRIMER
     elif footprint_bools[0] and not footprint_bools[1] and footprint_bools[2] and not footprint_bools[3]:
@@ -496,7 +594,6 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
-
 
         # PRIMER cutouts in final column
         for i, (data, title) in enumerate(zip([cutout_f277w_prim.data, cutout_f444w_prim.data], ['F277W', 'F444W'])):
@@ -534,7 +631,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     # In Euclid and Hubble and JWST
     elif footprint_bools[0] and footprint_bools[3] and (footprint_bools[1] or footprint_bools[2]):
 
-        fig, ax = plt.subplots(2, 6, figsize=(15, 10))
+        fig, ax = plt.subplots(2, 7, figsize=(15, 10))
 
         # Turn off axis labels and ticks
         for axis in ax.flat:
@@ -556,11 +653,19 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         plot_cutout(ax[1, 4], cutout_hubble.data, lims, 'F160W')
 
         # CWEB cutouts in final column. Reproject to Euclid WCS
-        if footprint_bools[1]:
-            for i, (data, title) in enumerate(zip([cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F277W', 'F444W'])):
+        if cweb_tile != '0':
+            for i, (data, title) in enumerate(zip([cutout_f115w_cweb.data, cutout_f150w_cweb.data, cutout_f277w_cweb.data, cutout_f444w_cweb.data], ['F115W', 'F150W', 'F277W', 'F444W'])):
                 data = rotate(data, -pa, reshape=False)
                 lims = findPlotLimits(data)
-                plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+                if i == 0:
+                    plot_cutout(ax[0, 5], data, lims, title)
+                if i == 1:
+                    plot_cutout(ax[0, 6], data, lims, title)
+                if i == 2:
+                    plot_cutout(ax[1, 5], data, lims, title)
+                if i == 3:
+                    plot_cutout(ax[1, 6], data, lims, title)
+
         if footprint_bools[2]:
             for i, (data, title) in enumerate(zip([cutout_f277w_prim.data, cutout_f444w_prim.data], ['F277W', 'F444W'])):
                 lims = findPlotLimits(data)
@@ -612,17 +717,17 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! REBELS sources
-    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    # t = t[t['RA'] > 148]
+    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    t = t[t['RA'] > 148]
 
-    # # # Skip first few
-    # # #t = t[:]
+    # # Skip first few
+    # #t = t[:]
 
-    # ra = t['RA']
-    # dec = t['Dec']
-    # z = t['Redshift (z)']
-    # ID = t['Object Name']
-    # ID = [name.split('>')[1].split('<')[0] for name in ID]
+    ra = t['RA']
+    dec = t['Dec']
+    z = t['Redshift (z)']
+    ID = t['Object Name']
+    ID = [name.split('>')[1].split('<')[0] for name in ID]
 
     #! Strong lens
     #ra = [150.00280406167596]
@@ -637,21 +742,21 @@ if __name__ == '__main__':
     # dec = cat['DEC']
 
     #! DEVILS sources
-    # devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
-    # cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
-    # print(cat.colnames)
-    # cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
-    # # Drop 'NA' strings from zBest column
-    # cat = cat[cat['zBest'] != 'NA']
-    # # Convert zBest to float
-    # cat['zBest'] = cat['zBest'].astype(float)
-    # # Remove zBest values of -99
-    # cat = cat[cat['zBest'] > 0.]
+    devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
+    cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
+    print(cat.colnames)
+    cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+    # Drop 'NA' strings from zBest column
+    cat = cat[cat['zBest'] != 'NA']
+    # Convert zBest to float
+    cat['zBest'] = cat['zBest'].astype(float)
+    # Remove zBest values of -99
+    cat = cat[cat['zBest'] > 0.]
 
-    # cat = cat[cat['FIRST_CLASS'] != 'NA']
-    # cat.sort('zBest')
-    # ra = cat['RAcen']
-    # dec = cat['DECcen']
+    cat = cat[cat['FIRST_CLASS'] != 'NA']
+    cat.sort('zBest')
+    ra = cat['RAcen']
+    dec = cat['DECcen']
 
     #! Harikane z=12-16 sources
     # hd1 = '10:01:51.31 02:32:50.0'
@@ -717,14 +822,14 @@ if __name__ == '__main__':
     # Muv = [-21.53, -22.19, -21.89, -21.58]
     # ID = ['COS-z10-1', 'COS-z12-1', 'COS-z12-2', 'COS-z12-3']
 
-    # # # Bright 10<z<12 sources
+    # Bright 10<z<12 sources
     # ra = ['09:59:51.77', '09:59:57.50', '10:00:37.96', '09:59:52.53', '10:01:34.80']
     # dec = ['2:07:15.02', '02:06:20.06', '01:49:32.43', '02:00:23.53', '02:05:41.48']
     # z = [10.06, 10.17, 11.07, 11.70, 11.50]
     # Muv = [-20.62, -20.97, -20.85, -21.13, -20.77]
     # ID = ['COS-z10-2', 'COS-z10-3', 'COS-z11-1', 'COS-z11-2', 'COS-z11-3']
 
-    # # # z>13
+    # # z>13
     # ra = ['09:59:05.75', '10:00:04.24', '10:01:31.17']
     # dec = ['02:04:04.39', '02:02:11.19', '01:58:45.00']
     # z = [13.10, 12.50, 14.7]
@@ -732,15 +837,15 @@ if __name__ == '__main__':
     # ID = ['COS-z13-1', 'COS-z13-2', 'COS-z14-1']
 
     # Probable contaminants
-    #ra = ['09:59:30.49', '09:59:31.30', '10:00:20.38']
-    #dec = ['02:14:44.10', '02:08:33.85', '01:49:58.33']
-    #z = [12.63, 13.8, 14.7]
-    #Muv = [-21.90, -20.97, -21.32]
-    #ID = ['COS-z12-4', 'COS-z13-3', 'COS-z14-2']
+    # ra = ['09:59:30.49', '09:59:31.30', '10:00:20.38']
+    # dec = ['02:14:44.10', '02:08:33.85', '01:49:58.33']
+    # z = [12.63, 13.8, 14.7]
+    # Muv = [-21.90, -20.97, -21.32]
+    # ID = ['COS-z12-4', 'COS-z13-3', 'COS-z14-2']
 
-    #Convert ra, dec to degrees
-    #ra = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).ra.deg for r, d in zip(ra, dec)]
-    #dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
+    # Convert ra, dec to degrees
+    # ra = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).ra.deg for r, d in zip(ra, dec)]
+    # dec = [SkyCoord(r, d, unit=(u.hourangle, u.deg)).dec.deg for r, d in zip(ra, dec)]
 
     #! CR7
     # cr7 = '10:00:58.005 01:48:15.251'
@@ -751,31 +856,35 @@ if __name__ == '__main__':
     # ID = ['CR7']
 
     #! All COSMOS crossmatched sources
-    t = Table.read(refcat_dir / 'all_COSMOS_highz.fits')
+    # t = Table.read(refcat_dir / 'all_COSMOS_highz.fits')
 
-    # Sort by decreasing redshift
-    t.sort('Redshift')
+    # # Sort by decreasing redshift
+    # t.sort('Redshift')
 
-    # Flip
-    t = t[::-1]
+    # # Flip
+    # t = t[::-1]
 
 
-    ra = t['RA']
-    dec = t['DEC']
+    # ra = t['RA']
+    # dec = t['DEC']
 
-    z = t['Redshift']
-    ID = t['Object Name']
+    # z = t['Redshift']
+    # ID = t['Object Name']
 
     for i in range(len(ra)):
 
         print(f'Object number {i+1} of {len(ra)}')
 
+        if isCoordInCWEB(ra[i], dec[i])[0] == '0':
+            print('Not in CWEB')
+            continue
+
         #print(cat[i]['zBest'])
         #print(cat[i]['FIRST_CLASS'])
         #print(ID[i])
 
-        Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]), save_cutout=False)
-        #Cutout(ra[i], dec[i], size=12.)
+        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]), save_cutout=False)
+        Cutout(ra[i], dec[i], size=12., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
         #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   

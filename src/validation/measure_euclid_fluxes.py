@@ -20,7 +20,7 @@ sys.path.append(str(Path.cwd().parent))
 from astropy.nddata import Cutout2D
 from matplotlib.colors import LinearSegmentedColormap
 
-from cutouts.cutout_codes import isCoordInSurveyFootprints
+from cutouts.cutout_codes import isCoordInSurveyFootprints, isCoordInCWEB
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -144,6 +144,13 @@ def filterCentreAndWidth(filter_name: str, instrument: str) -> tuple[float, floa
             centre = t[t['filter'] == filter_name]['centre'][0]
             width = t[t['filter'] == filter_name]['width'][0]
 
+    if instrument.lower() == 'jwst':
+                    
+            t = ascii.read(Path.cwd() / 'jwst_filters.txt')
+        
+            centre = t[t['filter'] == filter_name]['centre'][0]
+            width = t[t['filter'] == filter_name]['width'][0]
+
     return centre, width
 
 
@@ -242,6 +249,9 @@ def measure_euclid_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         # Calculate error from depths
         value = -(48.6 + depths_here)/2.5
         errors = 0.2*(10**value)
+
+        # Impose minimum error of 5%
+        errors[errors < 0.05*fluxFinal] = 0.05*fluxFinal
 
         # Aperture correction
         aperture_table = Table.read(psf_dir / f'{filter_name}_peak.txt', format='ascii')
@@ -353,6 +363,9 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
         value = -(48.6 + depths_here)/2.5
         errors = 0.2*(10**value)
 
+        # Impose minimum error of 5%
+        errors[errors < 0.05*fluxFinal] = 0.05*fluxFinal
+
         # Aperture correction
         aperture_table = Table.read(psf_dir / f'{filter_name}_peak.txt', format='ascii')
         aperture_table = aperture_table[aperture_table['apD'] == aperture_diameter]
@@ -375,10 +388,180 @@ def measure_ground_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, a
     # Return the table
     return flux_table
 
-    
+
+def measure_jwst_fluxes(ra: np.ndarray, dec: np.ndarray, filter_names: list, aperture_diameter: float = 0.32) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Measure the fluxes of objects in the Euclid filters.
+
+    Parameters
+    ----------
+    ra : np.ndarray
+        Array of RA values of objects.
+    dec : np.ndarray
+        Array of Dec values of objects.
+    filters : list
+        List of filters we want to measure fluxes in.
+    aperture_diameter : float, optional
+        Diameter of the aperture, in arcseconds. Default is 1.8.
+
+    Returns
+    -------
+    np.ndarray
+        Array of fluxes.
+    np.ndarray
+        Array of errors.
+    """
+
+    jwst_dir = Path().home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
+    depth_dir = Path().home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'depths' / 'COSMOS' / 'phot'
+    psf_dir = Path().home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'psf' / 'COSMOS' / 'enclosedflux'
+
+    zeropoint = 28.08
+
+    # Ensure RA and Dec are floats
+    ra = ra.astype(np.float64)
+    dec = dec.astype(np.float64)
+
+    # Initialize a dictionary to hold the data
+    data_dict = {'ra': ra, 'dec': dec}
+
+    # Empty arrays to hold fluxes and errors
+    fluxes_F115W = np.zeros(len(ra))
+    errors_F115W = np.zeros(len(ra))
+    fluxes_F150W = np.zeros(len(ra))
+    errors_F150W = np.zeros(len(ra))
+    fluxes_F277W = np.zeros(len(ra))
+    errors_F277W = np.zeros(len(ra))
+    fluxes_F444W = np.zeros(len(ra))
+    errors_F444W = np.zeros(len(ra))
+
+    # Loop through mosaics
+    mosaics = ['0A', '0B', '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B']
+
+    # Using global depths until we have local depths
+    depths = {'F115W': 27.35, 'F150W': 27.6, 'F277W': 28.35, 'F444W': 28.15}
+
+    coord_tiles = isCoordInCWEB(ra, dec)
+
+    for mosaic in mosaics:
+
+        print(f' ###### mosaic {mosaic} ######')
+
+        # Find index of coord_tiles matching this mosaic
+        idx = np.where(coord_tiles == mosaic)[0]
+
+        if len(idx) == 0:
+            print(f'No objects in tile {mosaic}.')
+            continue
+
+        # Open the mosaic
+        for filter_name in filter_names:
+
+            depths_here = depths[filter_name]
+
+            print(f'Calculating fluxes in {filter_name}...')
+
+            with fits.open(jwst_dir / f'mosaic_{mosaic}' / f'CWEB-{filter_name}-{mosaic}_i2dnobg_small.fits') as hdu:
+                image = hdu[1].data.byteswap().newbyteorder()
+                header = hdu[1].header
+                pix_scale = np.abs(header['CDELT1']) * 3600
+
+            # Convert to pixel coordinates
+            w = WCS(header)
+            x, y = w.all_world2pix(ra[:], dec[:], 1)
+            x = x[idx]
+            y = y[idx]
+
+            # x, y must be array-like
+            x = np.array(x)
+            y = np.array(y)
+
+            # Use sep to measure flux of object
+            flux_counts, _, _ = sep.sum_circle(image, x, y, (aperture_diameter/2.) / pix_scale)
+
+            # Convert counts to flux
+            value = -(48.6 + zeropoint)/2.5
+            fluxFinal = (10**value)*flux_counts
+
+            # Calculate error from depths
+            value = -(48.6 + depths_here)/2.5
+            err = 0.2*(10**value)
+            # Make an array of errors with the same length as fluxFinal
+            errors = np.zeros(len(fluxFinal))
+            errors[:] = err
+
+            # Impose minimum error of 5%
+            #errors[errors < 0.05*fluxFinal] = 0.05*fluxFinal
+
+            # Store fluxes and errors in the corresponding array
+            if filter_name == 'F115W':
+                fluxes_F115W[idx] = fluxFinal
+                errors_F115W[idx] = errors
+            
+            if filter_name == 'F150W':
+                fluxes_F150W[idx] = fluxFinal
+                errors_F150W[idx] = errors
+            
+            if filter_name == 'F277W':
+                fluxes_F277W[idx] = fluxFinal
+                errors_F277W[idx] = errors
+            
+            if filter_name == 'F444W':
+                fluxes_F444W[idx] = fluxFinal
+                errors_F444W[idx] = errors
+
+    # Store fluxes and errors in the data dictionary
+    data_dict['flux_F115W'] = fluxes_F115W
+    data_dict['err_F115W'] = errors_F115W
+    data_dict['flux_F150W'] = fluxes_F150W
+    data_dict['err_F150W'] = errors_F150W
+    data_dict['flux_F277W'] = fluxes_F277W
+    data_dict['err_F277W'] = errors_F277W
+    data_dict['flux_F444W'] = fluxes_F444W
+    data_dict['err_F444W'] = errors_F444W
+
+    # Convert the data dictionary to an Astropy table
+    flux_table = Table(data_dict)
+
+    # Return the table
+    return flux_table
+
+            
+
+def GetCWEBFootprints():
+
+    cweb_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
+    save_dir = Path.cwd().parents[1] / 'data' / 'mosaic'
+    mosaics = ['0A', '0B', '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B']
+
+    for mosaic in mosaics:
+        mosaic_dir = cweb_dir / f'mosaic_{mosaic}'
+        mosaic_name = f'CWEB-F444W-{mosaic}_i2dnobg_small.fits'
+
+        with fits.open(mosaic_dir / mosaic_name) as hdul:
+
+            # Get the footprint
+            header = hdul[1].header
+            wcs = WCS(header)
+
+            # Calculate the footprint
+            footprint = wcs.calc_footprint()
+            print(footprint)
+
+            # Save the footprint as .npy file
+            np.save(save_dir / f'CWEB_footprint_{mosaic}.npy', footprint)
+            print(f'Saved footprint at {save_dir}.')
+
 
 
 if __name__ == '__main__':
+
+    t = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'all_COSMOS_highz.fits')
+    ra = t['RA']
+    dec = t['DEC']
+
+    measure_jwst_fluxes(ra, dec, filter_names=['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
+    exit()
 
     #! REBELS sources
     t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
@@ -413,10 +596,12 @@ if __name__ == '__main__':
     # #!##################################################
     table_euclid = measure_euclid_fluxes(ra, dec, ['VIS', 'Y', 'J', 'H'], aperture_diameter=1.6)
     table_ground = measure_ground_fluxes(ra, dec, ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks'], aperture_diameter=1.8)
+    table_jwst = measure_jwst_fluxes(ra, dec, ['F115W', 'F150W', 'F277W', 'F444W'], aperture_diameter=0.32)
 
     # Save these tables
     table_euclid.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_euclid_fluxes.fits', format='fits', overwrite=True)
     table_ground.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_ground_fluxes.fits', format='fits', overwrite=True)
+    table_jwst.write(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'REBELS_jwst_fluxes.fits', format='fits', overwrite=True)
 
     # Open these tables
     #table_euclid = Table.read(Path.cwd().parent.parent / 'data' / 'ref_catalogues' / 'fluxes' / 'star_fluxes.fits')
@@ -462,6 +647,12 @@ if __name__ == '__main__':
                 centre, width = filterCentreAndWidth(filter_name, 'VISTA')
             plt.errorbar(centre, table_ground[f'flux_{filter_name}'][0], yerr=table_ground[f'err_{filter_name}'][0], xerr=width/2, 
                         fmt='o', color='red', alpha=0.7)
+
+        # And the JWST data
+        for filter_name in ['F115W', 'F150W', 'F277W', 'F444W']:
+            centre, width = filterCentreAndWidth(filter_name, 'JWST')
+            plt.errorbar(centre, table_jwst[f'flux_{filter_name}'][0], yerr=table_jwst[f'err_{filter_name}'][0], xerr=width/2, 
+                        fmt='o', color='blue', alpha=0.7)
         
         plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
         plt.ylabel(r'flux (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')

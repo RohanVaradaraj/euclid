@@ -22,7 +22,7 @@ from pathlib import Path
 # Image dir for UltraVISTA
 imageDir = Path.cwd().parents[3] / 'data' / 'euclid' / 'images'
 
-stackDir = Path.home() / 'euclid'
+stackDir = imageDir
 
 filter1 = 'Y' # Filters to be stacked
 filter2 = 'J'
@@ -37,8 +37,6 @@ print('Stacking {0} in {1}'.format(filters, fields))
 # Loop through fields ##########################################
 
 for i, fieldName in enumerate(fields):
-
-    stackDir = stackDir / fieldName.upper()
 
     print('Running loop. Stacking {0} images in {1}'.format(filters, fieldName))
 
@@ -97,6 +95,10 @@ for i, fieldName in enumerate(fields):
         print('Computing sum of the weights...')
         weightSum = wht1 + wht2 + wht3
 
+        # Replace zeros with ones
+        print('Replacing zeros with ones...')
+        weightSum[weightSum == 0] = 1
+
         print('Computing weighted sum...')
         w1_1 = wht1 * image1
         w2_2 = wht2 * image2
@@ -110,6 +112,10 @@ for i, fieldName in enumerate(fields):
         print('Computing sum of the weights...')
         weightSum = wht1 + wht2
 
+        # Replace zeros with ones
+        print('Replacing zeros with ones...')
+        weightSum[weightSum == 0] = 1
+
         print('Computing weighted sum...')
         w1_1 = wht1 * image1
 
@@ -117,9 +123,9 @@ for i, fieldName in enumerate(fields):
     print('########Saving image.#########')
 
     if filter3 == 'None':
-        fits.writeto(stackDir / fieldName.upper() / '/{0}_{1}{2}_STACK.fits'.format(fieldName.upper(), name1, name2), finalImage, header1, overwrite=True)
+        fits.writeto(stackDir / '{0}_{1}{2}_STACK.fits'.format(fieldName.upper(), name1, name2), finalImage, header1, overwrite=True)
     if filter3 != 'None':
-        fits.writeto(stackDir / fieldName.upper() / '/{0}_{1}{2}{3}_STACK.fits'.format(fieldName.upper(), filter1, filter2, filter3), finalImage, header1, overwrite=True)
+        fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK.fits'.format(fieldName.upper(), filter1, filter2, filter3), finalImage, header1, overwrite=True)
 
     print('###########Saved image to ', stackDir / fieldName.upper())
 
@@ -127,9 +133,9 @@ for i, fieldName in enumerate(fields):
     print('########Saving weight#########')
 
     if filter3 == 'None':
-        fits.writeto(stackDir / fieldName.upper() / '/{0}_{1}{2}_STACK_WHT.fits'.format(fieldName.upper(), name1, name2), weightSum, wheader1, overwrite=True)
+        fits.writeto(stackDir / '{0}_{1}{2}_STACK_WHT.fits'.format(fieldName.upper(), name1, name2), weightSum, wheader1, overwrite=True)
     if filter3 != 'None':
-        fits.writeto(stackDir / fieldName.upper() / '/{0}_{1}{2}{3}_STACK_WHT.fits'.format(fieldName.upper(), filter1, filter2, filter3), weightSum, wheader1, overwrite=True)
+        fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK_WHT.fits'.format(fieldName.upper(), filter1, filter2, filter3), weightSum, wheader1, overwrite=True)
 
     print('###########Saved weight to ', stackDir / fieldName.upper())
 

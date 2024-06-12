@@ -116,8 +116,6 @@ hsc_filters = list( set(glob.glob(str(filter_dir / 'HSC' / '*'))) - set(glob.glo
 hsc_filters = sorted(hsc_filters, key=custom_sort)
 print(hsc_filters)
 
-
-
 for hsc_filter in hsc_filters:
         
         # Open filter in two column format
@@ -144,5 +142,10 @@ for hsc_filter in hsc_filters:
         if hsc_filter == hsc_filters[0]:
             # Dummy label
             plt.plot([], [], color='steelblue', lw=2., alpha=0.5, label='HSC')
+
+
+jwst_filters = glob.glob(str(filter_dir / 'JWST' / '*angstroms.txt'))
+order = ['f115w', 'f150w', 'f277w', 'f444w']
+jwst_filters = sorted(jwst_filters, key=custom_sort)
 
 
