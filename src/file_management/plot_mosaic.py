@@ -83,7 +83,7 @@ plt.axis('equal')
 #ax.add_patch(dummy)
 
 #! Add the Euclid mask which is roughly the footprint
-e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.6063068,2.0034576], [150.4217294,1.7836002]]), closed=True, edgecolor='r', facecolor='none', lw=2.5, label='Euclid', alpha=0.8)
+e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.6063068,2.0034576], [150.4217294,1.7836002]]), closed=True, edgecolor='blue', facecolor='none', lw=2.5, label='Euclid', alpha=0.8)
 ax.add_patch(e)
 
 # Save the tile_index_map dictionary
@@ -109,17 +109,26 @@ ax.add_patch(r)
 #ax.add_patch(p)
 
 #! Add the COSMOS-Web tiles
-jwst_dir = Path.home().parent.parent / 'extraspace' / 'varadaraj' / 'CWEB'
-jwst_files = glob.glob(str(jwst_dir / '*F277*'))
+jwst_dir = Path.cwd().parents[3] / 'data' / 'CWEB'
+jwst_files = glob.glob(str(jwst_dir / '*' / '*F444*'))
 
 for jwst_file in jwst_files:
+
+    # Get tile name from directory the image is in (one level up)
+    tile = jwst_file.split('/')[-2].split('mosaic_')[-1]
+
     with fits.open(jwst_file) as hdu_jwst:
         wcs_jwst = WCS(hdu_jwst[1].header)
         jwst_footprint = wcs_jwst.calc_footprint()
-        print(jwst_footprint)
-        r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='orange', facecolor='none', lw=2.5, alpha=0.8)
+        r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='red', facecolor='none', lw=2.5, alpha=0.8)
         ax.add_patch(r)
-dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='orange', facecolor='none', lw=2.5, label='CWEB')
+
+        # Add the tile number at centre of polygon
+        centroid_x = np.mean(jwst_footprint[:, 0])
+        centroid_y = np.mean(jwst_footprint[:, 1])
+        ax.text(centroid_x, centroid_y, tile, fontsize=8, color='black', ha='center', va='center')
+
+dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='red', facecolor='none', lw=2.5, label='CWEB')
 ax.add_patch(dummy)
 
 #! Add the Hubble 3D-DASH footprint
@@ -133,12 +142,12 @@ with fits.open(dash) as hdu_dash:
 
 
 #! Plot positions of REBELS galaxies
-rebels = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-rebels_ra = rebels['RA']
-rebels_dec = rebels['Dec']
+# rebels = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+# rebels_ra = rebels['RA']
+# rebels_dec = rebels['Dec']
 
-# Plot the REBELS galaxies
-ax.scatter(rebels_ra, rebels_dec, marker='x', color='black', s=10, label='REBELS')
+# # Plot the REBELS galaxies
+# ax.scatter(rebels_ra, rebels_dec, marker='x', color='black', s=10, label='REBELS')
 
 
 # Set axis limits and labels
@@ -153,7 +162,7 @@ ax.set_ylabel('DEC (deg)')
 ax.legend(loc='upper right')
 
 plt.tight_layout()
-plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_gray.png')
+#plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_gray_fullCWEB.png')
 plt.show()
 
 

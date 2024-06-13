@@ -18,7 +18,7 @@ Avs = np.arange(0, 0.7, 0.1)
 ages = np.array([50, 100, 150, 200, 300, 400, 500])
 
 # Broad redshift range of interest
-redshift = '7'
+redshift = '8'
 
 z_lower = 4.9
 z_upper = 10.0
@@ -42,6 +42,7 @@ for Av in Avs:
         fluxes = Table.read(table_dir / f'LAE_fluxes_Av_{round(Av, 1)}_age_{age}Myr.fits')
 
         # Get magnitudes
+        mag_i = flux_to_mag(fluxes['i'])
         mag_Ye = flux_to_mag(fluxes['Ye'])
         mag_Je = flux_to_mag(fluxes['Je'])
         mag_y = flux_to_mag(fluxes['y'])
@@ -54,13 +55,14 @@ for Av in Avs:
         mag_nb921 = flux_to_mag(fluxes['nb921'])    
 
         # Calculate colors
+
+        if redshift == '6':
+            y_colour_1 = mag_i - mag_VIS
+            y_colour_2 = mag_VIS - mag_z
+
         if redshift == '7':
             y_colour_1 = mag_y - mag_Ye
             y_colour_2 = mag_Y - mag_Ye
-
-        if redshift == '6':
-            y_colour_1 = mag_z - mag_VIS
-            y_colour_2 = mag_z - mag_nb921
 
         if redshift == '8':
             y_colour_1 = mag_Ye - mag_Je
@@ -114,14 +116,14 @@ for Av in Avs:
 for i in range(2):
 
     if redshift == '8':
-        ax[i].set_xlim(6.75, 9.8)
-        ax[i].set_ylim(-2, 4)
+        ax[i].set_xlim(8.2, 9.)
+        ax[i].set_ylim(-0.5, 2)
     if redshift == '7':
         ax[i].set_xlim(6.5, 7.6)
         ax[i].set_ylim(-2, 2)
     if redshift == '6':
-        ax[i].set_xlim(5., 6.5)
-        ax[i].set_ylim(-2, 2)
+        ax[i].set_xlim(5.5, 6.5)
+        ax[i].set_ylim(-1, 3)
 
 
 
@@ -132,7 +134,7 @@ for i in range(2):
     if redshift == '7':
         ax[i].set_ylabel(['$y_{\mathrm{HSC}} - Y_{E}$', '$Y_{\mathrm{VISTA}} - Y_{E}$'][i])
     if redshift == '6':
-        ax[i].set_ylabel(['$z_{\mathrm{HSC}} - VIS$', '$z - NB921$'][i])
+        ax[i].set_ylabel(['$i_{\mathrm{HSC}} - VIS$', '$VIS - z_{\mathrm{HSC}}$'][i])
 
   
 ax[0].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$')

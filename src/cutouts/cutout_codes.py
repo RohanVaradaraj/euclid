@@ -736,27 +736,30 @@ if __name__ == '__main__':
     #! Nathan's z=3 sources
     # nathan_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'HSC_SSP_DR3' / 'ref_catalogues' / 'nathan'
     # cat = Table.read(nathan_dir / 'Z3_FinalSample.fits')
-    # cat.sort('MUV', reverse=True)
+    # cat.sort('MUV', reverse=False)
     # cat = cat[cat['RA'] > 148]
     # ra = cat['RA']
     # dec = cat['DEC']
+    # muv = cat['MUV']
+    # z = cat['ZPhot']
+    # ID = cat['UID']
 
     #! DEVILS sources
-    devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
-    cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
-    print(cat.colnames)
-    cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
-    # Drop 'NA' strings from zBest column
-    cat = cat[cat['zBest'] != 'NA']
-    # Convert zBest to float
-    cat['zBest'] = cat['zBest'].astype(float)
-    # Remove zBest values of -99
-    cat = cat[cat['zBest'] > 0.]
+    # devils_dir = Path.home() / 'DEVILS' / 'dr1cats' / 'data' / 'catalogues'
+    # cat = Table.read(devils_dir / 'D10VisualMorphology.csv', format='csv')
+    # print(cat.colnames)
+    # cat = cat[(cat['RAcen'] > 148) & (cat['DECcen'] > 1.8)]
+    # # Drop 'NA' strings from zBest column
+    # cat = cat[cat['zBest'] != 'NA']
+    # # Convert zBest to float
+    # cat['zBest'] = cat['zBest'].astype(float)
+    # # Remove zBest values of -99
+    # cat = cat[cat['zBest'] > 0.]
 
-    cat = cat[cat['FIRST_CLASS'] != 'NA']
-    cat.sort('zBest')
-    ra = cat['RAcen']
-    dec = cat['DECcen']
+    # cat = cat[cat['FIRST_CLASS'] != 'NA']
+    # cat.sort('zBest')
+    # ra = cat['RAcen']
+    # dec = cat['DECcen']
 
     #! Harikane z=12-16 sources
     # hd1 = '10:01:51.31 02:32:50.0'
@@ -882,9 +885,10 @@ if __name__ == '__main__':
         #print(cat[i]['zBest'])
         #print(cat[i]['FIRST_CLASS'])
         #print(ID[i])
+        #print(muv[i])
 
-        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i] + ', z=' + str(z[i]), save_cutout=False)
-        Cutout(ra[i], dec[i], size=12., save_cutout=False)
+        Cutout(ra[i], dec[i], size=5., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
+        #Cutout(ra[i], dec[i], size=12., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
         #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   

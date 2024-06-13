@@ -151,13 +151,13 @@ for cweb_filter in cweb_filters:
     #wavelength = [w * 1e-4 for w in wavelength]
 
     # Normalise
-    transmission = [t / (max(transmission)*1.2) for t in transmission]
+    transmission = [t / (max(transmission)*1.6) for t in transmission]
 
     # Plot filter
-    plt.plot(wavelength, transmission, color='maroon', lw=2., alpha=0.5)
+    plt.plot(wavelength, transmission, color='red', lw=4., alpha=0.5, linestyle='--')
     if cweb_filter == cweb_filters[0]:
         # Dummy label
-        plt.plot([], [], color='maroon', lw=2., alpha=0.5, label='COSMOS-Web')
+        plt.plot([], [], label='COSMOS-Web', color='red', lw=4., alpha=0.5, linestyle='--')
 
 plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
 plt.ylabel('Relative Transmission')
@@ -165,7 +165,7 @@ plt.legend(loc='lower right')
 
 # Full filter set
 plt.xlim(0.2, 2.55)
-#plt.savefig(plot_dir / 'filter_transmission_curves.png', bbox_inches='tight')
+plt.savefig(plot_dir / 'filter_transmission_curves_with_CWEB.png', bbox_inches='tight')
 
 # Zoomed in around Y
 #plt.xlim(0.7, 1.7)

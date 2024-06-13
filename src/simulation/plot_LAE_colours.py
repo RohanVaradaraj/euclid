@@ -25,15 +25,15 @@ def scale_values(values, min_old, max_old, min_new, max_new):
 plot_z_vs_EW = False
 
 # Plot colour colour diagrams?
-plot_colour_colour = False
+plot_colour_colour = True
 
 # Plot colour vs redshift diagrams?
-plot_colour_redshift = True
+plot_colour_redshift = False
 # If colour-redshift, then which of two different colours to plot?
 colour_plot = 'colour_2'
 
 # If colour-colour, what redshift range? 7 or 8?
-z_LAE = 7
+z_LAE = 6
 
 # Set up the grid
 redshifts = np.arange(5.5, 10.01, 0.01)
@@ -88,6 +88,7 @@ for Av in Avs:
         mag_He = flux_to_mag(He)
         mag_VIS = flux_to_mag(VIS)
         mag_z = flux_to_mag(z)
+        mag_i = flux_to_mag(fluxes['i'])
 
         # Plot Ye-Je on imshow as a function of redshift and EW
         zmin = np.min(fluxes['redshift'])
@@ -120,12 +121,12 @@ for Av in Avs:
 
             if z_LAE == 6:
 
-                c1 = mag_z-mag_y
+                c1 = mag_i - mag_VIS
                 c2 = mag_VIS-mag_z
 
                 # Limit the redshift
-                z_lower = 6.2
-                z_upper = 6.6
+                z_lower = 6.
+                z_upper = 6.1
                 mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
                 # Apply mask
@@ -135,23 +136,12 @@ for Av in Avs:
                 # Scale redshifts to map to size
                 scaled_sizes = scale_values(fluxes['redshift'][mask], z_lower, z_upper, 1, 50)
 
-                #plt.figure(figsize=(10, 8))
-
                 plt.scatter(c1, c2, c=fluxes['EW'][mask], cmap='viridis', s=scaled_sizes, alpha=0.7)
-                plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
-                #plt.clim(0, 70)
+
 
                 #! Plotting commands
                 plt.xlabel(r'$z_{\mathrm{HSC}} - y_{\mathrm{HSC}}$')
                 plt.ylabel(r'$I_{E} - z_{\mathrm{HSC}}$')
-
-
-                #plt.xlim(-0.5, 0.7)
-                #plt.ylim(-0.9, 6)
-
-                plt.title(f'{z_lower}' + r'$< z < $' + f'{z_upper}')
-
-                plt.show()
 
             if z_LAE == 7:
 
@@ -159,8 +149,8 @@ for Av in Avs:
                 c2 = mag_y-mag_Ye
 
                 # Limit to where redshift is less than 7.3
-                z_lower = 6.7
-                z_upper = 7.2
+                z_lower = 7.
+                z_upper = 7.5
                 mask = (fluxes['redshift'] > z_lower) & (fluxes['redshift'] < z_upper)
 
                 # Apply mask

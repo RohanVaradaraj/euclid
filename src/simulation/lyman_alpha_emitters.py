@@ -104,7 +104,7 @@ euclid_filters = getFilters('Euclid')
 vista_filters = getFilters('VISTA')
 hsc_filters = getFilters('HSC')
 
-redshifts = np.arange(6.6, 7.5, 0.01)
+redshifts = np.arange(8.2, 9., 0.01)
 plt.figure(figsize=(10, 6))
 
 Muv=-23
@@ -115,7 +115,7 @@ ani = FuncAnimation(plt.gcf(), update_plot, fargs=(Muv, EW), frames=redshifts, i
 
 # Save the animation as a GIF
 #ani.save(plot_dir / f'redshifting_lyman_alpha_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
-ani.save(plot_dir / f'LAE_z7_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
+ani.save(plot_dir / f'LAE_z8_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
 
 # Show the animation
 plt.show()
