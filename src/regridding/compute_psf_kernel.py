@@ -58,7 +58,7 @@ for field in fields:
     if instrument.lower() == 'jwst':
 
         print('Do JWST stuff here.')
-        
+
 
 
 
