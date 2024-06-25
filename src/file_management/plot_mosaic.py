@@ -155,7 +155,7 @@ ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.0)
 
 # Squish ra axis by np.cos(dec) to account for declination
-
+4
 
 ax.set_xlabel('RA (deg)')
 ax.set_ylabel('DEC (deg)')

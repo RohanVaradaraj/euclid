@@ -1,6 +1,10 @@
 # Ignore data
 /data
 
+# Ignore images outputted during regridding
+/src/regridding/*.fits
+/src/regridding/*.xml
+
 # Ignore temporary .sh files 
 /src/*/tmp_*
 /src/*/myfile.sh*
@@ -16,3 +20,5 @@
 /src/depths/check.*
 /src/depths/.nfs*
 /src/*/__pycache__/*
+
+/src/regridding/tweak_new.py

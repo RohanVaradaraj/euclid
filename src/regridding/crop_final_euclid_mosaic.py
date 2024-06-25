@@ -11,7 +11,7 @@ import os
 
 fields = ['COSMOS']
 
-filter_names = ['VIS'] #, 'Y', 'J', 'H']
+filter_names = ['VIS', 'Y', 'J', 'H']
 #filter_names = ['YJH']
 
 
