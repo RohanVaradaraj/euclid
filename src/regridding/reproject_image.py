@@ -16,14 +16,14 @@ import glob
 #! Instrument can take one of three values:
 #! euclid, jwst, vista
 
-instrument ='euclid'
+instrument ='jwst'
 
 fields = ['COSMOS']
 
-filter_names = ['VIS', 'Y', 'J', 'H'] # Euclid
+#filter_names = ['VIS', 'Y', 'J', 'H'] # Euclid
 #filter_names = ['YJH'] # Euclid stack
 
-#filter_names = ['F115W', 'F150W', 'F277W', 'F444W'] # CWEB
+filter_names = ['F115W', 'F150W', 'F277W', 'F444W'] # CWEB
 
 #filter_names = ['Y', 'J', 'H', 'K'] # VISTA
 
@@ -71,7 +71,7 @@ for field in fields:
                         -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
 
             # Now reproject the weight image
-            os.system(f'~/swarp/bin/swarp {weight_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
+            os.system(f'~/swarp/bin/swarp {weight_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_weight)} {keywords}')
 
     # If JWST, take all the tiles and resample and combine them.
     if instrument.lower() == 'jwst':
@@ -153,7 +153,7 @@ for field in fields:
                         -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
 
             # Now reproject the image and error layers
-            os.system(f'~/swarp/bin/swarp {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
+            os.system(f'~/swarp/bin/swarp {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_error)} {keywords}')
 
             #!# Remove the temporary image and error layers
             # for image in image_list:
