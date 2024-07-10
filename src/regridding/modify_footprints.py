@@ -21,11 +21,11 @@ plt.rcParams['figure.dpi'] = 100
 
 data_dir = Path.cwd().parents[3] / 'data'
 
-euclid_image = Path.cwd() / 'Euclid_VIS_cropped.fits'
-
 hsc_image = data_dir / 'COSMOS' / 'HSC-Y_DR3.fits'
 
-with fits.open(euclid_image) as hdul:
+vista_image = data_dir / 'COSMOS' / 'UVISTA_Y_DR6.fits'
+
+with fits.open(vista_image) as hdul:
     euclid_data = hdul[0].data
     euclid_header = hdul[0].header
 
@@ -42,7 +42,6 @@ wcs_hsc = WCS(hsc_header)
 # Find centre RA DEC of the HSC image
 ra_hsc, dec_hsc = wcs_hsc.all_pix2world(hsc_data.shape[1] / 2, hsc_data.shape[0] / 2, 0)
 print(ra_hsc, dec_hsc)
-exit()
 
 # Find differences in coords in bottom left pixel of each wcs in pixels
 ra_euclid, dec_euclid = wcs_euclid.all_pix2world(0, 0, 0)
@@ -57,6 +56,7 @@ print('this is the ra and dec in pixels', ra_euclid_pix, dec_euclid_pix)
 # Find differences in pixels
 diff_ra_pix = int(ra_euclid_pix - 0)
 diff_dec_pix = int(dec_euclid_pix - 0)
+print('this is the difference in pixels', diff_ra_pix, diff_dec_pix)
 
 
 # Shift Euclid image by these differences
@@ -90,7 +90,7 @@ euclid_footprint = wcs_euclid.calc_footprint()
 hsc_footprint = wcs_hsc.calc_footprint()
 
 # Make patches for footprints
-euclid_patch = plt.Polygon(euclid_footprint, fill=None, edgecolor='blue', lw=2.5, label='Euclid VIS')
+euclid_patch = plt.Polygon(euclid_footprint, fill=None, edgecolor='blue', lw=2.5, label='VISTA')
 hsc_patch = plt.Polygon(hsc_footprint, fill=None, edgecolor='red', lw=2.5, label='HSC Y')
 
 
@@ -112,6 +112,6 @@ plt.gca().invert_xaxis()
 plt.axis('equal')
 
 plt.legend()
-#plt.show()
+plt.show()
 
 

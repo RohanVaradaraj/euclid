@@ -489,6 +489,12 @@ def simulateDepths(filter_set: list[dict]) -> tuple[dict, dict]:
             depth_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'depths' / 'COSMOS' / 'phot'
             depth_table = name_dict[filter_name] + '_1.8as_gridDepths_300_200.fits'
 
+        elif filter_name in ['F115W', 'F150W', 'F277W', 'F444W']:
+
+            depth_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'depths' / 'COSMOS' / 'phot'
+            depth_table = filter_name.lower() + '_1.8as_gridDepths_300_200.fits'
+
+
         # Open the depth table
         t = Table.read(depth_dir / depth_table)
 
@@ -678,6 +684,13 @@ def filterCentreAndWidth(filter_name: str, instrument: str) -> tuple[float, floa
             centre = t[t['filter'] == filter_name]['centre'][0]
             width = t[t['filter'] == filter_name]['width'][0]
 
+    if instrument.lower() == 'jwst':
+
+            t = ascii.read(Path.cwd().parent / 'validation' / 'jwst_filters.txt')
+
+            centre = t[t['filter'] == filter_name.upper()]['centre'][0]
+            width = t[t['filter'] == filter_name.upper()]['width'][0]
+
     return centre, width
 
 
@@ -691,6 +704,7 @@ def update_plot(redshift, Muv, EW):
     euclid_filters = getFilters('Euclid')
     vista_filters = getFilters('VISTA')
     hsc_filters = getFilters('HSC')
+    jwst_filters = getFilters('JWST')
 
     plt.clf()  # Clear the previous plot
     plt.rcParams['figure.dpi'] = 75
@@ -699,8 +713,8 @@ def update_plot(redshift, Muv, EW):
                                 dust_type='Calzetti', Av=0.2, nebular=True, logU=-1.)
     wlen, flux_sed = set_Muv(z=redshift, Muv_target=Muv, wlen=wlen, flux=flux_sed)
     wlen, flux_sed = add_emission_line(EW=EW, z=redshift, wlen=wlen, flux=flux_sed)
-    fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters], (wlen, flux_sed), magnitudes=False)
-    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters])
+    fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters, jwst_filters], (wlen, flux_sed), magnitudes=False)
+    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters, jwst_filters])
     errors = getErrors(depths)
     signal_to_noise = getSignalToNoise(fluxes, errors)
     scattered_fluxes = scatterFluxes(fluxes, depths)
@@ -728,6 +742,12 @@ def update_plot(redshift, Muv, EW):
         filter_centres[filter_name] = centre
         filter_widths[filter_name] = width
 
+    for filter_name in jwst_filters.keys():
+        centre, width = filterCentreAndWidth(filter_name, 'JWST')
+        filter_centres[filter_name] = centre
+        filter_widths[filter_name] = width
+    
+
     # convert filter centres to angstroms from microns
     filter_centres = {k: v*1e4 for k, v in filter_centres.items()}
     filter_widths = {k: v*1e4 for k, v in filter_widths.items()}
@@ -745,6 +765,9 @@ def update_plot(redshift, Muv, EW):
         elif filter_name in ['g', 'r', 'i', 'nb816', 'z', 'nb921', 'y']:
             colour = 'black'
             fmt='D'
+        elif filter_name.upper() in ['F115W', 'F150W', 'F277W', 'F444W']:
+            colour = 'deepskyblue'
+            fmt = 'h'
 
         if signal_to_noise[filter_name] > 2:
             plt.errorbar(filter_centres[filter_name], flux, yerr=errors[filter_name], xerr=filter_widths[filter_name]/2, fmt=fmt, color=colour)
@@ -757,6 +780,7 @@ def update_plot(redshift, Muv, EW):
     plt.errorbar(0, 1, yerr=0, xerr=0, fmt='o', label='Euclid', color='red')
     plt.errorbar(0, 1, yerr=0, xerr=0, fmt='s', label='VISTA', color='blue')
     plt.errorbar(0, 1, yerr=0, xerr=0, fmt='D', label='HSC', color='black')
+    plt.errorbar(0, 1, yerr=0, xerr=0, fmt='h', label='JWST', color='deepskyblue')
 
     plt.xlabel(r'Wavelength ($\AA$)')
     plt.ylabel('Flux')
@@ -795,6 +819,7 @@ def runLymanAlphaEmitter_vectorised(redshift, Muv, EW, Av, age) -> dict:
     euclid_filters = getFilters('Euclid')
     vista_filters = getFilters('VISTA')
     hsc_filters = getFilters('HSC')
+    jwst_filters = getFilters('JWST')
 
     # Make a Lyman-break galaxy
     wlen, flux_sed = makeLBG_vectorised(redshifts=redshift, SFH_component='constant', age=(0, age), massformed=11., metallicity=0.2, 
@@ -809,10 +834,10 @@ def runLymanAlphaEmitter_vectorised(redshift, Muv, EW, Av, age) -> dict:
     sed = np.array([wlen, flux_sed])
 
     # Compute the flux through the filters
-    fluxes = convolveFilters_vectorised([euclid_filters, vista_filters, hsc_filters], sed, magnitudes=False)
+    fluxes = convolveFilters_vectorised([euclid_filters, vista_filters, hsc_filters, jwst_filters], sed, magnitudes=False)
 
     # Pull random depths from the depth table
-    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters])
+    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters, jwst_filters])
 
     # Scatter the photometry within the errors
     scattered_fluxes = scatterFluxes_vectorised(fluxes, depths, magnitude=False)
@@ -849,6 +874,7 @@ def runLymanAlphaEmitter(redshift, Muv, EW, Av, age) -> dict:
     euclid_filters = getFilters('Euclid')
     vista_filters = getFilters('VISTA')
     hsc_filters = getFilters('HSC')
+    jwst_filters = getFilters('JWST')
 
     # Make a Lyman-break galaxy
     wlen, flux_sed = makeLBG(redshift=redshift, SFH_component='constant', age=age, massformed=11., metallicity=0.2, 
@@ -861,10 +887,10 @@ def runLymanAlphaEmitter(redshift, Muv, EW, Av, age) -> dict:
     wlen, flux_sed = add_emission_line(EW=EW, z=redshift, wlen=wlen, flux=flux_sed)
 
     # Compute the flux through the filters
-    fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters], (wlen, flux_sed), magnitudes=False)
+    fluxes = convolveFilters([euclid_filters, vista_filters, hsc_filters, jwst_filters], (wlen, flux_sed), magnitudes=False)
 
     # Pull random depths from the depth table
-    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters])
+    depths, _ = simulateDepths([euclid_filters, vista_filters, hsc_filters, jwst_filters])
 
     # Scatter the photometry within the errors
     scattered_fluxes = scatterFluxes(fluxes, depths, magnitude=True)

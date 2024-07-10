@@ -3,7 +3,7 @@
 <VOTABLE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ivoa.net/xml/VOTable/v1.1">
 <DESCRIPTION>produced by SWarp</DESCRIPTION>
 <!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html -->
-<RESOURCE ID="SWarp" name="COSMOS_H_resamp.fits">
+<RESOURCE ID="SWarp" name="CWEB-F444W_resamp_rms.fits">
  <DESCRIPTION>Data related to SWarp</DESCRIPTION>
  <INFO name="QUERY_STATUS" value="OK" />
  <COOSYS ID="J2000" equinox="J2000" epoch="J2000" system="ICRS"/>
@@ -16,23 +16,23 @@
   <PARAM name="Soft_Auth" datatype="char" arraysize="*" ucd="meta.bib.author;meta.software" value="Emmanuel Bertin"/>
   <PARAM name="Soft_Ref" datatype="char" arraysize="*" ucd="meta.bib.bibcode;meta.software" value="2002ASPC..281..228B"/>
   <PARAM name="NThreads" datatype="int" ucd="meta.number;meta.software" value="40"/>
-  <PARAM name="Date" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="2024-06-25"/>
-  <PARAM name="Time" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="11:48:00"/>
-  <PARAM name="Duration" datatype="float" ucd="time.event;meta.software" value="822.05" unit="s"/>
+  <PARAM name="Date" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="2024-06-28"/>
+  <PARAM name="Time" datatype="char" arraysize="*" ucd="time.event.end;meta.software" value="13:15:32"/>
+  <PARAM name="Duration" datatype="float" ucd="time.event;meta.software" value="8059.01" unit="s"/>
   <PARAM name="User" datatype="char" arraysize="*" ucd="meta.curation" value="varadaraj"/>
-  <PARAM name="Host" datatype="char" arraysize="*" ucd="meta.curation" value="comp03"/>
+  <PARAM name="Host" datatype="char" arraysize="*" ucd="meta.curation" value="comp01"/>
   <PARAM name="Path" datatype="char" arraysize="*" ucd="meta.dataset" value="/mnt/vardy/vardygroupshare/rohan/euclid/src/regridding"/>
-  <PARAM name="Image_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp.fits"/>
-  <PARAM name="Weight_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp_wht.fits"/>
-  <PARAM name="NOverlap_Max" datatype="int" ucd="meta.number;stat.max;obs.image" value="1"/>
+  <PARAM name="Image_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="/mnt/vardy/vardygroupshare/data/CWEB/CWEB-F444W_resamp_rms.fits"/>
+  <PARAM name="Weight_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits" value="coadd.rms.fits"/>
+  <PARAM name="NOverlap_Max" datatype="int" ucd="meta.number;stat.max;obs.image" value="4"/>
   <PARAM name="ExpTime_Max" datatype="float" ucd="time.expo;stat.max;obs.image" value="0" unit="s"/>
-  <PARAM name="Gain_Max" datatype="float" ucd="instr.calib;stat.max;obs.image" value="24670.6" unit="photon/ADU"/>
+  <PARAM name="Gain_Max" datatype="float" ucd="instr.calib;stat.max;obs.image" value="0" unit="photon/ADU"/>
   <TABLE ID="Input_Image_Data" name="Input_Image_Data">
    <DESCRIPTION>Data gathered by SWarp for every FITS input image</DESCRIPTION>
    <!-- NFrames may be 0 if an error occurred early in the processing -->
-   <PARAM name="NFrames" datatype="int" ucd="meta.number;meta.dataset" value="1"/>
+   <PARAM name="NFrames" datatype="int" ucd="meta.number;meta.dataset" value="16"/>
    <!-- CurrFrame may differ from NFrames if an error occurred -->
-   <PARAM name="CurrFrame" datatype="int" ucd="meta.number;meta.dataset" value="1"/>
+   <PARAM name="CurrFrame" datatype="int" ucd="meta.number;meta.dataset" value="16"/>
    <FIELD name="Frame_Index" datatype="int" ucd="meta.record"/>
    <FIELD name="Image_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits"/>
    <FIELD name="Weight_Name" datatype="char" arraysize="*" ucd="obs.image;meta.fits"/>
@@ -67,12 +67,147 @@
    <FIELD name="COOSYS" datatype="char" arraysize="*" ucd="meta.code;pos"/>
    <DATA><TABLEDATA>
     <TR>
-     <TD>1</TD><TD>/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_MOSAIC.fits</TD><TD>/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_MOSAIC_WHT.fits</TD><TD>F</TD><TD>(null)</TD>
-     <TD>0</TD><TD>2024-06-25</TD><TD>11:44:13</TD><TD>595.00</TD>
-     <TD>0.0160787</TD><TD>0.241258</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
-     <TD>MAP_WEIGHT</TD><TD>T</TD><TD>0</TD><TD>0.245702</TD><TD>F</TD>
-     <TD>24670.6</TD><TD>5682.99</TD><TD>0</TD><TD>1</TD>
-     <TD>2.24998</TD><TD>150.1352582 2.308592937</TD><TD>0.149999</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>1</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_2A/CWEB-F444W-2A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:06:51</TD><TD>326.00</TD>
+     <TD>0.0123671</TD><TD>0.000245859</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>T</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9996</TD><TD>150.0149926 2.400678592</TD><TD>0.149999</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>2</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_3B/CWEB-F444W-3B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:22:26</TD><TD>934.00</TD>
+     <TD>0.012302</TD><TD>0.000255208</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9992</TD><TD>150.3065201 2.19207259</TD><TD>0.149998</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>3</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_4B/CWEB-F444W-4B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:28:23</TD><TD>357.00</TD>
+     <TD>0.0119899</TD><TD>0.000244766</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9992</TD><TD>150.2736074 2.101391449</TD><TD>0.149998</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>4</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_5A/CWEB-F444W-5A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:32:34</TD><TD>250.00</TD>
+     <TD>0.011942</TD><TD>0.000254868</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9997</TD><TD>149.9161585 2.128841206</TD><TD>0.149999</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>5</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_2B/CWEB-F444W-2B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:36:07</TD><TD>213.00</TD>
+     <TD>0.0124248</TD><TD>0.000257947</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9989</TD><TD>150.33952 2.282648445</TD><TD>0.149997</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>6</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_3A/CWEB-F444W-3A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:49:06</TD><TD>779.00</TD>
+     <TD>0.0124296</TD><TD>0.000254422</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9999</TD><TD>149.982009 2.310115703</TD><TD>0.15</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>7</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_4A/CWEB-F444W-4A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>11:57:31</TD><TD>504.00</TD>
+     <TD>0.0120272</TD><TD>0.000242612</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9999</TD><TD>149.9483416 2.219989125</TD><TD>0.15</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>8</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_5B/CWEB-F444W-5B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:03:47</TD><TD>376.00</TD>
+     <TD>0.0119796</TD><TD>0.000254596</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9991</TD><TD>150.2411154 2.010022211</TD><TD>0.149997</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>9</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_6B/CWEB-F444W-6B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:10:13</TD><TD>385.00</TD>
+     <TD>0.0120514</TD><TD>0.000245524</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9987</TD><TD>150.2076269 1.920236379</TD><TD>0.149996</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>10</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_7A/CWEB-F444W-7A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:19:59</TD><TD>586.00</TD>
+     <TD>0.0119924</TD><TD>0.000249444</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9988</TD><TD>149.8501785 1.947649794</TD><TD>0.149996</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>11</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_0A/CWEB-F444W-0A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:29:01</TD><TD>541.00</TD>
+     <TD>0.0123203</TD><TD>0.000247482</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9984</TD><TD>150.0805754 2.580986308</TD><TD>0.149995</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>12</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_1B/CWEB-F444W-1B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:33:40</TD><TD>279.00</TD>
+     <TD>0.0123086</TD><TD>0.000240902</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9983</TD><TD>150.3896196 2.367031108</TD><TD>0.149995</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>13</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_6A/CWEB-F444W-6A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:46:51</TD><TD>791.00</TD>
+     <TD>0.0120164</TD><TD>0.000245161</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9994</TD><TD>149.8831664 2.038234842</TD><TD>0.149998</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>14</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_7B/CWEB-F444W-7B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>12:54:21</TD><TD>449.00</TD>
+     <TD>0.0120494</TD><TD>0.000246578</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9981</TD><TD>150.1746425 1.829638522</TD><TD>0.149994</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>15</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_0B/CWEB-F444W-0B_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>13:00:21</TD><TD>360.00</TD>
+     <TD>0.0123291</TD><TD>0.000238377</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9978</TD><TD>150.4055313 2.463836327</TD><TD>0.149993</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
+     <TD>ICRS</TD>
+    </TR>
+    <TR>
+     <TD>16</TD><TD>/mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_1A/CWEB-F444W-1A_err.fits</TD><TD>(null)</TD><TD>F</TD><TD>(null)</TD>
+     <TD>0</TD><TD>2024-06-28</TD><TD>13:06:26</TD><TD>364.00</TD>
+     <TD>0.0122745</TD><TD>0.00024113</TD><TD>F</TD><TD>AUTO</TD><TD>128</TD><TD>3</TD><TD>0</TD>
+     <TD>NONE</TD><TD>F</TD><TD>0</TD><TD>1</TD><TD>F</TD>
+     <TD>0</TD><TD>50000</TD><TD>0</TD><TD>1</TD>
+     <TD>24.9991</TD><TD>150.0650584 2.485073063</TD><TD>0.149997</TD><TD>0</TD><TD>2000</TD><TD>2000</TD>
      <TD>ICRS</TD>
     </TR>
    </TABLEDATA></DATA>
@@ -87,19 +222,19 @@
   </TABLE>
   <RESOURCE ID="Config" name="Config">
    <DESCRIPTION>SWarp configuration</DESCRIPTION>
-   <PARAM name="Command_Line" datatype="char" arraysize="*" ucd="obs.param" value="/mnt/users/varadaraj/swarp/bin/swarp /mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_MOSAIC.fits -WEIGHT_IMAGE /mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_MOSAIC_WHT.fits -c regrid.swarp -IMAGEOUT_NAME /mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp.fits -WEIGHTOUT_NAME /mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp_wht.fits"/>
+   <PARAM name="Command_Line" datatype="char" arraysize="*" ucd="obs.param" value="/mnt/users/varadaraj/swarp/bin/swarp /mnt/vardy/vardygroupshare/rohan/images/CWEB/mosaic_2A/CWEB-F444W-2A_err.fits -c regrid.swarp -IMAGEOUT_NAME /mnt/vardy/vardygroupshare/data/CWEB/CWEB-F444W_resamp_rms.fits -WEIGHT_TYPE NONE -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE -VMEM_MAX 16384 -VMEM_DIR . -MEM_MAX 2048 -COMBINE_BUFSIZE 2048"/>
    <PARAM name="Prefs_Name" datatype="char" arraysize="*" ucd="obs.param;meta.file" value="regrid.swarp"/>
-   <PARAM name="ImageOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp.fits"/>
-   <PARAM name="WeightOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="/mnt/vardy/vardygroupshare/data/euclid/images/COSMOS_H_resamp_wht.fits"/>
+   <PARAM name="ImageOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="/mnt/vardy/vardygroupshare/data/CWEB/CWEB-F444W_resamp_rms.fits"/>
+   <PARAM name="WeightOut_Name" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value="coadd.rms.fits"/>
    <PARAM name="Header_Only" datatype="boolean" ucd="meta.code;obs.param" value="F"/>
    <PARAM name="Header_Suffix" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value=".head"/>
    <PARAM name="Weight_Suffix" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value=".weight.fits"/>
    <PARAM name="Combine" datatype="boolean" ucd="meta.code" value="T"/>
-   <PARAM name="Combine_Type" datatype="char" arraysize="*" ucd="meta.code;obs.param" value="WEIGHTED"/>
+   <PARAM name="Combine_Type" datatype="char" arraysize="*" ucd="meta.code;obs.param" value="AVERAGE"/>
    <PARAM name="Blank_BadPixels" datatype="boolean" ucd="meta.code;obs.param" value="F"/>
    <PARAM name="Celestial_Type" datatype="char" arraysize="*" ucd="meta;pos;obs.param" value="NATIVE"/>
    <PARAM name="Projection_Type" datatype="char" arraysize="*" ucd="meta;pos;obs.param" value="TAN"/>
-   <PARAM name="Projection_Err" datatype="float" arraysize="2" ucd="pos.angDistance;stat.max;obs.param" value="0.001 0" unit="pix"/>
+   <PARAM name="Projection_Err" datatype="float" arraysize="1" ucd="pos.angDistance;stat.max;obs.param" value="0.001" unit="pix"/>
    <PARAM name="Center_Type" datatype="char" arraysize="*" ucd="meta.code;pos;obs.param" value="MANUAL"/>
    <PARAM name="Center" datatype="double" arraysize="2" ucd="pos;obs.param" value="    150.0406399     2.212512836" unit="pix"/>
    <PARAM name="PixelScale_Type" datatype="char" arraysize="*" ucd="meta.code;pos;obs.param" value="MANUAL"/>
@@ -109,7 +244,7 @@
    <PARAM name="Resample_Dir" datatype="char" arraysize="*" ucd="meta.dataset" value="."/>
    <PARAM name="Resample_Suffix" datatype="char" arraysize="*" ucd="meta.dataset;meta.file" value=".resamp.fits"/>
    <PARAM name="Resampling_Type" datatype="char" arraysize="*" ucd="meta.code;pos;obs.param" value="LANCZOS3"/>
-   <PARAM name="Oversampling" datatype="int" arraysize="1" ucd="arith.factor;instr.pixel;obs.param" value="1"/>
+   <PARAM name="Oversampling" datatype="int" arraysize="1" ucd="arith.factor;instr.pixel;obs.param" value="5"/>
    <PARAM name="FScalAstro_Type" datatype="char" arraysize="*" ucd="phot.calib;obs.param" value="FIXED"/>
    <PARAM name="FScale_Keyword" datatype="char" arraysize="*" ucd="meta.code;phot.calib;obs.param" value="FLXSCALE"/>
    <PARAM name="FScale_Default" datatype="float" ucd="phot.calib;obs.param" value="1"/>
@@ -124,9 +259,9 @@
    <PARAM name="Back_Default" datatype="float" ucd="obs.param" value="0" unit="adu"/>
    <PARAM name="Back_FiltThresh" datatype="float" ucd="phot.count;arith.ratio;obs.param" value="0"/>
    <PARAM name="VMem_Dir" datatype="char" arraysize="*" ucd="meta" value="."/>
-   <PARAM name="VMem_Max" datatype="int" ucd="meta.number;stat.max" value="10000" unit="Mbyte"/>
-   <PARAM name="Mem_Max" datatype="int" ucd="meta.number;stat.max" value="10000" unit="Mbyte"/>
-   <PARAM name="Combine_BufSize" datatype="int" ucd="meta.number;stat.max" value="512" unit="Mbyte"/>
+   <PARAM name="VMem_Max" datatype="int" ucd="meta.number;stat.max" value="16384" unit="Mbyte"/>
+   <PARAM name="Mem_Max" datatype="int" ucd="meta.number;stat.max" value="2048" unit="Mbyte"/>
+   <PARAM name="Combine_BufSize" datatype="int" ucd="meta.number;stat.max" value="2048" unit="Mbyte"/>
    <PARAM name="Delete_TmpFiles" datatype="boolean" ucd="meta.code" value="T"/>
    <PARAM name="Copy_Keywords" datatype="char" arraysize="*" ucd="meta;meta.fits" value="OBJECT  "/>
    <PARAM name="Write_FileInfo" datatype="boolean" ucd="meta.code" value="F"/>

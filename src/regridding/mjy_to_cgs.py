@@ -35,15 +35,17 @@ for filter_name in filter_names:
     zpt = -6.10 - 2.5*np.log10(solid_angle)
     print(f'The AB zeropoint for a pixel scale of 0.15 arcsec/pix is {zpt}')
 
-    zpt_factor = (48.6 + zpt) / 2.5
+    zpt_factor = (48.6 + 28.08) / 2.5
 
     # conversion factor
     conversion_factor = 1e-23 * 1e6 * solid_angle * 10**zpt_factor
     print(f'The conversion factor is {conversion_factor}')
 
     print('Converting to cgs')
-    image_data_cgs = image_data * conversion_factor
+    image_data_cgs = image_data / conversion_factor
     print('Converted to cgs')
+    print(np.nanmean(image_data_cgs))
+    print(np.nanmean(image_data))
 
     #! Save the image
     print('Saving image')

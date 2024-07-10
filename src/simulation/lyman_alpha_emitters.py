@@ -103,19 +103,21 @@ plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
 euclid_filters = getFilters('Euclid')
 vista_filters = getFilters('VISTA')
 hsc_filters = getFilters('HSC')
+jwst_filters = getFilters('JWST')
 
-redshifts = np.arange(8.2, 9., 0.01)
+redshifts = np.arange(4, 10.5, 0.01)
 plt.figure(figsize=(10, 6))
 
 Muv=-23
 EW=200
 
 # Create the animation
-ani = FuncAnimation(plt.gcf(), update_plot, fargs=(Muv, EW), frames=redshifts, interval=200)
+ani = FuncAnimation(plt.gcf(), update_plot, fargs=(Muv, EW), frames=redshifts, interval=50)
 
 # Save the animation as a GIF
 #ani.save(plot_dir / f'redshifting_lyman_alpha_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
-ani.save(plot_dir / f'LAE_z8_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
+#ani.save(plot_dir / f'LAE_z8_Muv{Muv}_EW_{EW}A_yOverlap.gif', writer='imagemagick')
+ani.save(plot_dir / f'LAE_z4_12_Muv{Muv}_EW_{EW}A.gif', writer='imagemagick')
 
 # Show the animation
 plt.show()

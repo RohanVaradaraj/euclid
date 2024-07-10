@@ -142,15 +142,17 @@ def getFilters(instrument: str, plot: bool = False, plot_kwargs: dict = None) ->
         order = ['ch1', 'ch2']
     elif instrument.lower() == 'jwst':
         filter_names = glob.glob(str(filter_dir / 'JWST' / '*'))
-        filter_names = [f for f in cweb_filters if 'f115w' in f or 'f150w' in f or 'f277w' in f or 'f444w' in f]
+        filter_names = [f for f in filter_names if 'f115w_angstroms' in f or 'f150w_angstroms' in f or 'f277w_angstroms' in f or 'f444w_angstroms' in f]
         order = ['f115w', 'f150w', 'f277w', 'f444w']
     else:
         raise ValueError("Invalid instrument name")
 
     # Sort the filters
-    if instrument.lower() != 'hsc':
+    if instrument.lower() == 'euclid' or instrument.lower() == 'spitzer' or instrument.lower() == 'vista':
         filter_names = sorted(filter_names, key=lambda x: order.index(x.split('/')[-1].split('_')[-1].split('.')[0]))
-    else:  
+    if instrument.lower() == 'jwst':
+        filter_names = sorted(filter_names, key=lambda x: order.index(x.split('/')[-1].split('_')[0]))
+    if instrument.lower() == 'hsc':  
         filter_names = sorted(filter_names, key=lambda x: order.index(x.split('/')[-1].split('_HSC.txt')[0]))
 
     # Empty objects for transmission and wavelength
@@ -610,13 +612,18 @@ if __name__ == '__main__':
     #!     Generate a bunch of LBG colours, save to table
     #! --------------------------------------------------
 
-    redshifts = np.arange(6., 9.55, 0.05)
+    redshifts = np.arange(6., 10.05, 0.05)
     Av_vals = np.arange(0, 0.6, 0.1)
     ages = np.arange(0.05, 0.51, 0.05)
     
 
     # Make empty lists for all the VISTA and Euclid filters
+    g_mags_LBG = []
+    r_mags_LBG = []
+    i_mags_LBG = []
+    nb816_mags_LBG = []
     z_mags_LBG = []
+    nb921_mags_LBG = []
     y_mags_LBG = []
 
     Y_mags_LBG = []
@@ -624,9 +631,15 @@ if __name__ == '__main__':
     H_mags_LBG = []
     Ks_mags_LBG = []
 
+    VIS_mags_LBG = []
     Ye_mags_LBG = []
     Je_mags_LBG = []
     He_mags_LBG = []
+
+    f115w_mags_LBG = []
+    f150w_mags_LBG = []
+    f277w_mags_LBG = []
+    f444w_mags_LBG = []
 
     redshift_array = []
     Av_array = []
@@ -636,6 +649,7 @@ if __name__ == '__main__':
     euclid_filters = getFilters('euclid')
     vista_filters = getFilters('vista')
     hsc_filters = getFilters('hsc')
+    jwst_filters = getFilters('jwst')
 
     for redshift in redshifts:
         for Av in Av_vals:
@@ -655,35 +669,63 @@ if __name__ == '__main__':
                 lbg_dict = {redshift: (wlen, LBG_flux)}
 
                 # Convolve
-                mags = convolveFilters([hsc_filters, vista_filters, euclid_filters], lbg_dict)
+                mags = convolveFilters([hsc_filters, vista_filters, euclid_filters, jwst_filters], lbg_dict)
 
+                g_mags_LBG.append(mags[redshift]['g'])
+                r_mags_LBG.append(mags[redshift]['r'])
+                i_mags_LBG.append(mags[redshift]['i'])
+                nb816_mags_LBG.append(mags[redshift]['nb816'])
                 z_mags_LBG.append(mags[redshift]['z'])
+                nb921_mags_LBG.append(mags[redshift]['nb921'])
                 y_mags_LBG.append(mags[redshift]['y'])
+
                 Y_mags_LBG.append(mags[redshift]['Y'])
                 J_mags_LBG.append(mags[redshift]['J'])
                 H_mags_LBG.append(mags[redshift]['H'])
                 Ks_mags_LBG.append(mags[redshift]['Ks'])
+
+                VIS_mags_LBG.append(mags[redshift]['VIS'])
                 Je_mags_LBG.append(mags[redshift]['Je'])
                 Ye_mags_LBG.append(mags[redshift]['Ye'])
                 He_mags_LBG.append(mags[redshift]['He'])
 
+                f115w_mags_LBG.append(mags[redshift]['f115w'])
+                f150w_mags_LBG.append(mags[redshift]['f150w'])
+                f277w_mags_LBG.append(mags[redshift]['f277w'])
+                f444w_mags_LBG.append(mags[redshift]['f444w'])
+
     # Convert to arrays
+    g_mags_LBG = np.array(g_mags_LBG)
+    r_mags_LBG = np.array(r_mags_LBG)
+    i_mags_LBG = np.array(i_mags_LBG)
+    nb816_mags_LBG = np.array(nb816_mags_LBG)
     z_mags_LBG = np.array(z_mags_LBG)
+    nb921_mags_LBG = np.array(nb921_mags_LBG)
     y_mags_LBG = np.array(y_mags_LBG)
+
     Y_mags_LBG = np.array(Y_mags_LBG)
     J_mags_LBG = np.array(J_mags_LBG)
     H_mags_LBG = np.array(H_mags_LBG)
     Ks_mags_LBG = np.array(Ks_mags_LBG)
+
+    VIS_mags_LBG = np.array(VIS_mags_LBG)
     Ye_mags_LBG = np.array(Ye_mags_LBG)
     Je_mags_LBG = np.array(Je_mags_LBG)
     He_mags_LBG = np.array(He_mags_LBG)
 
-    # Save to astropy table
-    flux_table = Table([z_mags_LBG, y_mags_LBG, Y_mags_LBG, J_mags_LBG, H_mags_LBG, Ks_mags_LBG, Ye_mags_LBG, Je_mags_LBG, He_mags_LBG], names=['z', 'y', 'Y', 'J', 'H', 'Ks', 'Ye', 'Je', 'He'])
+    f115w_mags_LBG = np.array(f115w_mags_LBG)
+    f150w_mags_LBG = np.array(f150w_mags_LBG)
+    f277w_mags_LBG = np.array(f277w_mags_LBG)
+    f444w_mags_LBG = np.array(f444w_mags_LBG)
+
+    all_mags_list = [g_mags_LBG, r_mags_LBG, i_mags_LBG, nb816_mags_LBG, z_mags_LBG, nb921_mags_LBG, y_mags_LBG, Y_mags_LBG, J_mags_LBG, H_mags_LBG, Ks_mags_LBG, VIS_mags_LBG, Ye_mags_LBG, Je_mags_LBG, He_mags_LBG, f115w_mags_LBG, f150w_mags_LBG, f277w_mags_LBG, f444w_mags_LBG]
+    names = ['g', 'r', 'i', 'nb816', 'z', 'nb921', 'y', 'Y', 'J', 'H', 'Ks', 'VIS', 'Ye', 'Je', 'He', 'f115w', 'f150w', 'f277w', 'f444w']
+
+    flux_table = Table(all_mags_list, names=names)
     flux_table.add_column(Table.Column(name='Redshift', data=redshift_array), index=0)
     flux_table.add_column(Table.Column(name='Av', data=Av_array), index=1)
     flux_table.add_column(Table.Column(name='Age', data=age_array), index=2)
-    flux_table.write(table_dir / 'lbg_spectra_mags_2.fits', overwrite=True)
+    flux_table.write(table_dir / 'lbg_spectra_mags.fits', overwrite=True)
     exit()
 
     #! ########################################################################

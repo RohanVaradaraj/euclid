@@ -21,6 +21,7 @@ from pathlib import Path
 
 # Image dir for UltraVISTA
 imageDir = Path.cwd().parents[3] / 'data' / 'euclid' / 'images'
+imageDir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 
 stackDir = imageDir
 
@@ -41,16 +42,22 @@ for i, fieldName in enumerate(fields):
     print('Running loop. Stacking {0} images in {1}'.format(filters, fieldName))
 
     # Set up images
-    image1 = imageDir / f'{fieldName}_{filter1}_MOSAIC.fits'
-    image2 = imageDir / f'{fieldName}_{filter2}_MOSAIC.fits'
+    #image1 = imageDir / f'{fieldName}_{filter1}_MOSAIC.fits'
+    #image2 = imageDir / f'{fieldName}_{filter2}_MOSAIC.fits'
+    image1 = imageDir / f'Euclid_{filter1}_vista_matched.fits'
+    image2 = imageDir / f'Euclid_{filter2}_vista_matched.fits'
     if filter3 != 'None':
-        image3 = imageDir / f'{fieldName}_{filter3}_MOSAIC.fits'
+        #image3 = imageDir / f'{fieldName}_{filter3}_MOSAIC.fits'
+        image3 = imageDir / f'Euclid_{filter3}_vista_matched.fits'
 
-    wht1 = imageDir / f'{fieldName}_{filter1}_MOSAIC_WHT.fits'
-    wht2 = imageDir / f'{fieldName}_{filter2}_MOSAIC_WHT.fits'
+    #wht1 = imageDir / f'{fieldName}_{filter1}_MOSAIC_WHT.fits'
+    #wht2 = imageDir / f'{fieldName}_{filter2}_MOSAIC_WHT.fits'
+    wht1 = imageDir / f'Euclid_{filter1}_vista_matched_WHT.fits'
+    wht2 = imageDir / f'Euclid_{filter2}_vista_matched_WHT.fits'
     if filter3 != 'None':
-        wht3 = imageDir / f'{fieldName}_{filter3}_MOSAIC_WHT.fits'
-
+        #wht3 = imageDir / f'{fieldName}_{filter3}_MOSAIC_WHT.fits'
+        wht3 = imageDir / f'Euclid_{filter3}_vista_matched_WHT.fits'
+        
     print('First image: ', image1)
     print('With weight: ', wht1)
     print('Second image: ', image2)
@@ -123,9 +130,11 @@ for i, fieldName in enumerate(fields):
     print('########Saving image.#########')
 
     if filter3 == 'None':
-        fits.writeto(stackDir / '{0}_{1}{2}_STACK.fits'.format(fieldName.upper(), name1, name2), finalImage, header1, overwrite=True)
+        #fits.writeto(stackDir / '{0}_{1}{2}_STACK.fits'.format(fieldName.upper(), name1, name2), finalImage, header1, overwrite=True)
+        fits.writeto(stackDir / f'Euclid_{filter1}{filter2}_vista_matched.fits', finalImage, header1, overwrite=True)
     if filter3 != 'None':
-        fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK.fits'.format(fieldName.upper(), filter1, filter2, filter3), finalImage, header1, overwrite=True)
+        #fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK.fits'.format(fieldName.upper(), filter1, filter2, filter3), finalImage, header1, overwrite=True)
+        fits.writeto(stackDir / f'Euclid_{filter1}{filter2}{filter3}_vista_matched.fits', finalImage, header1, overwrite=True)
 
     print('###########Saved image to ', stackDir / fieldName.upper())
 
@@ -133,9 +142,11 @@ for i, fieldName in enumerate(fields):
     print('########Saving weight#########')
 
     if filter3 == 'None':
-        fits.writeto(stackDir / '{0}_{1}{2}_STACK_WHT.fits'.format(fieldName.upper(), name1, name2), weightSum, wheader1, overwrite=True)
+        #fits.writeto(stackDir / '{0}_{1}{2}_STACK_WHT.fits'.format(fieldName.upper(), name1, name2), weightSum, wheader1, overwrite=True)
+        fits.writeto(stackDir / f'Euclid_{filter1}{filter2}_vista_matched_WHT.fits', weightSum, wheader1, overwrite=True)
     if filter3 != 'None':
-        fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK_WHT.fits'.format(fieldName.upper(), filter1, filter2, filter3), weightSum, wheader1, overwrite=True)
+        #fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK_WHT.fits'.format(fieldName.upper(), filter1, filter2, filter3), weightSum, wheader1, overwrite=True)
+        fits.writeto(stackDir / f'Euclid_{filter1}{filter2}{filter3}_vista_matched_WHT.fits', weightSum, wheader1, overwrite=True)
 
     print('###########Saved weight to ', stackDir / fieldName.upper())
 

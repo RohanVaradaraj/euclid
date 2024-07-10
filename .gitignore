@@ -9,8 +9,9 @@
 /src/*/tmp_*
 /src/*/myfile.sh*
 
-# Ignore miscellaneous plots
+# Ignore miscellaneous plots and code
 /plots/misc
+/src/miscellaneous
 
 # Ignore on-the-fly swarp outputs
 /src/*/EUC_MER*
