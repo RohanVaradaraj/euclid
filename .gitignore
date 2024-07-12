@@ -26,3 +26,5 @@
 
 # Ignore SED fitting outputs
 /data/sed_fitting/*
+
+/plots/cutouts/*
