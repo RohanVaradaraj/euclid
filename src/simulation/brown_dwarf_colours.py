@@ -612,7 +612,7 @@ if __name__ == '__main__':
     #!     Generate a bunch of LBG colours, save to table
     #! --------------------------------------------------
 
-    redshifts = np.arange(6., 10.05, 0.05)
+    redshifts = np.arange(4., 10., 0.05)
     Av_vals = np.arange(0, 0.6, 0.1)
     ages = np.arange(0.05, 0.51, 0.05)
     

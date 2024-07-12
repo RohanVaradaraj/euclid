@@ -23,3 +23,6 @@
 /src/*/__pycache__/*
 
 /src/regridding/tweak_new.py
+
+# Ignore SED fitting outputs
+/data/sed_fitting/*

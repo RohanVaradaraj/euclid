@@ -11,8 +11,12 @@ from pathlib import Path
 from astropy.wcs import WCS
 
 image_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
-image_name = 'Euclid_Y_vista_matched.fits'
-weight_name = 'Euclid_Y_vista_matched_WHT.fits'
+
+#image_name = 'Euclid_Y_vista_matched.fits'
+#weight_name = 'Euclid_Y_vista_matched_WHT.fits'
+
+image_name = 'CWEB_f115w_vista_matched.fits'
+weight_name = 'CWEB_f115w_vista_matched_RMS.fits'
 
 
 with fits.open(image_dir / image_name) as hdu:
@@ -37,7 +41,7 @@ hdr_w['NAXIS1'] = 5000
 hdr_w['NAXIS2'] = 5000
 
 hdu = fits.PrimaryHDU(image_crop, header=hdr)
-hdu.writeto(image_dir / 'test_Y.fits', overwrite=True)
+hdu.writeto(image_dir / 'test_f115w.fits', overwrite=True)
 
 hdu = fits.PrimaryHDU(weight_crop, header=hdr_w)
-hdu.writeto(image_dir / 'test_Y_wht.fits', overwrite=True)
+hdu.writeto(image_dir / 'test_f115w_rms.fits', overwrite=True)

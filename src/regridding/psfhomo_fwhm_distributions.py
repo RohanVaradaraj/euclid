@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 plot the fwhms of the PSFs in the PSF-homogenised euclid and jwst images.
 
@@ -30,6 +32,7 @@ plot_dir = Path.cwd().parent.parent / 'plots' / 'psf'
 plot_pipe = False
 
 filter_names = ['VIS', 'Ye', 'Je', 'He']
+filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
 
 compare_names = ['HSC-I_DR3', 'Y_DR6', 'J_DR6', 'H_DR6']
 
@@ -63,4 +66,5 @@ plt.hist(compare_data['FWHM_IMAGE'], bins=np.arange(0.6, 1, 0.005), color='gray'
 plt.xlabel('FWHM (arcsec)')
 plt.ylabel('Normalized count')
 plt.legend()
+plt.savefig(plot_dir / 'CWEB_homogenised_psf_fwhm_distributions.png')
 plt.show()

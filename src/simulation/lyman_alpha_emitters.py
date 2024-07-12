@@ -108,7 +108,7 @@ jwst_filters = getFilters('JWST')
 redshifts = np.arange(4, 10.5, 0.01)
 plt.figure(figsize=(10, 6))
 
-Muv=-23
+Muv=-21
 EW=200
 
 # Create the animation

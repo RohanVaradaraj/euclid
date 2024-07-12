@@ -314,8 +314,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             cutout_grI = Cutout2D(data_I, c, size=size/pix_scale, wcs=wcs_I)
 
     #### Y ####
-    #with fits.open(vista_dir / 'UVISTA_Y_DR6_cropped.fits') as hdu_Y:
-    with fits.open(vista_dir / 'UVISTA_Y_dr5_rc1.fits') as hdu_Y:
+    with fits.open(vista_dir / 'UVISTA_Y_DR6.fits') as hdu_Y:
+    #with fits.open(vista_dir / 'UVISTA_Y_dr5_rc1.fits') as hdu_Y:
 
         data_Y = hdu_Y[0].data
         hdr_Y = hdu_Y[0].header
@@ -325,8 +325,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         cutout_grY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
 
     #### J ####
-    #with fits.open(vista_dir / 'UVISTA_J_DR6_cropped.fits') as hdu_J:
-    with fits.open(vista_dir / 'UVISTA_J_dr5_rc1.fits') as hdu_J:
+    with fits.open(vista_dir / 'UVISTA_J_DR6.fits') as hdu_J:
+    #with fits.open(vista_dir / 'UVISTA_J_dr5_rc1.fits') as hdu_J:
 
         data_J = hdu_J[0].data
         hdr_J = hdu_J[0].header
@@ -336,8 +336,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         cutout_grJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
 
     #### H ####
-    #with fits.open(vista_dir / 'UVISTA_H_DR6_cropped.fits') as hdu_H:
-    with fits.open(vista_dir / 'UVISTA_H_dr5_rc1.fits') as hdu_H:
+    with fits.open(vista_dir / 'UVISTA_H_DR6.fits') as hdu_H:
+    #with fits.open(vista_dir / 'UVISTA_H_dr5_rc1.fits') as hdu_H:
             
         data_H = hdu_H[0].data
         hdr_H = hdu_H[0].header
@@ -705,6 +705,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     plt.tight_layout()
 
     if save_cutout:
+        plot_title = str(plot_title)
         save_name = plot_title.split(',')[0]
         plt.savefig(plot_dir / f'{save_name}.png')
 
@@ -874,20 +875,35 @@ if __name__ == '__main__':
     # z = t['Redshift']
     # ID = t['Object Name']
 
+    #! Initial det_YJH candidates
+    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'XMATCH_COSMOS_5sig_Ye_2sig_VISTA_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits')
+    ra = t['RA_1']
+    dec = t['DEC_1']
+    ID = t['Object Name']
+    z = t['Redshift']
+
+    # Sort by flux in Y, reversed
+    t.sort('flux_Ye', reverse=True)
+    print(t['flux_Ye'])
+
+
+    ############! GET CUTOUTS ############
     for i in range(len(ra)):
 
         print(f'Object number {i+1} of {len(ra)}')
 
-        if isCoordInCWEB(ra[i], dec[i])[0] == '0':
-            print('Not in CWEB')
-            continue
+    #     print(f'Object number {i+1} of {len(ra)}')
+
+    #     if isCoordInCWEB(ra[i], dec[i])[0] == '0':
+    #         print('Not in CWEB')
+    #         continue
 
         #print(cat[i]['zBest'])
         #print(cat[i]['FIRST_CLASS'])
         #print(ID[i])
         #print(muv[i])
 
-        Cutout(ra[i], dec[i], size=5., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
+        Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
         #Cutout(ra[i], dec[i], size=12., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
         #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
