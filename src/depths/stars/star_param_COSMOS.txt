@@ -1,5 +1,0 @@
-# name	bright	faint	upperfwhm	saturate	faintest
-Y	17.4	21.0	0.5		16.5		21.0
-J	17.2	21.0	0.5		16.5		21.0
-H	17.0	21.0	0.45		16.5		21.0
-VIS	16.5	23.0	0.3		16.5		23.0
