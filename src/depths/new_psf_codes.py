@@ -61,9 +61,10 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     ##############################################
     psfSize = 75
     psfDegree = 5
-    psfNSNAP = 2
+    psfNSNAP = 1
 
     assocRad = 1.0/0.1 # Euclid pix scale
+    assocRad = 1.0/0.03 # JWST pix scale
 
     rstepAS = 0.05 ## arcsec
     rmaxAS = 9.0 ## arcsec

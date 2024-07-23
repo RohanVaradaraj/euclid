@@ -17,7 +17,7 @@ from pathlib import Path
 ######################### Set-up ####################################
 fields = ['COSMOS']
 
-reqFilters = ['H']
+reqFilters = ['f115w']
 
 # enter the prefered queue.
 queue = 'normal'
@@ -26,7 +26,7 @@ overwrite = True # this is the default anyway
 # to run the first stage for each filter, set to true
 # then check the pdf, update the star_param file
 # then run again set to false
-stars = False
+stars = True
 
 ############################### Loop ################################
 ## Loop through the different fields

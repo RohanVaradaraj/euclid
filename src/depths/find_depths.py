@@ -24,6 +24,7 @@ fields = ['COSMOS']
 
 # required aperture diameter
 reqFilters = ['Y', 'J', 'H', 'VIS']
+reqFilters = ['f115w'] #, 'f150w', 'f277w', 'f444w'] # JWST
 
 # enter the prefered queue.
 queue = 'normal'
@@ -34,7 +35,8 @@ overwrite = True # False is the default anyway
 # change at your peril!
 #apDiametersAS = [1.8, 2.0, 3.0, 4.0, 5.0]
 #apDiametersAS = [0.3, 0.5, 0.6, 1.0, 1.2, 1.8] # For euclid.
-apDiametersAS =  [0.1, 0.2, 0.3, 0.6, 1.0, 1.2, 1.5, 2.0] # For euclid, rerunning
+#apDiametersAS =  [0.1, 0.2, 0.3, 0.6, 1.0, 1.2, 1.5, 2.0] # For euclid, rerunning
+apDiametersAS = [0.32, 1.0, 1.2, 1.5, 1.8] # for JWST
 
 ############################### Loop ################################
 ## Loop through the different fields
