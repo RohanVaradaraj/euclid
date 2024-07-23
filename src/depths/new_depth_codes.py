@@ -166,7 +166,7 @@ def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = 
                     + apStringPix
         if filter_name[0] == 'f':
             keywords = keywordsbase + \
-                    ' -CHECKIMAGE_TYPE "-SEGMENTATION" '\
+                    ' -CHECKIMAGE_TYPE "SEGMENTATION" '\
                     +'-CHECKIMAGE_NAME "' + \
                     str(seg_name) + '" -PHOT_APERTURES ' \
                     + apStringPix + ' -DETECT_MINAREA 5 -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5'

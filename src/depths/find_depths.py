@@ -23,11 +23,12 @@ os.system('module load sextractor')
 fields = ['COSMOS']
 
 # required aperture diameter
-reqFilters = ['Y', 'J', 'H', 'VIS']
-reqFilters = ['f115w'] #, 'f150w', 'f277w', 'f444w'] # JWST
+#reqFilters = ['Y', 'J', 'H', 'VIS']
+reqFilters = ['f150w', 'f277w', 'f444w'] # JWST
+#reqFilters =['f115w']
 
 # enter the prefered queue.
-queue = 'normal'
+queue = 'cmb'
 overwrite = True # False is the default anyway
 
 ####################################################################

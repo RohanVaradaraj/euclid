@@ -286,7 +286,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     # If contained_in is None, do the check for coordinates in the footprints
     if contained_in is None:
         contained_in = isCoordInSurveyFootprints(ra, dec)
-        print(contained_in)
+        print('contained_in array: ', contained_in)
 
     # Check if all values of contained_in are '0'.
     if np.all(contained_in[0] == '0'):
@@ -535,7 +535,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[0, i], data, lims, title)
 
         # Bottom row: Euclid cutouts
-        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
 
@@ -556,7 +556,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 
         # Bottom row: Euclid cutouts
-        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
 
@@ -591,7 +591,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 
         # Bottom row: Euclid cutouts
-        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
 
@@ -616,7 +616,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[0, i], data, lims, title)
 
         # Bottom row: Euclid cutouts
-        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
 
@@ -644,7 +644,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             plot_cutout(ax[0, i], data, lims, title)
 
         # Bottom row: Euclid cutouts
-        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], ['VIS', 'NISP-Y', 'NISP-J', 'NISP-H'])):
+        for i, (data, title) in enumerate(zip([cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data], [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[1, i], data, lims, title)
 
@@ -709,9 +709,10 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         save_name = plot_title.split(',')[0]
         plt.savefig(plot_dir / f'{save_name}.png')
 
-    plt.show()
-    plt.close()
-    return None
+    return fig, ax
+    #plt.show()
+    #plt.close()
+    #return None
 
 
 
