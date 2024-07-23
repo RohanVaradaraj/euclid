@@ -158,11 +158,18 @@ def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = 
                        ' -WEIGHT_TYPE ' + wht_type + \
                        ' -WEIGHT_IMAGE ' + str(wht_name)
         
-        keywords = keywordsbase + \
-                   ' -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" '\
-                   +'-CHECKIMAGE_NAME "' + \
-                   str(bgSubName) + ',' + str(seg_name) + '" -PHOT_APERTURES ' \
-                   + apStringPix
+        if filter_name[0] != 'f':
+            keywords = keywordsbase + \
+                    ' -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" '\
+                    +'-CHECKIMAGE_NAME "' + \
+                    str(bgSubName) + ',' + str(seg_name) + '" -PHOT_APERTURES ' \
+                    + apStringPix
+        if filter_name[0] == 'f':
+            keywords = keywordsbase + \
+                    ' -CHECKIMAGE_TYPE "-SEGMENTATION" '\
+                    +'-CHECKIMAGE_NAME "' + \
+                    str(seg_name) + '" -PHOT_APERTURES ' \
+                    + apStringPix + ' -DETECT_MINAREA 5 -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5'
     
         command = '/mnt/users/videouser/sextractor/bin/sex '+ str(image_name) +' -c ' + str(input_sex) + keywords
         print(command)
