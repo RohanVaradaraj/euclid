@@ -1,3 +1,4 @@
+#!/bin/bash
 """
 sed_fitting_codes.py
 
@@ -182,6 +183,32 @@ def buildLePhareLibrary(parameter_file: str,
         # Galaxies
         os.system(f'$LEPHAREDIR/source/mag_gal  -t G -c $LEPHAREDIR/config/{parameter_file}')
 
+        ##################! $LEPHAREDIR NOT WORKING ###################
+
+    #     # Build stars
+    #     os.system(f'~/lephare/lephare_dev/source/sedtolib -t S -c ~/lephare/lephare_dev/config/{parameter_file}')
+
+    #     # Build quasars
+    #     os.system(f'~/lephare/l.'ephare_dev/source/sedtolib -t Q -c ~/lephare/lephare_dev/config/{parameter_file}')
+
+    #     # Build galaxies
+    #     os.system(f'~/lephare/lephare_dev/source/sedtolib -t G -c ~/lephare/lephare_dev/config/{parameter_file}')
+
+    # if build_filters:
+
+    #     os.system(f'~/lephare/lephare_dev/source/filter  -c ~/lephare/lephare_dev/config/{parameter_file}')
+
+    # if build_mags:
+
+    #     # Stars
+    #     os.system(f'~/lephare/lephare_dev/source/mag_star -c  ~/lephare/lephare_dev/config/{parameter_file}')
+
+    #     # Quasars
+    #     os.system(f'~/lephare/lephare_dev/source/mag_gal  -t Q -c ~/lephare/lephare_dev/config/{parameter_file}')
+
+    #     # Galaxies
+    #     os.system(f'~/lephare/lephare_dev/source/mag_gal  -t G -c ~/lephare/lephare_dev/config/{parameter_file}')
+
     return None
 
 
@@ -219,6 +246,9 @@ def runPhotometricRedshifts(parameter_file: str, zphot_dir: Path,
 
     # Run the command
     os.system(f'$LEPHAREDIR/source/zphota -c $LEPHAREDIR/config/{parameter_file}')
+
+    #################! $LEPHAREDIR NOT WORKING ####################
+    #os.system(f'~/lephare/lephare_dev/source/zphota -c ~/lephare/lephare_dev/config/{parameter_file}')
 
     return None
 

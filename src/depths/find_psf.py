@@ -17,7 +17,7 @@ from pathlib import Path
 ######################### Set-up ####################################
 fields = ['COSMOS']
 
-reqFilters = ['f115w']
+reqFilters = ['f277w', 'f444w']
 
 # enter the prefered queue.
 queue = 'normal'

@@ -63,7 +63,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     psfDegree = 5
     psfNSNAP = 1
 
-    assocRad = 1.0/0.1 # Euclid pix scale
+    #assocRad = 1.0/0.1 # Euclid pix scale
     assocRad = 1.0/0.03 # JWST pix scale
 
     rstepAS = 0.05 ## arcsec
@@ -135,7 +135,10 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     # get the pixel scale
     hdulist = fits.open(image_name)
     imageHeader = hdulist[0].header
-    cdone_o = -3600.0*imageHeader['CD1_1']
+    if filter_name[0] != 'f':
+        cdone_o = -3600.0*imageHeader['CD1_1']
+    else:
+        cdone_o = np.abs(3600.0*imageHeader['CDELT1'])
     pix_scale = round(cdone_o, 5)
     print("The pixel scale is {0:.4f}".format(pix_scale))
     naxis1 = imageHeader['NAXIS1']
@@ -157,7 +160,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
         five_sigHere = five_sig['1.0as'][0]
 
     if filter_name[0] == 'f':
-        five_sigHere = five_sig['0.3as'][0]
+        five_sigHere = five_sig['0.32as'][0]
 
     
     if bzk:
@@ -531,14 +534,23 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
 
     minSize = 0.05*expectedSize*pix_scale              #! IF FILTER IS VIS, SET LOWER MIN SIZE
     maxSize = 0.8*expectedSize*pix_scale # arcseconds #! IF FILTER IS VIS, SET UPPER MAX SIZE
+
+    if filter_name[1] == '2' or filter_name[1] == '4':
+        minSize = 0.1*expectedSize*pix_scale
+        maxSize = 0.5*expectedSize*pix_scale
     
-    #minSize = 0.5*expectedSize*pix_scale 
-    #maxSize = 1.5*expectedSize*pix_scale # arcseconds
+    # minSize = 0.5*expectedSize*pix_scale 
+    # maxSize = 1.5*expectedSize*pix_scale # arcseconds
+
+    # minSize = 0.01*expectedSize*pix_scale               #! JWST
+    # maxSize = 0.5*expectedSize*pix_scale # arcseconds
     
     apMag = tbdata['MAG_APER'][:,0]
     apMag = tbdata['MAG_AUTO']
     faintMag = five_sig - 2.0 # 1.5
     brightMag = faintMag -7.5
+
+
     
     bright = (apMag < faintMag) & (apMag > brightMag) & (tbdata[size_type]*pix_scale < maxSize) & (tbdata[size_type]*pix_scale > minSize) # cut at 20 sigma, and a reasonable size /minsize
     newtb = tbdata[bright]
@@ -573,7 +585,14 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
     
     # read in the cut from a nice file
     cuts = Table.read('./stars/star_param_{0}.txt'.format(field), format = 'ascii.commented_header')
-    ff = (cuts['name'] == filter_name)
+
+    if filter_name[0] == 'f':
+        base_filter_name = filter_name.split('_')[0]
+        ff = (cuts['name'] == base_filter_name)
+
+    else:
+        ff = (cuts['name'] == filter_name)
+
     brMag = cuts['bright'][ff]
     faMag = cuts['faint'][ff]
     maxsize = cuts['upperfwhm'][ff]
@@ -581,8 +600,10 @@ def sizemag_stars(input_cat: str, five_sig: float, filter_name: str, field: str,
     nosigma = 2.0
     nosigmaup = 1.5
     faintLevel = cuts['faintest'][ff]
-    
+
     # first get a rough estimate from the brighter stars
+    print('faMag')
+    print(faMag)
     br = (apMagR < faMag) & (apMagR > brMag)  & (size < maxsize)
     firstmedian = np.median(size[br])
     mad = np.median(np.abs(size[br]-firstmedian))

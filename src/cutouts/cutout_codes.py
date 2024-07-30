@@ -304,7 +304,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     vista_dir = ground_dir / 'COSMOS'
 
     #### I ####
-    with fits.open(vista_dir / 'HSC-I_DR3.fits') as hdu_I:
+    with fits.open(vista_dir / 'HSC-NB0921_DR3.fits') as hdu_I:
             
             data_I = hdu_I[0].data
             hdr_I = hdu_I[0].header
@@ -530,7 +530,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -550,7 +550,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -585,7 +585,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -611,7 +611,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -639,7 +639,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 

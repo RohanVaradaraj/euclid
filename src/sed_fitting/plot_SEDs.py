@@ -15,6 +15,7 @@ import glob
 from sed_fitting_codes import *
 import sys
 from matplotlib.backends.backend_pdf import PdfPages
+from make_comparison_tables import stellar_type
 
 # Backend for running on queue
 import matplotlib as mpl
@@ -34,17 +35,18 @@ def mag_to_flux(mag):
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-output_pdf = 'det_Je_J_LBG.pdf'
+output_pdf = 'det_Ye_Y_LBG.pdf'
+#output_pdf = 'det_NB0921_Ye.pdf'
 
 # Set up directories
 #zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'test_euclid'
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Je_J_LBG'
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Ye_Y_LBG'
 
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
 #input_name = 'euclid_test.in'
 #input_name = 'euclid_lya.in'
-input_name = 'det_Je_J.in'
+input_name = 'det_Ye_Y.in'
 flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
 
 # Define start and end points of each section in the LePhare .spec file
@@ -59,6 +61,21 @@ de_pz = 209
 
 ds_param = 3
 de_param = 9
+
+#! Without euclid
+# Check if 'no_euclid' is in input name
+if 'no_euclid' in input_name:
+    ds_phot = 9
+    de_phot = 24
+
+    ds_mod = 205
+    de_mod = -1
+
+    ds_pz = 24
+    de_pz = 205
+
+    ds_param = 3
+    de_param = 9
 
 # From these values, we can get the number of filters which will be useful for extracting fluxes from the .in file.
 n_bands = de_phot - ds_phot
@@ -75,17 +92,28 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 # Get filters
 filter_dict = filter_widths()
 
+# If running only VIISTA: Remove items with keys VIS, Ye, Je, He
+if 'no_euclid' in input_name:
+    filter_dict.pop('VIS')
+    filter_dict.pop('Ye')
+    filter_dict.pop('Je')
+    filter_dict.pop('He')
+
 # Load the crossmatched catalogue of known objects
 crossmatch_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-crossmatch_name = 'XMATCH_COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y.fits'
+crossmatch_name = 'XMATCH_COSMOS_5sig_Ye_2sig_VISTA_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
 crossmatch = Table.read(crossmatch_dir / crossmatch_name, format='fits')
 crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Load the parent catalogue to get RA,DEC
-parent_cat = Table.read(crossmatch_dir / 'COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y.fits', format='fits')
+parent_cat = Table.read(crossmatch_dir / 'COSMOS_5sig_Ye_2sig_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits', format='fits')
+#parent_cat = Table.read(crossmatch_dir / 'XMATCH_HSC_NB.fits', format='fits')
 
 # Collect all .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
+
+# Sort the files in increasing numerical order
+spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 
 with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
@@ -151,6 +179,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         secondary_is_stellar = False
 
         zphot_1 = round(params['Zphot'][0], 2)
+        dz_sup = round(params['Zsup'][0], 2)
+        dz_inf = round(params['Zinf'][0], 2)
         chi2_1 = round(params['Chi2'][0], 1)
 
         print('GAL 1 SOLUTION: ', zphot_1, chi2_1)
@@ -166,6 +196,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         chi2_star = round(params['Chi2'][-1], 1)
         print('STELLAR SOLUTION: ', chi2_star)
 
+        stellar_model = params['Model'][-1]
+        mlt_type = stellar_type(stellar_model)
+
         #! Sigma array
         sigma = flux / error
 
@@ -177,15 +210,15 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         ############! PLOT RESULTS OF FITTING #############
         # Plot best model
-        ax1.plot(primary_wlen, primary_sed, color='deepskyblue', alpha=1.0, label=f'z = {zphot_1}, ' + r'$\chi^{2} = $' + f'{chi2_1}', linewidth=3, zorder=4)
+        ax1.plot(primary_wlen, primary_sed, color='deepskyblue', alpha=1.0, label= rf'$z = {zphot_1}^{{+{round(dz_sup-zphot_1, 2)}}}_{{-{round(zphot_1-dz_inf, 2)}}}$, ' + r'$\chi^{2} = $' + f'{chi2_1}', linewidth=3, zorder=4)
 
         # plot secondary galaxy solution and stellar model
         if not secondary_is_stellar:
             ax1.plot(secondary_wlen, secondary_sed, color='darkorange', label=f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}', linewidth=2, alpha=0.7)
-            ax1.plot(stellar_wlen, stellar_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}', linewidth=2, alpha=0.7)
+            ax1.plot(stellar_wlen, stellar_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7)
 
         if secondary_is_stellar:
-            ax1.plot(secondary_wlen, secondary_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}', linewidth=2, alpha=0.7)
+            ax1.plot(secondary_wlen, secondary_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7)
 
         ax2.plot(zpdf['z'], zpdf['P'], color='black', linewidth=2)
         ax2.set_xlim(0, 10)
@@ -233,6 +266,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ############! CUTOUT ##############
         # Get ra, dec of object from parent catalogue
         obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
+        print(obj)
         ra = obj['RA'][0]
         dec = obj['DEC'][0]
 

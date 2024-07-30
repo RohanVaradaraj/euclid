@@ -1,3 +1,4 @@
+#!/bin/bash
 """
 Run the SED fitting.
 
@@ -20,15 +21,15 @@ convert_script = Path.cwd() / 'convert_fits_txt.py'
 # subprocess.run(['python3', str(convert_script)], check=True)
 
 #! LBG
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Je_J_LBG'
-#buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Ye_Y_LBG'
+buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
 if not zphot_dir.exists():
     zphot_dir.mkdir(parents=True)
 runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir, overwrite=True)
 
 #! LAE
-# zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Ye_y_LAE'
-# buildLePhareLibrary(parameter_file='euclid_lae.para', build_libs=True, build_filters=True, build_mags=True)
+# zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_NB0921_Ye_LAE'
+# #buildLePhareLibrary(parameter_file='euclid_lae.para', build_libs=True, build_filters=True, build_mags=True)
 # if not zphot_dir.exists():
 #     zphot_dir.mkdir(parents=True)
 # runPhotometricRedshifts(parameter_file='euclid_lae.para', zphot_dir=zphot_dir, overwrite=True)

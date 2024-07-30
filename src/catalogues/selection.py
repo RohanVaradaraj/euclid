@@ -71,7 +71,7 @@ def main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filte
     # Save table
     save_dir = Path(output_save_dir)
     t.write(save_dir / output_save_name, overwrite=True)
-    print(f"Filtered catalogue saved as {output_save_name}")
+    print(f"Filtered catalogue saved as {save_dir / output_save_name}")
 
 # Example usage
 if __name__ == "__main__":
@@ -81,24 +81,34 @@ if __name__ == "__main__":
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
     base_output_name = "COSMOS"
     
+    filters = {
+        'Ye': {'type': 'detection', 'value': 5},
+        'Y': {'type': 'detection', 'value': 2},
+        'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+        'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+        'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+    }
+
     # filters = {
-    #     'Ye': {'type': 'detection', 'value': 5},
-    #     'HSC-Y_DR3': {'type': 'detection', 'value': 2},
+    #     'Je': {'type': 'detection', 'value': 5},
+    #     'J': {'type': 'detection', 'value': 3},
+    #     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    #     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    #     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+    #     'HSC-Z_DR3': {'type': 'non-detection', 'value': 2},
+    #     'HSC-Y_DR3': {'type': 'non-detection', 'value': 2},
+    #     'Y': {'type': 'non-detection', 'value': 2},
+    # }
+
+    # Imposing detection in narrowband
+    # filters = {
+    #     'HSC-NB0921_DR3': {'type': 'detection', 'value': 5},
+    #     'Ye': {'type': 'detection', 'value': 3},
     #     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     #     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
     #     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
     # }
 
-    filters = {
-        'Je': {'type': 'detection', 'value': 5},
-        'J': {'type': 'detection', 'value': 3},
-        'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-Z_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-Y_DR3': {'type': 'non-detection', 'value': 2},
-        'Y': {'type': 'non-detection', 'value': 2},
-    }
 
     input_name = generate_input_name(base_output_name, filters)
     os.environ['LEPHARE_INPUT'] = input_name

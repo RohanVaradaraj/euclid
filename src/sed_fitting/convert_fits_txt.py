@@ -19,7 +19,9 @@ import os
 if __name__ == "__main__":
 
     # Get catalogue name from environment variable
-    cat_name = 'COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y.fits'
+    #cat_name = 'COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y.fits'
+    cat_name = 'COSMOS_5sig_Ye_2sig_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+
 
     '''SETUP'''
     cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
@@ -27,7 +29,8 @@ if __name__ == "__main__":
 
     # Directory
     out_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
-    
+    #out_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
+
     # Base name for output
     base_output_name = 'euclid'
 
@@ -41,9 +44,14 @@ if __name__ == "__main__":
     }
 
     # Get input name
-    out_name = 'det_Je_J.in'
+    out_name = 'det_Ye_Y.in'
+    # out_name = 'hsc_nb.in'
+    #out_name = 'det_NB0921_Ye.in'
     
     all_filters = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'CFHT-z', 'HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'VIS', 'Ye', 'Je', 'He']
+
+    if 'no_euclid' in out_name:
+        all_filters = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'CFHT-z', 'HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
 
     print(all_filters)
 

@@ -158,18 +158,12 @@ def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = 
                        ' -WEIGHT_TYPE ' + wht_type + \
                        ' -WEIGHT_IMAGE ' + str(wht_name)
         
-        if filter_name[0] != 'f':
-            keywords = keywordsbase + \
-                    ' -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" '\
-                    +'-CHECKIMAGE_NAME "' + \
-                    str(bgSubName) + ',' + str(seg_name) + '" -PHOT_APERTURES ' \
-                    + apStringPix
-        if filter_name[0] == 'f':
-            keywords = keywordsbase + \
-                    ' -CHECKIMAGE_TYPE "SEGMENTATION" '\
-                    +'-CHECKIMAGE_NAME "' + \
-                    str(seg_name) + '" -PHOT_APERTURES ' \
-                    + apStringPix + ' -DETECT_MINAREA 5 -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5'
+
+        keywords = keywordsbase + \
+                ' -CHECKIMAGE_TYPE "-BACKGROUND,SEGMENTATION" '\
+                +'-CHECKIMAGE_NAME "' + \
+                str(bgSubName) + ',' + str(seg_name) + '" -PHOT_APERTURES ' \
+                + apStringPix
     
         command = '/mnt/users/videouser/sextractor/bin/sex '+ str(image_name) +' -c ' + str(input_sex) + keywords
         print(command)
@@ -214,39 +208,43 @@ def image_depth(image_name: str, zeropoint: float, ap_diametersAS: np.ndarray = 
     regions, globaldepths, meddepths, modedepths = extract_local_depths(aperPhotFile, ap_diametersAS, zeropoint, recalculate = recalculate, num_apertures = num_apertures, step = step, plotDir = str(plotDir), strips = strips, maskreg = mask, refimage = bgSubName) #, plot = True)
     
     ######################################################################
-    # make a nice file with the output
-    depthFile = resultsDir + '{0}_{1}.txt'.format(filter_name, num_apertures)
-    f = open(depthFile, 'w')
+    # make a nice file with the  output
+    depthFile = resultsDir / '{0}_{1}.txt'.format(filter_name, num_apertures)
+
+    print('Writing the output to ', depthFile)
+
+    with open(depthFile, 'w') as f:
     
-    apString = ''
-    for i in range(ap_diametersAS.size):
-#        apString = apString + '{0:.1f}as\t'.format(ap_diametersAS[i])
+        apString = ''
+        for i in range(ap_diametersAS.size):
+    #        apString = apString + '{0:.1f}as\t'.format(ap_diametersAS[i])
 
-        apString = apString + '{0:.2f}as\t'.format(ap_diametersAS[i]) # Change to 2sf for jwst apertures.
+            apString = apString + '{0:.2f}as\t'.format(ap_diametersAS[i]) # Change to 2sf for jwst apertures.
 
 
-    print('######## AP STRING ' + apString + '################')
+        print('######## AP STRING ' + apString + '################')
 
-    f.write('#ap\t{0}\t{1}\n'.format(apString, 'type'))
+        f.write('#ap\t{0}\t{1}\n'.format(apString, 'type'))
 
-    depthtype = ['median', 'global', 'mode']
-    for di, deptht in enumerate(depthtype):
-        
-        for r, reg in enumerate(regions):
+        depthtype = ['median', 'global', 'mode']
+        for di, deptht in enumerate(depthtype):
             
-            apResultString = ''
-            for i in range(ap_diametersAS.size):
-                if deptht == 'median':
-                    apResultString = apResultString + '{0:.2f}\t'.format(meddepths[r, i])
-                elif deptht == 'global':
-                    apResultString = apResultString + '{0:.2f}\t'.format(globaldepths[r, i])
-                elif deptht == 'mode':
-                    apResultString = apResultString + '{0:.2f}\t'.format(modedepths[r, i])
-                    
-            printString = '{0}\t{1}\t{2}\n'.format(reg, apResultString, deptht)
-            f.write(printString)
+            for r, reg in enumerate(regions):
+                
+                apResultString = ''
+                for i in range(ap_diametersAS.size):
+                    if deptht == 'median':
+                        apResultString = apResultString + '{0:.2f}\t'.format(meddepths[r, i])
+                    elif deptht == 'global':
+                        apResultString = apResultString + '{0:.2f}\t'.format(globaldepths[r, i])
+                    elif deptht == 'mode':
+                        apResultString = apResultString + '{0:.2f}\t'.format(modedepths[r, i])
+                print(apResultString)
+                        
+                printString = '{0}\t{1}\t{2}\n'.format(reg, apResultString, deptht)
+                f.write(printString)
 
-    f.close()
+        f.close()
     print("Output file saved to ", depthFile)
     
     return
@@ -424,7 +422,7 @@ def aperture_photometry_blank(image_name: str, seg_map: str, wht_map: str, ap_si
     hdulist = fits.open(image_name)
     header = hdulist[next].header
     imageData = hdulist[next].data
-    
+
     if pix_scale < 0.0:
         # read from header
         if 'CD1_1' in header:
@@ -1058,12 +1056,12 @@ def extract_local_depths(inputTableFile: str, ap_diametersAS: np.ndarray, zeropo
     # close the plot
     pdf.close()
     print("Plot saved to ", plotName)
-    exit()
+    # exit()
     
     ## Before I return the results
     ## Collect the results into a nice table
     ## with ok formatting!
-    for x, xi in enumerate(regions): print('{0}, {1:.2f}'.format(xi, global_depth[x,0]))
+    #for x, xi in enumerate(regions): print('{0}, {1:.2f}'.format(xi, global_depth[x,0]))
     
     return regions, global_depth, median_local_depth, mode_local_depth
 
