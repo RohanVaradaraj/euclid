@@ -169,7 +169,10 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
         # use the depth catalogue
         print('Using catalogue', depthCat)
         plot_name = plot_dir + '/{0}_sizemag.pdf'.format(filter_name)
-        starName = sizemag_stars(depthCat, five_sigHere, filter_name, field_name, pix_scale, plot_dir = plot_dir, star_dir = catDir, plot_name = plot_name, size_type = 'FLUX_RADIUS')
+        if filter_name[0] != 'f':
+            starName = sizemag_stars(depthCat, five_sigHere, filter_name, field_name, pix_scale, plot_dir = plot_dir, star_dir = catDir, plot_name = plot_name, size_type = 'FLUX_RADIUS')
+        else:
+            starName = '/mnt/vardy/vardygroupshare/rohan/euclid/data/psf/COSMOS/catalogues/' + use_cat
 
     if stars_only:
         return
@@ -236,7 +239,7 @@ def psfex(image_name: Path, filter_name: str, field_name: str, zeropoint: float,
     # Can uncomment this line if we want to look at some snaps.
     #psfOutFile = resultsDir + 'snap_{0}_rohan.fits'.format(filter_name)
     
-    print('psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)
+    print('/mnt/zfsusers/varadaraj/psfex/bin/psfex '+ seCatalogue +' -c ' + str(input_PSFEx) + keywords)
     overwrite_PSF = True
     
     if os.path.isfile(psfOutFile) and overwrite_PSF == False:
@@ -462,7 +465,11 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
 
         #! Loop through each Euclid tile
         for j, tile_name in enumerate(availableFilters):
-        
+
+            if filter_name[0] == 'f':
+                use_cat = f'{filter_name}_stars.ascii'
+            else:
+                use_cat = 'NONE'
                 
             # define the images etc to send through
             image_name = imagedata['Image'][j]
@@ -473,7 +480,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
 
             depth_dir = str(Path.cwd().parent.parent / 'data' / 'depths')
 
-            
+
             if imageDir == 'here':
                 imageDir = data_dir / filter_name / field_name
             
@@ -481,7 +488,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
             if queue == 'none':
                 print("Running here ")
                 
-                psfex(imageDir+'/'+image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir+'/'+wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat= use_cat)
+                psfex(imageDir+'/'+image_name, tile_name, field_name, zeropoint, depth_dir, wht_name = imageDir+'/'+wht_name, wht_type = wht_type, output_dir = output_dir, overwrite = overwrite, stars_only = stars_only, overwrite_PSF = False, use_cat=use_cat)
 
             else:
                 print("Spawning in the queue...", queue)
@@ -489,7 +496,7 @@ def get_psf(field_name: str, req_filters: List[str], queue: str = 'none', ap_dia
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}'.format(imageDir+'/'+image_name, imageDir+'/'+wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir))
+                f.write('python3 stupid_psf.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(imageDir+'/'+image_name, imageDir+'/'+wht_name, wht_type, zeropoint, output_dir, tile_name, overwrite, stars_only, field_name, depth_dir, use_cat))
                 f.close()
                 
                 # now execute this

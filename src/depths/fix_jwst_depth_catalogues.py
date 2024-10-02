@@ -13,6 +13,8 @@ from astropy.wcs import WCS
 from astropy.table import Table
 from pathlib import Path
 import glob
+import fnmatch
+import re
 
 image_dir = Path.cwd().parents[3] / 'data' / 'CWEB'
 cat_dir = Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues'
@@ -21,7 +23,10 @@ filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
 
 for filter_name in filter_names:
 
-    files = glob.glob(str(cat_dir / f'd{filter_name}_*.fits'))
+    tile_pattern = '[0-7][AB]'
+    files = glob.glob(str(cat_dir / f'd{filter_name}_{tile_pattern}.fits'))
+
+
     print(files)
 
     for file_name in files:
@@ -41,6 +46,10 @@ for filter_name in filter_names:
 
         t['RA'] = ra
         t['DEC'] = dec
+
+        t.remove_columns(['ALPHA_J2000', 'DELTA_J2000'])
+        t.rename_column('RA', 'ALPHA_J2000')
+        t.rename_column('DEC', 'DELTA_J2000')
 
         t.write(file_name, overwrite=True)
 
