@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Initial selection of high-z Lyman break candidates.
 
@@ -57,7 +59,7 @@ def generate_input_name(filters, run_brown_dwarfs=False, run_dusty=False, run_ly
         return '_'.join(parts) + '_dusty.in'
     if run_lya:
         return '_'.join(parts) + '_lya.in'
-    else:
+    if not run_brown_dwarfs and not run_lya and not run_dusty:
         return '_'.join(parts) + '.in'
 
 

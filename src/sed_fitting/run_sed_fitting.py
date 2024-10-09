@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env python3
+
 """
 Run the SED fitting.
 
@@ -23,6 +24,9 @@ run_dusty = False
 # Run Lyman-alpha emitter fits by using modified BC03 templates
 run_lya = False
 
+# Overwrite existing .spec files
+overwrite = True
+
 # BOOL ARRAY
 #[RUN_BROWN_DWARFS, RUN_LYA, RUN_DUSTY]
 
@@ -30,9 +34,9 @@ run_lya = False
 
 #! All filters
 all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 
-                'Y', 'J', 'H', 'Ks', 
-                'f115w', 'f150w', 'f277w' , 'f444w', 
-                'VIS', 'Ye', 'Je', 'He']  
+               'Y', 'J', 'H', 'Ks', 
+               'f115w', 'f150w', 'f277w' , 'f444w', 
+               'VIS', 'Ye', 'Je', 'He']  
 
 
 #! Ye
@@ -80,6 +84,8 @@ def run_sed_fitting():
     bools_json = json.dumps([run_brown_dwarfs, run_dusty, run_lya])
     all_filters_json = json.dumps(all_filters)
 
+    #! ############## Run preparation scripts ##############
+
     #! Selection
     print("Running selection.py...")
     selection_script = Path.cwd() / 'selection.py'
@@ -96,7 +102,7 @@ def run_sed_fitting():
 
     GenerateLePhareConfig(all_filters, det_filters, run_brown_dwarfs, run_dusty, run_lya)
 
-    #! Run LePhare
+    ############! Run LePhare ############
 
     #! Set up the correct folders for outputting .spec files
     if run_brown_dwarfs:
@@ -105,21 +111,57 @@ def run_sed_fitting():
         det_folder = 'det_' + '_'.join(det_filters) + '_lya'
     if run_dusty:
         det_folder = 'det_' + '_'.join(det_filters) + '_dusty'
-    else:
+    if not run_brown_dwarfs and not run_lya and not run_dusty:
         det_folder = 'det_' + '_'.join(det_filters)
 
-        #! Create directories if necessary
-        zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / det_folder
-        if not zphot_dir.exists():
-            zphot_dir.mkdir(parents=True)
+    #! Create directories if necessary
+    zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / det_folder
+    if not zphot_dir.exists():
+        zphot_dir.mkdir(parents=True)
 
-        #! Build the LePhare libraries
-        buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
+    #! Build the LePhare libraries
+    buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
 
-        #! Run the photometric redshifts
-        runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir, overwrite=True)
+    #! Run the photometric redshifts
+    if overwrite:
+        for file in zphot_dir.glob('*.spec'):
+            file.unlink()
+        print('Deleted all previous .spec files.')
+
+    runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir)
 
     return None
 
 if __name__ == "__main__":
+
+    #! First run the normal sed fitting
+    # run_brown_dwarfs = False
+    # run_dusty = False
+    # run_lya = False
+
+    # run_sed_fitting()
+
+    #! Then run brown dwarfs
+    run_brown_dwarfs = True
+    run_dusty = False
+    run_lya = False
+
     run_sed_fitting()
+
+    #! Then run dusty galaxies
+    run_brown_dwarfs = False
+    run_dusty = True
+    run_lya = False
+
+    run_sed_fitting()
+
+    #! Then run Lyman-alpha emitters
+    run_brown_dwarfs = False
+    run_dusty = False
+    run_lya = True
+
+    run_sed_fitting()
+
+    #! Extract good SED fits once all of the above have run.
+    # good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
+    # subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json], check=True)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python3
 """
 sed_fitting_codes.py
 
@@ -26,117 +26,6 @@ def remove_items(master_list, items_to_remove):
 
 
 
-def convertFitsToText(cat_name: str, ground_filters: list[str], euclid_filters: list[str], 
-                      cat_dir: Optional[str] = Path.cwd().parent.parent / 'data' / 'catalogues',
-                      field: Optional[str] = 'COSMOS', append_unused: bool = False,
-                      add_zspec: bool = False, zspec_colname: Optional[str] = None) -> None:
-    
-    """
-    LePhare requires a .txt file of the fluxes and errors in a particular order.
-    This function takes in a catalogue and processes it into the required format, saving it in the correct LePhare directory.
-
-    Parameters
-    ----------
-    cat_name : str
-        The name of the catalogue to be converted.
-    ground_filters : list[str]
-        The names of the ground-based filters in the catalogue.
-    euclid_filters : list[str]
-        The names of the Euclid filters in the catalogue.3
-    cat_dir : Optional[str], optional
-        The directory containing the catalogue, by default is 'euclid' / 'data' / 'catalogues'
-    field : Optional[str], optional
-        The field of the catalogue, by default is 'COSMOS'.
-        For now, we only have Euclid PV data in the COSMOS field, but this keeps the function general for the future!
-    append_unused : bool, optional
-        If True, the function will append unused filters to the end of the .txt file, by default False.
-
-    Returns
-    -------
-    None
-        Directly writes the text file to ~/mnt/hoy/temporaryFilesROHAN/lephare/inputs/.
-    """
-
-    output_dir = Path.home().parent.parent / 'mnt' / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs'
-
-    # Replace dashes with underscores in the filter names
-    ground_filters = [filt.replace('-', '_') for filt in ground_filters]
-
-    # Read in images.lis
-    ground_info = Table.read(vardy_dir / field / 'images.lis', format='ascii.commented_header')
-    euclid_info = Table.read(euclid_dir / 'data' / 'images.lis', format='ascii.commented_header')
-
-    avail_ground = ground_info['Name']
-    avail_euclid = euclid_info['Name']
-
-    # Open the catalogue
-    t = Table.read(cat_dir / cat_name)
-
-    #! Create the table in the correct format. First: ground based. Then: Euclid.
-
-    # Make base lists for the column names. We will use this to rearrange the columns later.
-    column_names = ['ID']
-
-    # If there are redshifts, get these
-    if add_zspec:
-        redshifts = t[zspec_colname]
-
-    # Loop through ground-based filters and add to start of list
-    for filter_name in ground_filters:
-
-        column_names = column_names + ['flux_{0}'.format(filter_name)]
-        column_names = column_names + ['err_{0}'.format(filter_name)]
-
-    # Now do the same for the Euclid filters
-    for filter_name in euclid_filters:
-
-        column_names = column_names + ['flux_{0}'.format(filter_name)]
-        column_names = column_names + ['err_{0}'.format(filter_name)]
-
-    #! Deprecated
-    if append_unused:
-        remainder_ground = list(set(avail_ground) - set(ground_filters))
-        remainder_euclid = list(set(avail_euclid) - set(euclid_filters))
-
-        for filter_name in remainder_ground:
-
-            column_names = column_names + ['flux_{0}'.format(filter_name)]
-            column_names = column_names + ['err_{0}'.format(filter_name)]
-
-        for filter_name in remainder_euclid:
-
-            column_names = column_names + ['flux_{0}'.format(filter_name)]
-            column_names = column_names + ['err_{0}'.format(filter_name)]
-
-    n = len(ground_filters) + len(euclid_filters)
-
-    # Compute the LePhare context
-    sum = 0
-    for i in range(n):
-        sum += 2**1
-    context = sum
-    print(context)
-
-    t['Context'] = context
-    t['ID'] = t['ID'].astype(int)
-    column_names = column_names + ['Context']
-
-    # Rearrange table
-    t = t[column_names]
-
-    # Add spetroscopic redshifts if they exist
-    if add_zspec:
-        t['z_spec'] = redshifts
-
-    # Save the table
-    ascii.write(t, output_dir / cat_name.replace('.fits', '.txt'), format='commented_header', overwrite=True)
-    print('Saved to: ', output_dir / cat_name.replace('.fits', '.txt'))
-    print(t)
-
-    return None
-
-
-
 def buildLePhareLibrary(parameter_file: str, 
                         parameter_dir: Optional[Path] = Path.home() / 'lephare' / 'lephare_dev' / 'config',
                         build_libs: Optional[bool] = False, build_filters: Optional[bool] = False, build_mags: Optional[bool] = False) -> None:
@@ -161,6 +50,9 @@ def buildLePhareLibrary(parameter_file: str,
     -------
     None
     """
+
+    # Get code directory
+    code_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'rohan' / 'euclid' /'src' / 'sed_fitting'
 
     # Move into lephare directory
     os.chdir(str(parameter_dir))
@@ -219,13 +111,15 @@ def buildLePhareLibrary(parameter_file: str,
     #     # Galaxies
     #     os.system(f'~/lephare/lephare_dev/source/mag_gal  -t G -c ~/lephare/lephare_dev/config/{parameter_file}')
 
+    # Move back to code directory
+    os.chdir(code_dir)
+
     return None
 
 
 
 def runPhotometricRedshifts(parameter_file: str, zphot_dir: Path,
-                        parameter_dir: Optional[Path] = Path.home().parent.parent / 'lephare' / 'lephare_dev' / 'config', 
-                        overwrite: bool = False) -> None:
+                        parameter_dir: Optional[Path] = Path.home().parent.parent / 'lephare' / 'lephare_dev' / 'config') -> None:
 
     """
     Run LePhare photometric redshifts
@@ -237,25 +131,23 @@ def runPhotometricRedshifts(parameter_file: str, zphot_dir: Path,
     zphot_dir : Path
         The directory to output the .spec files.
     parameter_dir : Optional[Path], optional
-        The directory containing the parameter file, by default is ~/ 'lephare' / 'lephare_dev' / 'config'.
-    overwrite : bool, optional
-        If True, remove previous files, by default False.
-    
+        The directory containing the parameter file, by default is ~/ 'lephare' / 'lephare_dev' / 'config'.    
 
     Returns
     -------
     None
     """
+
+    code_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'rohan' / 'euclid' /'src' / 'sed_fitting'
     
     # Move into the directory where we will output the .spec files
     os.chdir(zphot_dir)
 
-    # Remove previous files, if desired.
-    if overwrite:
-        os.system('rm ./*')
-
     # Run the command
     os.system(f'$LEPHAREDIR/source/zphota -c $LEPHAREDIR/config/{parameter_file}')
+
+    # Move back to the original directory
+    os.chdir(code_dir)
 
     #################! $LEPHAREDIR NOT WORKING ####################
     #os.system(f'~/lephare/lephare_dev/source/zphota -c ~/lephare/lephare_dev/config/{parameter_file}')
@@ -292,6 +184,8 @@ def filter_widths():
     }
 
     return filt_dict
+
+
 
 def filter_files():
     """ 
@@ -492,8 +386,9 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
             det_string += '_lya.in'
         if run_dusty:
             det_string += '_dusty.in'
-        else:
+        if not run_brown_dwarfs and not run_lya and not run_dusty:
             det_string += '.in'
+            
         cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string 
 
         f.write(f'CAT_IN		{cat_in}		# Input Catalog (full path)\n')
@@ -502,7 +397,11 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
         f.write('CAT_FMT      MEME		  # MEME: (Mag,Err)i , MMEE: (Mag)i,(Err)i\n')
         f.write('CAT_LINES    1,300000             #  MIN and MAX RANGE of ROWS used in input cat [def:-99,-99]\n')
         f.write('CAT_TYPE     SHORT	          # Input Format    (LONG,SHORT-def)\n')
-        f.write('CAT_OUT	     $LEPHAREDIR/test/euclid_test.out	# Output catalog (full path)\n')
+
+        # Use the input name to determine the .out name (replace .in with .out)
+        cat_out = det_string.replace('.in', '.out')
+
+        f.write(f'CAT_OUT	     $LEPHAREDIR/test/{cat_out}	# Output catalog (full path)\n')
         f.write('PARA_OUT     $LEPHAREDIR/config/zphot_output.para  # Ouput parameter (full path)\n')
         f.write('BD_SCALE     0		          # Bands used for scaling, (Sum 2^n; n=0->nbd-1, 0[-def]:all bands) \n')
         f.write('GLB_CONTEXT  -1		          # Overwrite Context (Sum 2^n; n=0->nbd-1, 0 : all bands used, -1[-def]: used context per object) \n')
@@ -510,15 +409,15 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
         f.write('# ERR_SCALE  0.03,0.02,0.02,0.02,0.04,0.04,0.04  # errors per band added in quadrature\n')
         f.write('ERR_FACTOR  1.0                    # error scaling factor 1.0 [-def] \n')
         f.write('#\n')
-        f.write('#-------    Theoretical libraries  ')
+        f.write('#-------    Theoretical libraries  \n')
         f.write('ZPHOTLIB    GAL_EUC,STAR_EUC\n')
         f.write('ADD_EMLINES NO \n')
         f.write('#\n')
         f.write('########    PHOTOMETRIC REDSHIFTS OPTIONS      ###########\n')
         f.write('# FIR LIBRARY \n')
         f.write('FIR_LIB     NONE\n')
-        f.write('FIR_LMIN         7.0           # Lambda Min (micron) for FIR analysis \nFIR_CONT        -1 \nFIR_SCALE       -1 \nFIR_FREESCALE    YES             # ALLOW FOR FREE SCALING \nFIR_SUBSTELLAR   NO')        
-        f.write('# PHYSICAL LIBRARY with Stochastic models from  BC07 \nPHYS_LIB      NONE\ nPHYS_CONT    -1 \nPHYS_SCALE   -1 \nPHYS_NMAX     100000 ')
+        f.write('FIR_LMIN         7.0           # Lambda Min (micron) for FIR analysis \nFIR_CONT        -1 \nFIR_SCALE       -1 \nFIR_FREESCALE    YES             # ALLOW FOR FREE SCALING \nFIR_SUBSTELLAR   NO\n')        
+        f.write('# PHYSICAL LIBRARY with Stochastic models from  BC07 \nPHYS_LIB      NONE \nPHYS_CONT    -1 \nPHYS_SCALE   -1 \nPHYS_NMAX     100000 \n')
         f.write('#\n')
 
         #! Priors
