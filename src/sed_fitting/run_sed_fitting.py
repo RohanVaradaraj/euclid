@@ -40,11 +40,11 @@ filters = {
     'Ye': {'type': 'detection', 'value': 5},
     'Je': {'type': 'detection', 'value': 2},
     'He': {'type': 'detection', 'value': 2},
-    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-Z_DR3': {'type': 'non-detection', 'value': 2},
-    #'VIS': {'type': 'non-detection', 'value': 2}, # Might interfere with e.g. z=6.9 candidates
+    # 'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    # 'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    # 'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+    # 'HSC-Z_DR3': {'type': 'non-detection', 'value': 2},
+    'VIS': {'type': 'non-detection', 'value': 2}, # Might interfere with e.g. z=6.9 candidates
 }
 
 #! Je
@@ -80,22 +80,21 @@ def run_sed_fitting():
     bools_json = json.dumps([run_brown_dwarfs, run_dusty, run_lya])
     all_filters_json = json.dumps(all_filters)
 
-    selection_script = Path.cwd() / 'selection.py'
-    convert_script = Path.cwd() / 'convert_fits_txt.py'
-
     #! Selection
     print("Running selection.py...")
+    selection_script = Path.cwd() / 'selection.py'
     subprocess.run(['python3', str(selection_script), filters_json], check=True)
 
     #! Convert catalogue to lephare format
     print("Running convert_fits_txt.py...")
+    convert_script = Path.cwd() / 'convert_fits_txt.py'
     subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json], check=True)
 
     #! Generate lephare config file
     det_filters = [f for f, t in filters.items() if t['type'] == 'detection']
     nondet_filters = [f for f, t in filters.items() if t['type'] == 'non-detection']
 
-    GenerateLePhareConfig(all_filters, run_brown_dwarfs, run_dusty, run_lya)
+    GenerateLePhareConfig(all_filters, det_filters, run_brown_dwarfs, run_dusty, run_lya)
 
     #! Run LePhare
 

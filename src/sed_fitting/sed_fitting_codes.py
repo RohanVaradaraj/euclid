@@ -165,6 +165,8 @@ def buildLePhareLibrary(parameter_file: str,
     # Move into lephare directory
     os.chdir(str(parameter_dir))
 
+
+
     if build_libs:
 
         # Build stars
@@ -303,9 +305,9 @@ def filter_files():
         'HSC-G_DR3':'myfilters/HSC/g_HSC.txt',
         'HSC-R_DR3':'myfilters/HSC/r_HSC.txt',
         'HSC-I_DR3':'myfilters/HSC/i_HSC.txt',
-        'HSC-NB0816_DR3':'myfilters/HSC/nb0816_HSC.txt',
+        'HSC-NB0816_DR3':'myfilters/HSC/nb816_HSC.txt',
         'HSC-Z_DR3':'myfilters/HSC/z_HSC.txt',
-        'HSC-NB0921_DR3':'myfilters/HSC/nb0921_HSC.txt',
+        'HSC-NB0921_DR3':'myfilters/HSC/nb921_HSC.txt',
         'HSC-Y_DR3':'myfilters/HSC/y_HSC.txt',
         'Y':'myfilters/VISTA/VISTA_Y.txt',
         'J':'myfilters/VISTA/VISTA_J.txt',
@@ -327,15 +329,17 @@ def filter_files():
 
 
 
-def GenerateLePhareConfig(all_filters: list, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
-    file_name=Path.home() / 'lephare' / 'lephare_dev' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05]) -> None:
+def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
+    file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05]) -> None:
     """
     Generate a LePhare configuration file.
 
     Parameters
     ----------
     all_filters : list
-        List of all filters to include in the config file.
+        List of all filters to include in the config file. Usually all filters available in the cat
+    det_filters : list
+        List of filters to use for detection. Used to generate the input catalogue name.
     run_brown_dwarfs : bool
         If True, run the brown dwarf SED fitting without the bluest filters.
     run_lya : bool

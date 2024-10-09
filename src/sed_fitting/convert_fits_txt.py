@@ -46,9 +46,10 @@ if __name__ == "__main__":
 
     # Get input name
     out_name = generate_input_name(filters, *bools)
+    print(out_name)
 
     if 'no_euclid' in out_name:
-        all_filters = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'CFHT-z', 'HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
+        all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'f115w', 'f150w', 'f277w', 'f444w']
 
     # Delete blue filters if we are running fitting for brown dwarfs
     if bools[0] == True:
@@ -119,5 +120,5 @@ if __name__ == "__main__":
 
     # Write to the desired format: no header names, .in file.
     ascii.write(t, out_dir / out_name, format='commented_header', overwrite=True)
-    print(t.info)
+    print(t)
     print(f'Context: {context}')
