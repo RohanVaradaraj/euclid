@@ -14,13 +14,24 @@ from astropy.io import fits, ascii
 import numpy as np
 from pathlib import Path
 import os
+import sys
+import json
+from selection import generate_selection_name, generate_input_name
+from sed_fitting_codes import remove_items
+
+if len(sys.argv) > 1:
+    filters_json = sys.argv[1]
+    filters = json.loads(filters_json)
+    bools_json = sys.argv[2]
+    bools = json.loads(bools_json)
+    all_filters_json = sys.argv[3]
+    all_filters = json.loads(all_filters_json)
 
 # Example usage
 if __name__ == "__main__":
 
-    # Get catalogue name from environment variable
-    #cat_name = 'COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y.fits'
-    cat_name = 'COSMOS_5sig_Ye_2sig_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+    # Generate catalogue name from input filters
+    cat_name = generate_selection_name('COSMOS', filters)
 
 
     '''SETUP'''
@@ -29,31 +40,27 @@ if __name__ == "__main__":
 
     # Directory
     out_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
-    #out_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
 
     # Base name for output
     base_output_name = 'euclid'
 
-    # Example filters dictionary from the first script
-    filters = {
-        'Ye': {'type': 'detection', 'value': 5},
-        'HSC-Y_DR3': {'type': 'detection', 'value': 2},
-        'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-        'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-    }
-
     # Get input name
-    out_name = 'det_Ye_Y.in'
-    # out_name = 'hsc_nb.in'
-    #out_name = 'det_NB0921_Ye.in'
-    
-    all_filters = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'CFHT-z', 'HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'VIS', 'Ye', 'Je', 'He']
+    out_name = generate_input_name(filters, *bools)
 
     if 'no_euclid' in out_name:
         all_filters = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'CFHT-z', 'HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
 
-    print(all_filters)
+    # Delete blue filters if we are running fitting for brown dwarfs
+    if bools[0] == True:
+        filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1', 'ch2']
+        all_filters = remove_items(all_filters, filters_to_remove)
+        print('Running brown dwarfs: blue filters and long-wavelength filters removed in input catalogue.')
+
+    # Delete reddest filters if we are NOT running dusty galaxies
+    if bools[1] == False:
+        filters_to_remove = ['f444w', 'ch1', 'ch2']
+        all_filters = remove_items(all_filters, filters_to_remove)
+        print('Not running dusty galaxies: reddest filters removed in input catalogue.')
 
     # Read input filters
     inputs = Table.read(image_dir / 'images.lis', format='ascii.commented_header')
@@ -62,10 +69,11 @@ if __name__ == "__main__":
     # Read data table
     t = Table.read(cat_dir / cat_name, format='fits', hdu=1)
 
+    # Limit to where JWST errors are positive
+    t = t[t['err_f115w'] > 0]
+
     '''CREATE TABLE'''
 
-    print(t.columns)
-    print(t)
     # Create arrays for flux and error column names
 
     # Create base arrays
@@ -99,7 +107,6 @@ if __name__ == "__main__":
 
     # Define the result as the context
     context = sum
-    print(context)
 
     t['Context'] = context
     t['ID'] = t['ID'].astype(int)
@@ -112,4 +119,5 @@ if __name__ == "__main__":
 
     # Write to the desired format: no header names, .in file.
     ascii.write(t, out_dir / out_name, format='commented_header', overwrite=True)
-    print(t)
+    print(t.info)
+    print(f'Context: {context}')

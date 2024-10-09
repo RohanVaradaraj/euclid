@@ -15,7 +15,36 @@ import glob
 from sed_fitting_codes import *
 import sys
 from matplotlib.backends.backend_pdf import PdfPages
-from make_comparison_tables import stellar_type
+
+def stellar_type(model):
+    stellar_dict = {
+        1: 'M4',
+        2: 'M5',
+        3: 'M6',
+        4: 'M7',
+        5: 'M8',
+        6: 'M9',
+        7: 'L0',
+        8: 'L1',
+        9: 'L2',
+        10: 'L3',
+        11: 'L4',
+        12: 'L5',
+        13: 'L6',
+        14: 'L7',
+        15: 'L8',
+        16: 'L9',
+        17: 'T0',
+        18: 'T1',
+        19: 'T2',
+        20: 'T3',
+        21: 'T4',
+        22: 'T5',
+        23: 'T6',
+        24: 'T7',
+        25: 'T8',
+    }
+    return stellar_dict[model]
 
 # Backend for running on queue
 import matplotlib as mpl
@@ -35,18 +64,21 @@ def mag_to_flux(mag):
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-output_pdf = 'det_Ye_Y_LBG.pdf'
+output_pdf = 'det_Je.pdf'
 #output_pdf = 'det_NB0921_Ye.pdf'
 
 # Set up directories
 #zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'test_euclid'
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Ye_Y_LBG'
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Je'
+
+# Crossmatched catalogue name to get existing sources
+crossmatch_name = 'XMATCH_COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y.fits'
 
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
 #input_name = 'euclid_test.in'
 #input_name = 'euclid_lya.in'
-input_name = 'det_Ye_Y.in'
+input_name = 'det_Je.in'
 flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
 
 # Define start and end points of each section in the LePhare .spec file
@@ -101,12 +133,11 @@ if 'no_euclid' in input_name:
 
 # Load the crossmatched catalogue of known objects
 crossmatch_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-crossmatch_name = 'XMATCH_COSMOS_5sig_Ye_2sig_VISTA_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
 crossmatch = Table.read(crossmatch_dir / crossmatch_name, format='fits')
 crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Load the parent catalogue to get RA,DEC
-parent_cat = Table.read(crossmatch_dir / 'COSMOS_5sig_Ye_2sig_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits', format='fits')
+parent_cat = Table.read(crossmatch_dir / 'COSMOS_5sig_Je_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y_nonDet_VIS.fits', format='fits')
 #parent_cat = Table.read(crossmatch_dir / 'XMATCH_HSC_NB.fits', format='fits')
 
 # Collect all .spec files
@@ -165,6 +196,10 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         primary_sed = mag_to_flux(model_fluxes[0])
         primary_wlen = model_wlens[0]
 
+        if len(model_fluxes) < 2:
+            print('Only one solution')
+            continue
+
         secondary_sed = mag_to_flux(model_fluxes[1])
         secondary_wlen = model_wlens[1]
 
@@ -183,6 +218,11 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         dz_inf = round(params['Zinf'][0], 2)
         chi2_1 = round(params['Chi2'][0], 1)
 
+        # Selection criterion for HSC+VISTA+JWST+Euclid
+        # if chi2_1 > 20.4:
+        #     print('Would not be selected as a high-z galaxy')
+        #     continue
+
         print('GAL 1 SOLUTION: ', zphot_1, chi2_1)
 
         zphot_2 = round(params['Zphot'][1], 2)
@@ -198,6 +238,12 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         stellar_model = params['Model'][-1]
         mlt_type = stellar_type(stellar_model)
+
+        cut = 20.4
+
+        if ((chi2_1 > cut) | (chi2_1 < 0)) & ((chi2_2 > cut) | (chi2_2 < 0)) & ((chi2_star > cut) | (chi2_star < 0)):
+            print('Poor fit for all models')
+            continue
 
         #! Sigma array
         sigma = flux / error

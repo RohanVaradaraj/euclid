@@ -49,6 +49,7 @@ def stellar_type(model):
     }
     return stellar_dict[model]
 
+
 #! Output directory for comparison catalogue
 save_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'catalogues' / 'comparison'
 
