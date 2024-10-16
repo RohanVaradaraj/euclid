@@ -231,6 +231,7 @@ def isCoordInCWEB(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
         in_cweb = '0'
 
         #! Check if the point lies in any of the COSMOS-Web polygons
+        #! If so, find all of them
         for i, polygon in enumerate(polygons):
             if polygon.contains(point):
                 in_cweb = mosaics[i]
@@ -304,7 +305,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     vista_dir = ground_dir / 'COSMOS'
 
     #### I ####
-    with fits.open(vista_dir / 'HSC-NB0921_DR3.fits') as hdu_I:
+    with fits.open(vista_dir / 'HSC-I_DR3.fits') as hdu_I:
             
             data_I = hdu_I[0].data
             hdr_I = hdu_I[0].header
@@ -405,9 +406,9 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
 
     # If all of the Euclid cutouts are zero, then the cutout is empty so return none
-    if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
-        print("Euclid cutouts are empty")
-        return None
+    # if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
+    #     print("Euclid cutouts are empty")
+    #     return None#
 
 
     #! Next check for and get the Hubble cutouts
@@ -497,6 +498,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
             cutout_f277w_prim = Cutout2D(data_PRIMER, c, size=size/pix_scale, wcs=wcs_PRIMER)
 
+
         #### F444W ####
         with fits.open(primer_dir / 'primer_cosmos_nircam_v0.5_f444w_30mas_sci.fits') as hdu_PRIMER:
 
@@ -530,7 +532,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -550,7 +552,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -585,7 +587,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -611,7 +613,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -639,7 +641,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             axis.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         # Top row: ground-based cutouts
-        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-NB0921', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
+        for i, (data, title) in enumerate(zip([cutout_grI.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data], ['HSC-I', 'VISTA-Y', 'VISTA-J', 'VISTA-H'])):
             lims = findPlotLimits(data)
             plot_cutout(ax[0, i], data, lims, title)
 
@@ -669,8 +671,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         if footprint_bools[2]:
             for i, (data, title) in enumerate(zip([cutout_f277w_prim.data, cutout_f444w_prim.data], ['F277W', 'F444W'])):
                 lims = findPlotLimits(data)
-                plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
-
+                #plot_cutout(ax[0, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 5], data, lims, title)
+                plot_cutout(ax[1, 5], data, lims, title) if i == 0 else plot_cutout(ax[1, 6], data, lims, title)
 
     if add_centre_lines:
         # Draw a plus symbol on each subplot to show the centre of the cutout
@@ -703,6 +705,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         plt.suptitle(plot_title)
 
     plt.tight_layout()
+    #plt.show()
 
     if save_cutout:
         plot_title = str(plot_title)
@@ -718,18 +721,25 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 if __name__ == '__main__':
     
+    #! PRIMER STARS
+    t = Table.read(Path.cwd().parents[3] / 'data' / 'psf' / 'COSMOS' / 'catalogues' / 'f410m_stars.fits')
+
+    ra = t['ALPHA_J2000']
+    dec = t['DELTA_J2000']
+    ID = t['NUMBER']
+
     #! REBELS sources
-    t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
-    t = t[t['RA'] > 148]
+    # t = ascii.read(Path.cwd().parent.parent / 'data' / 'mosaic' / 'REBELS.csv', format='csv')
+    # t = t[t['RA'] > 148]
 
-    # # Skip first few
-    # #t = t[:]
+    # # # Skip first few
+    # # #t = t[:]
 
-    ra = t['RA']
-    dec = t['Dec']
-    z = t['Redshift (z)']
-    ID = t['Object Name']
-    ID = [name.split('>')[1].split('<')[0] for name in ID]
+    # ra = t['RA']
+    # dec = t['Dec']
+    # z = t['Redshift (z)']
+    # ID = t['Object Name']
+    # ID = [name.split('>')[1].split('<')[0] for name in ID]
 
     #! Strong lens
     #ra = [150.00280406167596]
@@ -877,15 +887,43 @@ if __name__ == '__main__':
     # ID = t['Object Name']
 
     #! Initial det_YJH candidates
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'XMATCH_COSMOS_5sig_Ye_2sig_VISTA_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits')
-    ra = t['RA_1']
-    dec = t['DEC_1']
-    ID = t['Object Name']
-    z = t['Redshift']
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'XMATCH_COSMOS_5sig_Ye_2sig_VISTA_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits')
+    # ra = t['RA_1']
+    # dec = t['DEC_1']
+    # ID = t['Object Name']
+    # z = t['Redshift']
 
-    # Sort by flux in Y, reversed
-    t.sort('flux_Ye', reverse=True)
-    print(t['flux_Ye'])
+    # # Sort by flux in Y, reversed
+    # t.sort('flux_Ye', reverse=True)
+    # print(t['flux_Ye'])
+
+    #! My LAE candidate
+    # ra = [150.11833152095758]
+    # dec = [2.2522416552619746]
+    # ID = [178396]
+
+    #! Stars
+    t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
+
+    # Sort by class_star
+    t.sort('CLASS_STAR', reverse=True)
+    print(len(t))
+
+    t = t[t['CLASS_STAR'] < 0.99]
+
+    STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
+    t = t[STARS]
+
+    print(len(t))
+
+    #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
+
+    ra = t['RA']
+    dec = t['DEC']
+    class_star = t['CLASS_STAR']
+    flag = t['FLAGS']
+    elong = t['ELONGATION']
+    fwhm = t['FWHM_IMAGE']
 
 
     ############! GET CUTOUTS ############
@@ -904,10 +942,11 @@ if __name__ == '__main__':
         #print(ID[i])
         #print(muv[i])
 
-        Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
-        #Cutout(ra[i], dec[i], size=12., save_cutout=False)
+        #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
+        print(class_star[i], flag[i], elong[i], fwhm[i])
+        Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        #Cutout(ra[i], dec[i], size=10., plot_title=ID[i])
+        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

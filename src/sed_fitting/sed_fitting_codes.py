@@ -180,7 +180,9 @@ def filter_widths():
         'VIS': (0.7180, 0.3699),
         'Ye': (1.0812, 0.2626),
         'Je': (1.3670, 0.3991),
-        'He': (1.7708, 0.4994)
+        'He': (1.7708, 0.4994),
+        'ch1cds': (3.551, 0.750),
+        'ch2cds': (4.493, 1.010),
     }
 
     return filt_dict
@@ -215,8 +217,8 @@ def filter_files():
         'Ye':'myfilters/Euclid/Euclid_Y.txt',
         'Je':'myfilters/Euclid/Euclid_J.txt',
         'He':'myfilters/Euclid/Euclid_H.txt',
-        'ch1':'myfilters/SPITZER/irac_ch1.txt',
-        'ch2':'myfilters/SPITZER/irac_ch2.txt',
+        'ch1cds':'myfilters/SPITZER/irac_ch1.txt',
+        'ch2cds':'myfilters/SPITZER/irac_ch2.txt',
     }
 
     return filt_files
@@ -292,12 +294,12 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
         filter_names = all_filters
 
         if run_brown_dwarfs:
-            filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1', 'ch2']
+            filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
             filter_names = remove_items(filter_names, filters_to_remove)
             print('Running brown dwarfs: blue filters and long-wavelength filters removed in config file.')
 
         if run_dusty == False:
-            filters_to_remove = ['f444w', 'ch1', 'ch2']
+            filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
             filter_names = remove_items(filter_names, filters_to_remove)
             print('Not running dusty galaxies: reddest filters removed in config file.')
 
@@ -388,6 +390,9 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
             det_string += '_dusty.in'
         if not run_brown_dwarfs and not run_lya and not run_dusty:
             det_string += '.in'
+        print('####################')
+        print(det_string)
+
             
         cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string 
 
@@ -481,17 +486,3 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
         print(f'Generated LePhare config file: {file_name}')
 
         return None
-
-
-        
-
-
-
-
-
-
-
-
-
-
-

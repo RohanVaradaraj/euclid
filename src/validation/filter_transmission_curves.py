@@ -38,7 +38,7 @@ euclid_filters = sorted(euclid_filters, key=custom_sort)
 
 euclid_colours = ['purple', 'blue', 'green', 'red']
 
-plt.figure(figsize=(14, 6))
+plt.figure(figsize=(14, 4))
 
 for i, euclid_filter in enumerate(euclid_filters):
 
@@ -62,11 +62,11 @@ for i, euclid_filter in enumerate(euclid_filters):
     transmission = [t / max(transmission) for t in transmission]
 
     # Plot filter
-    plt.plot(wavelength, transmission, color=euclid_colours[i], lw=2., alpha=0.8, zorder=10)
+    plt.plot(wavelength, transmission, color=euclid_colours[i], lw=2.5, alpha=0.8, zorder=10)
 
     # Add text at midpoint of each filter according to order labels
     mid_wavelength = (max(wavelength) - min(wavelength)) / 2 + min(wavelength)
-    plt.text(mid_wavelength, 0.8, order[i], color=euclid_colours[i], fontsize=15, ha='center', va='center', zorder=20)
+    plt.text(mid_wavelength, 0.85, order[i], color=euclid_colours[i], fontsize=15, ha='center', va='center', zorder=20)
 
 vista_filters = glob.glob(str(filter_dir / 'VISTA' / 'VISTA_*'))
 
@@ -92,7 +92,7 @@ for vista_filter in vista_filters:
     transmission = [t / (max(transmission)*1.3) for t in transmission]
 
     # Plot filter
-    plt.plot(wavelength, transmission, color='darkorange', lw=2., alpha=0.5)
+    plt.plot(wavelength, transmission, color='darkorange', lw=2.5, alpha=0.5)
     if vista_filter == vista_filters[0]:
         # Dummy label
         plt.plot([], [], color='darkorange', lw=2., alpha=0.5, label='VISTA')
@@ -126,38 +126,38 @@ for hsc_filter in hsc_filters:
         transmission = [t / (max(transmission)*1.3) for t in transmission]
 
         # Plot filter
-        plt.plot(wavelength, transmission, color='steelblue', lw=2., alpha=0.5)
+        plt.plot(wavelength, transmission, color='steelblue', lw=2.5, alpha=0.5)
         if hsc_filter == hsc_filters[0]:
             # Dummy label
             plt.plot([], [], color='steelblue', lw=2., alpha=0.5, label='HSC')
 
 # Add CWeb filters
-for cweb_filter in cweb_filters:
+# for cweb_filter in cweb_filters:
     
-    # Open filter in two column format
-    with open(cweb_filter, 'r') as f:
-        lines = f.readlines() 
+#     # Open filter in two column format
+#     with open(cweb_filter, 'r') as f:
+#         lines = f.readlines() 
 
-    # Extract wavelength and transmission
-    wavelength = []
-    transmission = []
-    for line in lines:
-        if line[0] != '#':
-            values = line.split()
-            wavelength.append(float(values[0]))
-            transmission.append(float(values[1]))
+#     # Extract wavelength and transmission
+#     wavelength = []
+#     transmission = []
+#     for line in lines:
+#         if line[0] != '#':
+#             values = line.split()
+#             wavelength.append(float(values[0]))
+#             transmission.append(float(values[1]))
 
-    # Convert wavelength to microns
-    #wavelength = [w * 1e-4 for w in wavelength]
+#     # Convert wavelength to microns
+#     #wavelength = [w * 1e-4 for w in wavelength]
 
-    # Normalise
-    transmission = [t / (max(transmission)*1.6) for t in transmission]
+#     # Normalise
+#     transmission = [t / (max(transmission)*1.6) for t in transmission]
 
-    # Plot filter
-    plt.plot(wavelength, transmission, color='red', lw=4., alpha=0.5, linestyle='--')
-    if cweb_filter == cweb_filters[0]:
-        # Dummy label
-        plt.plot([], [], label='COSMOS-Web', color='red', lw=4., alpha=0.5, linestyle='--')
+#     # Plot filter
+#     plt.plot(wavelength, transmission, color='red', lw=4., alpha=0.5, linestyle='--')
+#     if cweb_filter == cweb_filters[0]:
+#         # Dummy label
+#         plt.plot([], [], label='COSMOS-Web', color='red', lw=3., alpha=0.5, linestyle='--')
 
 plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
 plt.ylabel('Relative Transmission')
@@ -165,7 +165,9 @@ plt.legend(loc='lower right')
 
 # Full filter set
 plt.xlim(0.2, 2.55)
-plt.savefig(plot_dir / 'filter_transmission_curves_with_CWEB.png', bbox_inches='tight')
+#plt.xlim(0.2, 5)
+plt.tight_layout()
+plt.savefig(plot_dir / 'filter_transmission_curves_paper.png', bbox_inches='tight')
 
 # Zoomed in around Y
 #plt.xlim(0.7, 1.7)

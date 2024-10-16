@@ -27,6 +27,9 @@ if len(sys.argv) > 1:
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
 
+#! BOOL ARRAY
+#![RUN_BROWN_DWARFS, RUN_DUSTY, RUN_LYA]
+
 # Example usage
 if __name__ == "__main__":
 
@@ -48,18 +51,15 @@ if __name__ == "__main__":
     out_name = generate_input_name(filters, *bools)
     print(out_name)
 
-    if 'no_euclid' in out_name:
-        all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'f115w', 'f150w', 'f277w', 'f444w']
-
     # Delete blue filters if we are running fitting for brown dwarfs
     if bools[0] == True:
-        filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1', 'ch2']
+        filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
         all_filters = remove_items(all_filters, filters_to_remove)
         print('Running brown dwarfs: blue filters and long-wavelength filters removed in input catalogue.')
 
     # Delete reddest filters if we are NOT running dusty galaxies
     if bools[1] == False:
-        filters_to_remove = ['f444w', 'ch1', 'ch2']
+        filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
         all_filters = remove_items(all_filters, filters_to_remove)
         print('Not running dusty galaxies: reddest filters removed in input catalogue.')
 

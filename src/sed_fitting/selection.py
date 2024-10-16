@@ -34,6 +34,13 @@ def apply_filters(table, filters):
         elif threshold['type'] == 'non-detection':
             table = table[table[f'flux_{filter_name}']/table[f'err_{filter_name}'] < threshold['value']]
             print(f"{threshold['value']}sigma non-detection in {filter_name}: ", len(table))
+        elif threshold['type'] == 'stacked-detection':
+            stack_filters = filter_name.split('+')
+            stacked_flux = table[f'flux_{stack_filters[0]}'] + table[f'flux_{stack_filters[1]}']
+            stacked_err = np.sqrt(table[f'err_{stack_filters[0]}']**2 + table[f'err_{stack_filters[1]}']**2)
+            table = table[stacked_flux/stacked_err > threshold['value']]
+            print(f"{threshold['value']}sigma stacked detection in {stack_filters}: ", len(table))
+
     return table
 
 def generate_selection_name(base_name, filters):
@@ -43,7 +50,10 @@ def generate_selection_name(base_name, filters):
         clean_filter_name = clean_filter_name.replace('HSC-', 'HSC_')
         if threshold['type'] == 'detection':
             parts.append(f"{threshold['value']}sig_{clean_filter_name}")
-        else:
+        if threshold['type'] == 'stacked-detection':
+            stack_filters = filter_name.split('+')
+            parts.append(f"{threshold['value']}sig_{'_'.join(stack_filters)}")
+        if threshold['type'] == 'non-detection':
             parts.append(f"nonDet_{clean_filter_name}")
     return '_'.join(parts) + '.fits'
 
@@ -53,6 +63,10 @@ def generate_input_name(filters, run_brown_dwarfs=False, run_dusty=False, run_ly
         clean_filter_name = filter_name.replace('_DR3', '')
         if threshold['type'] == 'detection':
             parts.append(clean_filter_name)
+        if threshold['type'] == 'stacked-detection':
+            stack_filters = filter_name.split('+')
+            for stack_filter in stack_filters:
+                parts.append(stack_filter)
     if run_brown_dwarfs:
         return '_'.join(parts) + '_bd.in'
     if run_dusty:
@@ -94,7 +108,8 @@ if __name__ == "__main__":
 
     input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
     #input_cat_name = "COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_07_12.fits"
-    input_cat_name = 'COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_10_07.fits' # Newest with JWST
+    #input_cat_name = 'COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_10_07.fits' # Newest with JWST
+    input_cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits' # VISTA-Selected
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
     base_output_name = "COSMOS"
     

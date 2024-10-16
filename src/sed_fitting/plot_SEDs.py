@@ -15,6 +15,34 @@ import glob
 from sed_fitting_codes import *
 import sys
 from matplotlib.backends.backend_pdf import PdfPages
+from selection import generate_selection_name, generate_input_name
+from astropy.coordinates import SkyCoord
+import json
+
+# Backend for running on queue
+import matplotlib as mpl
+mpl.use('Agg')
+
+cutout_path = Path.cwd().parents[0] / 'cutouts'
+sys.path.append(str(cutout_path))
+from cutout_codes import *
+from vista_cutouts import *
+
+crosstalk_path = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
+sys.path.append(str(crosstalk_path))
+from full_catalogue_codes import label_ct
+
+plt.rcParams['axes.linewidth'] = 2.5
+plt.rcParams.update({'font.size': 15})
+plt.rcParams['figure.dpi'] = 100
+
+if len(sys.argv) > 1:
+    filters_json = sys.argv[1]
+    filters = json.loads(filters_json)
+    bools_json = sys.argv[2]
+    bools = json.loads(bools_json)
+    all_filters_json = sys.argv[3]
+    all_filters = json.loads(all_filters_json)
 
 def stellar_type(model):
     stellar_dict = {
@@ -46,50 +74,86 @@ def stellar_type(model):
     }
     return stellar_dict[model]
 
-# Backend for running on queue
-import matplotlib as mpl
-mpl.use('Agg')
-
-cutout_path = Path.cwd().parents[0] / 'cutouts'
-sys.path.append(str(cutout_path))
-from cutout_codes import *
-
-plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 15})
-plt.rcParams['figure.dpi'] = 100
-
 # Function to convert magnitudes to fluxes
 def mag_to_flux(mag):
     return 10**(-0.4 * (mag + 48.6))
 
+#! What is the main object we want to plot? highz, bd, dusty or lya?
+object_type = 'highz'
+
+#! Label crosstalk?
+label_crosstalk = True
+
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-output_pdf = 'det_Je.pdf'
-#output_pdf = 'det_NB0921_Ye.pdf'
+
+#! Set up the output PDF name from the det and nondet filters
+det_list = [f for f, t in filters.items() if t['type'] == 'detection']
+if len(det_list) != 0:
+    base_det = 'det_' + '_'.join(det_list)
+if len(det_list) == 0:
+    stack_list = [f for f, t in filters.items() if t['type'] == 'stacked-detection']
+    stack_filters = stack_list[0].split('+')
+    base_det = 'det_' + '_'.join(stack_filters)
+    det_list = stack_filters
+
+base_nondet = 'nonDet_' + '_'.join([f for f, t in filters.items() if t['type'] == 'non-detection'])
+if object_type == 'highz':
+    output_pdf = f'{base_det}_{base_nondet}.pdf'
+else:
+    output_pdf = f'{base_det}_{base_nondet}_{object_type}.pdf'
+print('Saving to: ', output_pdf)
 
 # Set up directories
-#zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'test_euclid'
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Je'
+# zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
+zphot_folder = base_det + f'_best_{object_type}'
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+print(zphot_dir)
 
 # Crossmatched catalogue name to get existing sources
-crossmatch_name = 'XMATCH_COSMOS_5sig_Je_3sig_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y.fits'
+crossmatch_name = 'all_COSMOS_highz.fits'
+
+# Load the crossmatched catalogue of known objects
+crossmatch_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
+crossmatch = Table.read(crossmatch_dir / crossmatch_name, format='fits')
+crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
-#input_name = 'euclid_test.in'
-#input_name = 'euclid_lya.in'
-input_name = 'det_Je.in'
+input_name = base_det + '.in'
 flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
+
+# Directory to read in the .out file
+lephare_out_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
+
+# Determine the number of filters
 
 # Define start and end points of each section in the LePhare .spec file
 ds_phot = 9
-de_phot = 28
 
-ds_mod = 209
+print(det_list)
+
+if 'e' in det_list[0]:
+    de_phot = 27
+if det_list == ['Y', 'J']:
+    de_phot = 20
+
+if 'e' in det_list[0]:
+    ds_mod = 228
+if det_list == ['Y', 'J']:
+    ds_mod = 220
+
 de_mod = -1
 
-ds_pz = 28
-de_pz = 209
+if 'e' in det_list[0]:
+    ds_pz = 27
+if det_list == ['Y', 'J']:
+    ds_pz = 20
+
+if 'e' in det_list[0]:
+    de_pz = 228
+if det_list == ['Y', 'J']:
+    de_pz = 220
 
 ds_param = 3
 de_param = 9
@@ -109,6 +173,20 @@ if 'no_euclid' in input_name:
     ds_param = 3
     de_param = 9
 
+# #! Brown dwarf fitting
+# if 'bd' or 'lya' in output_pdf:
+#     ds_phot = 9
+#     de_phot = 24
+
+#     ds_mod = 224
+#     de_mod = -1
+
+#     ds_pz = 24
+#     de_pz = 224
+
+#     ds_param = 3
+#     de_param = 9
+
 # From these values, we can get the number of filters which will be useful for extracting fluxes from the .in file.
 n_bands = de_phot - ds_phot
 
@@ -124,6 +202,26 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 # Get filters
 filter_dict = filter_widths()
 
+# Remove f444w
+if 'dusty' not in output_pdf:
+    filter_dict.pop('f444w')
+    filter_dict.pop('ch1cds')
+    filter_dict.pop('ch2cds')
+    print('Removed f444w, ch1cds, ch2cds')
+
+if det_list == ['Y', 'J']:
+    filter_dict.pop('VIS')
+    filter_dict.pop('Ye')
+    filter_dict.pop('Je')
+    filter_dict.pop('He')
+    print('Removed VIS, Ye, Je, He')
+
+if 'bd' or 'lya' in output_pdf:
+    filter_dict.pop('f277w')
+    filter_dict.pop('HSC-G_DR3')
+    filter_dict.pop('HSC-R_DR3')
+    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+
 # If running only VIISTA: Remove items with keys VIS, Ye, Je, He
 if 'no_euclid' in input_name:
     filter_dict.pop('VIS')
@@ -131,14 +229,17 @@ if 'no_euclid' in input_name:
     filter_dict.pop('Je')
     filter_dict.pop('He')
 
-# Load the crossmatched catalogue of known objects
-crossmatch_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-crossmatch = Table.read(crossmatch_dir / crossmatch_name, format='fits')
-crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Load the parent catalogue to get RA,DEC
-parent_cat = Table.read(crossmatch_dir / 'COSMOS_5sig_Je_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_nonDet_HSC_Z_nonDet_HSC_Y_nonDet_Y_nonDet_VIS.fits', format='fits')
-#parent_cat = Table.read(crossmatch_dir / 'XMATCH_HSC_NB.fits', format='fits')
+# Generate the name of the parent catalogue
+parent_cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+parent_cat_name = generate_selection_name('COSMOS', filters)
+
+# Label crosstalk
+if label_crosstalk:
+    label_ct(str(parent_cat_dir / parent_cat_name), fieldName='COSMOS')
+
+parent_cat = Table.read(parent_cat_dir / parent_cat_name, format='fits')
 
 # Collect all .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
@@ -225,25 +326,28 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         print('GAL 1 SOLUTION: ', zphot_1, chi2_1)
 
+        #! Read in the secondary solutions from the lephare_out tables
+        bd_out_name = base_det + '_bd.out'
+        bd_out = ascii.read(lephare_out_dir / bd_out_name, format='no_header')
+        chi2_star = round(bd_out[bd_out['col1'] == int(ID)]['col21'][0], 1)
+
+        dusty_out_name = base_det + '_dusty.out'
+        dusty_out = ascii.read(lephare_out_dir / dusty_out_name, format='no_header')
+        chi2_2 = round(dusty_out[dusty_out['col1'] == int(ID)]['col15'][0], 1)
+
         zphot_2 = round(params['Zphot'][1], 2)
-        chi2_2 = round(params['Chi2'][1], 1)
+        #chi2_2 = round(params['Chi2'][1], 1)
 
         print('GAL 2 SOLUTION: ', zphot_2, chi2_2)
 
         if int(zphot_2) == -1:
             secondary_is_stellar = True
 
-        chi2_star = round(params['Chi2'][-1], 1)
+        #chi2_star = round(params['Chi2'][-1], 1)
         print('STELLAR SOLUTION: ', chi2_star)
 
         stellar_model = params['Model'][-1]
         mlt_type = stellar_type(stellar_model)
-
-        cut = 20.4
-
-        if ((chi2_1 > cut) | (chi2_1 < 0)) & ((chi2_2 > cut) | (chi2_2 < 0)) & ((chi2_star > cut) | (chi2_star < 0)):
-            print('Poor fit for all models')
-            continue
 
         #! Sigma array
         sigma = flux / error
@@ -277,6 +381,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         model_photometry = mag_to_flux(phot['modelPhot'])
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
+
+
         # Real photometry with upper limits for sigma < 2
         for i in range(len(flux)):
             if sigma[i] < 2:
@@ -284,24 +390,63 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             else:
                 ax1.errorbar(central_wavelengths[i], flux[i], yerr=error[i], fmt='o', color='black', markersize=8, zorder=6, elinewidth=2)
 
-        ############! CHECK IF THIS IS AN EXISTING OBJECT ############
-        # Check if this object is in the crossmatched catalogue
-        if int(ID) in crossmatch['ID']:
-            # Get the object
-            obj = crossmatch[np.where(crossmatch['ID'] == int(ID))]
+        ############! CROSSMATCH WITH EXISTING SOURCES ############
+        # Get the RA and DEC of the object from the parent catalog
+        obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
+        obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
 
-            # Get the redshift
-            ref_id = obj['Object Name'][0]
-            z_spec = round(obj['Redshift'][0], 2)
+        # Get the RA and DEC of all objects in the crossmatch catalog
+        xmatch_ra = crossmatch['RA']
+        xmatch_dec = crossmatch['DEC']
 
-            ax1.set_title(f'ID {ID}, {ref_id}, z = {z_spec}')
+        # Create SkyCoord objects for both catalogs
+        catalog1 = SkyCoord(ra=obj_ra * u.deg, dec=obj_dec * u.deg)  # Single object
+        catalog2 = SkyCoord(ra=xmatch_ra * u.deg, dec=xmatch_dec * u.deg)  # Crossmatch catalog
+
+        # Perform crossmatch using match_to_catalog_sky
+        idx, d2d, d3d = catalog1.match_to_catalog_sky(catalog2)
+
+        # Set the tolerance to 1 arcsecond
+        tolerance = 1 * u.arcsec
+
+        # side mission: check if there is a 'CLASS' column in the parent catalogue
+        if 'CLASS' in parent_cat.colnames:
+            ct = parent_cat[np.where(parent_cat['ID'] == int(ID))]['CLASS'][0]
+            if ct > 0:
+                print('Possible crosstalk')
         else:
-            ax1.set_title(f'ID {ID}')
+            ct = 0.
+
+        # Check if the match is within the tolerance
+        if d2d < tolerance:
+            # Get the index of the matched object
+            matched_idx = idx  # Since idx is scalar when matching a single object
+
+            # Retrieve the corresponding object from the crossmatch catalog
+            obj = crossmatch[matched_idx]
+
+            # Extract the object name and redshift
+            name = obj['Object Name']
+            redshift = round(obj['Redshift'], 2)
+
+            # Update the title of the plot with the matched information. Add crosstalk if it is non-zero.
+            title_string = f'ID {ID}, z = {redshift}'
+            if ct > 0:
+                title_string += f', POSSIBLE CROSSTALK'
+            ax1.set_title(title_string)
+        else:
+            # If no match is found, just set the title with the ID
+            title_string = f'ID {ID}'
+            if ct > 0:
+                title_string += f', POSSIBLE CROSSTALK'
+            ax1.set_title(title_string)
+
+
 
         ax1.set_yscale('log')
         ax1.legend(loc='upper right')
         ax1.set_ylim(3e-32, 1e-29)
-        ax1.set_xlim(3000, 35000)
+        ax1.set_xlim(3000, 40000)
 
         ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')
         ax1.set_xlabel(r'$\lambda (\AA)$')
@@ -312,11 +457,13 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ############! CUTOUT ##############
         # Get ra, dec of object from parent catalogue
         obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
-        print(obj)
         ra = obj['RA'][0]
         dec = obj['DEC'][0]
 
-        cutout_fig, cutout_axs = Cutout(ra, dec, size=10., save_cutout=False)
+        if det_list == ['Y', 'J']:
+            cutout_fig, cutout_axs = VistaCutout(ra, dec, size=10., save_cutout=False)
+        else:
+            cutout_fig, cutout_axs = Cutout(ra, dec, size=10., save_cutout=False)
 
         pdf.savefig(cutout_fig)
         plt.close(cutout_fig)

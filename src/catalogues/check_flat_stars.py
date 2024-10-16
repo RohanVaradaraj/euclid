@@ -26,9 +26,12 @@ plt.rcParams['figure.dpi'] = 100
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 
 # Read in the photometry
-#t = Table.read(cat_dir / 'det_YJH_flat_stars_VISTA_Y.fits')
+t = Table.read(cat_dir / 'det_YJH_flat_stars_VISTA_Y_with_JWST.fits')
 #t = Table.read(cat_dir / 'det_YJH_stars_VISTA_Y.fits')
-t = Table.read(cat_dir / 'det_YJH_flat_stars_HSC_I.fits')
+#t = Table.read(cat_dir / 'det_YJH_flat_stars_HSC_I.fits')
+
+# Restrict JWST table to where error is > 0
+t = t[t['err_f115w'] > 0]
 
 
 filter_info = filter_widths()
@@ -42,11 +45,18 @@ i = flux_to_mag(t['flux_HSC-I_DR3'])
 z = flux_to_mag(t['flux_HSC-Z_DR3'])
 y = flux_to_mag(t['flux_HSC-Y_DR3'])
 
+f115w = flux_to_mag(t['flux_f115w'])
+f150w = flux_to_mag(t['flux_f150w'])
+f277w = flux_to_mag(t['flux_f277w'])
+f444w = flux_to_mag(t['flux_f444w'])
+
 
 #! UNCOMMENT TO PLOT STELLAR LOCUS
-# plt.scatter(r-i, i-z, color='black', s=5)
+#plt.scatter(r-i, i-z, color='black', s=5)
+# plt.scatter(f115w-f150w, f150w-f277w, color='red', s=5)
 # plt.show()
 # exit()
+
 
 
 #! UNCOMMENT TO PLOT PHOTOMETRY/SED
@@ -88,11 +98,21 @@ dJe = (2.5 / np.log(10)) * (t['err_Je'] / t['flux_Je'])
 dHe = (2.5 / np.log(10)) * (t['err_He'] / t['flux_He'])
 dVIS = (2.5 / np.log(10)) * (t['err_VIS'] / t['flux_VIS'])
 
+df115w = (2.5 / np.log(10)) * np.abs((t['err_f115w'] / t['flux_f115w']))
+df150w = (2.5 / np.log(10)) * (t['err_f150w'] / t['flux_f150w'])
+df277w = (2.5 / np.log(10)) * (t['err_f277w'] / t['flux_f277w'])
+df444w = (2.5 / np.log(10)) * (t['err_f444w'] / t['flux_f444w'])
+
 # Propagate errors in subtraction
 dYYe = np.sqrt(dY**2 + dYe**2)
 dJJe = np.sqrt(dJ**2 + dJe**2)
 dHHe = np.sqrt(dH**2 + dHe**2)
 dVISi = np.sqrt(dVIS**2 + dVIS**2)
+
+dYef115w = np.sqrt(dYe**2 + df115w**2)
+dJef150w = np.sqrt(dJe**2 + df150w**2)
+
+
 
 # print(dY)
 
@@ -133,14 +153,24 @@ dVISi = np.sqrt(dVIS**2 + dVIS**2)
 # plt.show()
 # plt.close()
 
+# plt.figure(figsize=(10, 6))
+# plt.errorbar(i, i-VIS, yerr=dVISi, xerr=di, fmt='o', color='black', markersize=5)
+# plt.plot([min(i), max(i)], [-0.1, -0.1], color='red', linestyle='dotted')
+# plt.plot([min(i), max(i)], [0, 0], color='red', linestyle='--')
+# plt.plot([min(i), max(i)], [0.1, 0.1], color='red', linestyle='dotted')
+# plt.title(r'$| r - i| < 0.2 \wedge |i - z| < 0.2$')
+# plt.xlabel(r'$i_{\mathrm{HSC}}$')
+# plt.ylabel(r'$i_{\mathrm{HSC}} - i_{E}$')
+# plt.ylim(-0.5, 0.5)
+# plt.show()
+
 plt.figure(figsize=(10, 6))
-plt.errorbar(i, i-VIS, yerr=dVISi, xerr=di, fmt='o', color='black', markersize=5)
-plt.plot([min(i), max(i)], [-0.1, -0.1], color='red', linestyle='dotted')
-plt.plot([min(i), max(i)], [0, 0], color='red', linestyle='--')
-plt.plot([min(i), max(i)], [0.1, 0.1], color='red', linestyle='dotted')
-plt.title(r'$| r - i| < 0.2 \wedge |i - z| < 0.2$')
-plt.xlabel(r'$i_{\mathrm{HSC}}$')
-plt.ylabel(r'$i_{\mathrm{HSC}} - i_{E}$')
+plt.errorbar(f115w, f115w-Y, yerr=dYef115w, xerr=np.abs(df115w), fmt='o', color='black', markersize=5)
+plt.plot([min(f115w), max(f115w)], [-0.1, -0.1], color='red', linestyle='dotted')
+plt.plot([min(f115w), max(f115w)], [0, 0], color='red', linestyle='--')
+plt.plot([min(f115w), max(f115w)], [0.1, 0.1], color='red', linestyle='dotted')
+plt.title(r'$| Y - J| < 0.05 \wedge |J - H| < 0.05$')
+plt.xlabel(r'$f115w$')
+plt.ylabel(r'$f115w - Y$')
 plt.ylim(-0.5, 0.5)
 plt.show()
-

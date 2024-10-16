@@ -77,8 +77,10 @@ for field in fields:
 
         for filter_name in filter_names:
 
-            if not Path.exists(jwst_psf_dir / f'{filter_name.lower()}_psf.fits'):
+            #if not Path.exists(jwst_psf_dir / f'{filter_name.lower()}_psf.fits'):
+            if not Path.exists(jwst_psf_dir / f'webbpsf_{filter_name.upper()}.fits'):
 
+                print('Manually extracting the PSF slice.')
                 hdu = fits.open(jwst_psf_dir / f'{filter_name.lower()}.psf')
                 data = hdu[1].data[0][0]
                 header = hdu[1].header
@@ -96,8 +98,8 @@ for field in fields:
 
             jwst_psf = jwst_psf_dir / f'{filter_name.lower()}_psf.fits'
 
-            output_name = output_dir / f'{filter_name.lower()}_to_VISTA_kernel.fits'
-            os.system(f'addpixscl {str(jwst_psf)} 0.15')
+            output_name = output_dir / f'webbpsf_{filter_name.lower()}_to_VISTA_kernel.fits'
+            os.system(f'addpixscl {str(jwst_psf)} 0.03')
             os.system(f'addpixscl {str(vista_psf)} 0.15')
             os.system(f'pypher {str(jwst_psf)} {str(vista_psf)} {str(output_name)}')
 
