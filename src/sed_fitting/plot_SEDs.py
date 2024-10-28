@@ -214,21 +214,24 @@ if det_list == ['Y', 'J']:
     filter_dict.pop('Ye')
     filter_dict.pop('Je')
     filter_dict.pop('He')
-    print('Removed VIS, Ye, Je, He')
-
-if 'bd' or 'lya' in output_pdf:
+    filter_dict.pop('f115w')
+    filter_dict.pop('f150w')
     filter_dict.pop('f277w')
-    filter_dict.pop('HSC-G_DR3')
-    filter_dict.pop('HSC-R_DR3')
-    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+    #filter_dict.pop('f444w')
+    print('Removed VIS, Ye, Je, He', 'f115w', 'f150w', 'f277w', 'f444w')
 
-# If running only VIISTA: Remove items with keys VIS, Ye, Je, He
+# if 'bd' or 'lya' in output_pdf:
+#     filter_dict.pop('f277w')
+#     filter_dict.pop('HSC-G_DR3')
+#     filter_dict.pop('HSC-R_DR3')
+#     print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+
+# If running only VISTA: Remove items with keys VIS, Ye, Je, He
 if 'no_euclid' in input_name:
     filter_dict.pop('VIS')
     filter_dict.pop('Ye')
     filter_dict.pop('Je')
     filter_dict.pop('He')
-
 
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -430,7 +433,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             redshift = round(obj['Redshift'], 2)
 
             # Update the title of the plot with the matched information. Add crosstalk if it is non-zero.
-            title_string = f'ID {ID}, z = {redshift}'
+            title_string = f'ID {ID}, z = {redshift}, {name}'
             if ct > 0:
                 title_string += f', POSSIBLE CROSSTALK'
             ax1.set_title(title_string)

@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import rotate
 from astropy.table import Table
 import astropy.units as u
+from scipy import ndimage
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -252,11 +253,30 @@ def VistaCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, s
 
         cutout_ch2 = Cutout2D(data_ch2, c, size=size/pix_scale, wcs=wcs_ch2)
 
+    # Make a GRI stack
+    optical_stack = np.sum([cutout_grG.data, cutout_grR.data, cutout_grI.data], axis=0) / 3.
+    optical_stack = Cutout2D(optical_stack, c, size=size/pix_scale, wcs=cutout_grG.wcs)
+
+    # Smooth the stack
+    smooth_optical_stack = ndimage.gaussian_filter(optical_stack.data, sigma=2)
+    smooth_optical_stack = Cutout2D(smooth_optical_stack, c, size=size/pix_scale, wcs=cutout_grG.wcs)
+
+    # Make a YJHK stack
+    NIR_stack = np.sum([cutout_grY.data, cutout_grJ.data, cutout_grH.data, cutout_grK.data], axis=0) / 4.
+    NIR_stack = Cutout2D(NIR_stack, c, size=size/pix_scale, wcs=cutout_grY.wcs)
+
+    # Make a spitzer stack
+    spitzer_stack = np.sum([cutout_ch1.data, cutout_ch2.data], axis=0) / 2.
+    spitzer_stack = Cutout2D(spitzer_stack, c, size=size/pix_scale, wcs=cutout_ch1.wcs)
+
     #! Plot
-    cutouts = [cutout_grG, cutout_grR, cutout_grI, cutout_grNB0816, cutout_grZ, cutout_grNB0921, cutout_gry, cutout_grY, cutout_grJ, cutout_grH, cutout_grK, cutout_ch1, cutout_ch2]
-    cutout_titles = ['HSC-G', 'HSC-R', 'HSC-I', 'NB0816', 'HSC-Z', 'NB0921', 'HSC-Y', 'Y', 'J', 'H', 'K', 'ch1', 'ch2']
+    cutouts = [optical_stack, cutout_grNB0816, cutout_grZ, cutout_grNB0921, cutout_gry, smooth_optical_stack, NIR_stack, cutout_grY, cutout_grJ, cutout_grH, cutout_grK, cutout_ch1, cutout_ch2, spitzer_stack]
+    cutout_titles = ['GRI', 'NB0816', 'HSC-Z', 'NB0921', 'HSC-Y', r'$GRI_{\sigma}$', 'YJHK', 'Y', 'J', 'H', 'K', 'ch1', 'ch2', 'ch1+ch2']
 
     fig, ax = plt.subplots(2, 7, figsize=(20, 12))
+
+    # Maximise the size of the subplots
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
 
     for i, cutout in enumerate(cutouts):
             
@@ -266,10 +286,6 @@ def VistaCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, s
         ax[i//7, i%7].set_xticks([])
         ax[i//7, i%7].set_yticks([])
         ax[i//7, i%7].set_title(cutout_titles[i])
-
-        # Delete the last subplot
-        if i == 11:
-            fig.delaxes(ax[1, 6])
 
         # Remove axis labels
         ax[i//7, i%7].set_xticks([])

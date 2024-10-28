@@ -25,7 +25,7 @@ run_dusty = False
 run_lya = False
 
 # Overwrite existing .spec files
-overwrite = True
+overwrite = False
 
 #! BOOL ARRAY
 #![RUN_BROWN_DWARFS, RUN_DUSTY, RUN_LYA]
@@ -141,12 +141,16 @@ def run_sed_fitting():
     # runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir)
 
     #! Extract good SED fits once all of the above have run.
-    good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-    subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json], check=True)
+    # good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
+    # subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json], check=True)
 
     #! Run the plotting code
-    plot_script = Path.cwd() / 'plot_SEDs.py'
-    subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json], check=True)
+    # plot_script = Path.cwd() / 'plot_SEDs.py'
+    # subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json], check=True)
+
+    #! Run the visual selection code
+    visual_script = Path.cwd() / 'visual_selection.py'
+    subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json], check=True)
 
 
     return None

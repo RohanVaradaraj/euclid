@@ -9,15 +9,15 @@ import glob
 import matplotlib.pyplot as plt
 import re
 
-plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 15})
+plt.rcParams['axes.linewidth'] = 4
+plt.rcParams.update({'font.size': 25})
 plt.rcParams['figure.dpi'] = 100
 
 filter_dir = Path().home() / 'lephare' / 'lephare_dev' / 'filt' / 'myfilters'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'filters'
 
 euclid_filters = glob.glob(str(filter_dir / 'Euclid' / 'Euclid_*'))
-order = ['VIS', 'Y', 'J', 'H']
+order = [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$']
 
 cweb_filters = glob.glob(str(filter_dir / 'JWST' / '*'))
 
@@ -25,6 +25,7 @@ cweb_filters = glob.glob(str(filter_dir / 'JWST' / '*'))
 cweb_filters = [f for f in cweb_filters if 'f115w' in f or 'f150w' in f or 'f277w' in f or 'f444w' in f]
 print(cweb_filters)
 
+lw = 5
 
 # Sort the euclid filter paths by the order of the filters above
 def custom_sort(filename):
@@ -38,7 +39,7 @@ euclid_filters = sorted(euclid_filters, key=custom_sort)
 
 euclid_colours = ['purple', 'blue', 'green', 'red']
 
-plt.figure(figsize=(14, 4))
+plt.figure(figsize=(14, 5))
 
 for i, euclid_filter in enumerate(euclid_filters):
 
@@ -62,11 +63,11 @@ for i, euclid_filter in enumerate(euclid_filters):
     transmission = [t / max(transmission) for t in transmission]
 
     # Plot filter
-    plt.plot(wavelength, transmission, color=euclid_colours[i], lw=2.5, alpha=0.8, zorder=10)
+    plt.plot(wavelength, transmission, color=euclid_colours[i], lw=lw, alpha=0.8, zorder=10)
 
     # Add text at midpoint of each filter according to order labels
     mid_wavelength = (max(wavelength) - min(wavelength)) / 2 + min(wavelength)
-    plt.text(mid_wavelength, 0.85, order[i], color=euclid_colours[i], fontsize=15, ha='center', va='center', zorder=20)
+    plt.text(mid_wavelength, 0.85, order[i], color=euclid_colours[i], fontsize=25, ha='center', va='center', zorder=20)
 
 vista_filters = glob.glob(str(filter_dir / 'VISTA' / 'VISTA_*'))
 
@@ -92,10 +93,10 @@ for vista_filter in vista_filters:
     transmission = [t / (max(transmission)*1.3) for t in transmission]
 
     # Plot filter
-    plt.plot(wavelength, transmission, color='darkorange', lw=2.5, alpha=0.5)
+    plt.plot(wavelength, transmission, color='darkorange', lw=lw, alpha=0.5)
     if vista_filter == vista_filters[0]:
         # Dummy label
-        plt.plot([], [], color='darkorange', lw=2., alpha=0.5, label='VISTA')
+        plt.plot([], [], color='darkorange', lw=lw, alpha=0.5, label='VISTA')
 
 hsc_labels = ['g', 'r', 'i', 'z', 'y']
 hsc_filters = list( set(glob.glob(str(filter_dir / 'HSC' / '*'))) - set(glob.glob(str(filter_dir / 'HSC' / '*nb*'))))
@@ -126,10 +127,10 @@ for hsc_filter in hsc_filters:
         transmission = [t / (max(transmission)*1.3) for t in transmission]
 
         # Plot filter
-        plt.plot(wavelength, transmission, color='steelblue', lw=2.5, alpha=0.5)
+        plt.plot(wavelength, transmission, color='steelblue', lw=lw, alpha=0.5)
         if hsc_filter == hsc_filters[0]:
             # Dummy label
-            plt.plot([], [], color='steelblue', lw=2., alpha=0.5, label='HSC')
+            plt.plot([], [], color='steelblue', lw=lw, alpha=0.5, label='HSC')
 
 # Add CWeb filters
 # for cweb_filter in cweb_filters:
@@ -160,14 +161,20 @@ for hsc_filter in hsc_filters:
 #         plt.plot([], [], label='COSMOS-Web', color='red', lw=3., alpha=0.5, linestyle='--')
 
 plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
-plt.ylabel('Relative Transmission')
-plt.legend(loc='lower right')
+#plt.ylabel('Relative Transmission')
+#plt.legend(loc='lower right', fontsize=15)
 
 # Full filter set
 plt.xlim(0.2, 2.55)
 #plt.xlim(0.2, 5)
 plt.tight_layout()
-plt.savefig(plot_dir / 'filter_transmission_curves_paper.png', bbox_inches='tight')
+
+# Remove ylabel markers
+plt.yticks([])
+
+plt.savefig(plot_dir / 'filter_transmission_curves_poster.pdf', bbox_inches='tight')
+
+
 
 # Zoomed in around Y
 #plt.xlim(0.7, 1.7)

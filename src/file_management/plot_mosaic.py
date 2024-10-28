@@ -16,8 +16,8 @@ from matplotlib.patches import Polygon
 import numpy as np
 
 # Making plots look nice
-plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 15})
+plt.rcParams['axes.linewidth'] = 4
+plt.rcParams.update({'font.size': 25})
 plt.rcParams['figure.dpi'] = 100
 
 euclid_dir = Path.home() / 'euclid' / 'Y' / 'COSMOS'
@@ -83,15 +83,15 @@ plt.axis('equal')
 #ax.add_patch(dummy)
 
 #! Add the Euclid mask which is roughly the footprint
-e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.6063068,2.0034576], [150.4217294,1.7836002]]), closed=True, edgecolor='blue', facecolor='none', lw=2.5, label='Euclid', alpha=0.8)
+e = Polygon(np.array([[150.6599884,2.6947483], [149.8463557,2.9082861], [149.6063068,2.0034576], [150.4217294,1.7836002]]), closed=True, edgecolor='blue', facecolor='none', lw=4, label='Euclid', alpha=0.8)
 ax.add_patch(e)
 
 # Save the tile_index_map dictionary
 np.save(Path.cwd().parent.parent / 'data' / 'mosaic' / 'tile_index_map.npy', tile_index_map)
 
 #! Also add the UltraVISTA tile and PRIMER tile
-uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_DR6_cropped.fits'
-uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_dr5_rc1.fits'
+uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_DR6.fits'
+#uvista_Y = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS' / 'UVISTA_Y_dr5_rc1.fits'
 with fits.open(uvista_Y) as hdu_uvista:
     wcs_uvista = WCS(hdu_uvista[0].header)
     uvista_footprint = wcs_uvista.calc_footprint()
@@ -101,7 +101,7 @@ with fits.open(primer) as hdu_primer:
     wcs_primer = WCS(hdu_primer[0].header)
     primer_footprint = wcs_primer.calc_footprint()
 
-r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='none', facecolor='darkgray', lw=2.5, label='UltraVISTA', alpha=0.8, zorder=-1) # Gray for Rebecca
+r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='darkgray', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8, zorder=-1) # darkgray for Rebecca
 #r = Polygon(np.array(uvista_footprint), closed=True, edgecolor='b', facecolor='none', lw=2.5, label='UltraVISTA', alpha=0.8)
 
 ax.add_patch(r)
@@ -109,27 +109,27 @@ ax.add_patch(r)
 #ax.add_patch(p)
 
 #! Add the COSMOS-Web tiles
-jwst_dir = Path.cwd().parents[3] / 'data' / 'CWEB'
-jwst_files = glob.glob(str(jwst_dir / '*' / '*F444*'))
+# jwst_dir = Path.cwd().parents[3] / 'data' / 'CWEB'
+# jwst_files = glob.glob(str(jwst_dir / '*' / '*F444*'))
 
-for jwst_file in jwst_files:
+# for jwst_file in jwst_files:
 
-    # Get tile name from directory the image is in (one level up)
-    tile = jwst_file.split('/')[-2].split('mosaic_')[-1]
+#     # Get tile name from directory the image is in (one level up)
+#     tile = jwst_file.split('/')[-2].split('mosaic_')[-1]
 
-    with fits.open(jwst_file) as hdu_jwst:
-        wcs_jwst = WCS(hdu_jwst[1].header)
-        jwst_footprint = wcs_jwst.calc_footprint()
-        r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='red', facecolor='none', lw=2.5, alpha=0.8)
-        ax.add_patch(r)
+#     with fits.open(jwst_file) as hdu_jwst:
+#         wcs_jwst = WCS(hdu_jwst[1].header)
+#         jwst_footprint = wcs_jwst.calc_footprint()
+#         r = Polygon(np.array(jwst_footprint), closed=True, edgecolor='red', facecolor='none', lw=2.5, alpha=0.8)
+#         ax.add_patch(r)
 
-        # Add the tile number at centre of polygon
-        centroid_x = np.mean(jwst_footprint[:, 0])
-        centroid_y = np.mean(jwst_footprint[:, 1])
-        ax.text(centroid_x, centroid_y, tile, fontsize=8, color='black', ha='center', va='center')
+#         # Add the tile number at centre of polygon
+#         centroid_x = np.mean(jwst_footprint[:, 0])
+#         centroid_y = np.mean(jwst_footprint[:, 1])
+#         ax.text(centroid_x, centroid_y, tile, fontsize=8, color='black', ha='center', va='center')
 
-dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='red', facecolor='none', lw=2.5, label='CWEB')
-ax.add_patch(dummy)
+# dummy = Polygon([[0,0], [1,1], [1,0], [0,1]], closed=True, edgecolor='red', facecolor='none', lw=2.5, label='CWEB')
+# ax.add_patch(dummy)
 
 #! Add the Hubble 3D-DASH footprint
 dash = Path.home().parent.parent / 'hoy' / 'DASH' / 'hlsp_3d-dash_hst_wfc3_combined-cosmos_f160w_v1.0_drz-sci.fits'
@@ -155,14 +155,14 @@ ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.0)
 
 # Squish ra axis by np.cos(dec) to account for declination
-4
+
 
 ax.set_xlabel('RA (deg)')
 ax.set_ylabel('DEC (deg)')
-ax.legend(loc='upper right')
+#ax.legend(loc='upper right')
 
 plt.tight_layout()
-#plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_gray_fullCWEB.png')
+plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_poster.png')
 plt.show()
 
 
