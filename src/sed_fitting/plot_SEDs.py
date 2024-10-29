@@ -79,7 +79,8 @@ def mag_to_flux(mag):
     return 10**(-0.4 * (mag + 48.6))
 
 #! What is the main object we want to plot? highz, bd, dusty or lya?
-object_type = 'highz'
+#object_type = 'best_highz'
+object_type = 'BD'
 
 #! Label crosstalk?
 label_crosstalk = True
@@ -98,7 +99,7 @@ if len(det_list) == 0:
     det_list = stack_filters
 
 base_nondet = 'nonDet_' + '_'.join([f for f, t in filters.items() if t['type'] == 'non-detection'])
-if object_type == 'highz':
+if object_type == 'best_highz':
     output_pdf = f'{base_det}_{base_nondet}.pdf'
 else:
     output_pdf = f'{base_det}_{base_nondet}_{object_type}.pdf'
@@ -106,7 +107,7 @@ print('Saving to: ', output_pdf)
 
 # Set up directories
 # zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
-zphot_folder = base_det + f'_best_{object_type}'
+zphot_folder = base_det + f'_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 print(zphot_dir)
 
@@ -174,18 +175,19 @@ if 'no_euclid' in input_name:
     de_param = 9
 
 # #! Brown dwarf fitting
-# if 'bd' or 'lya' in output_pdf:
-#     ds_phot = 9
-#     de_phot = 24
+if 'BD' or 'lya' in output_pdf:
+    print('PLOTTING BROWN DWARFS')
+    ds_phot = 9
+    de_phot = 18
 
-#     ds_mod = 224
-#     de_mod = -1
+    ds_mod = 219
+    de_mod = -1
 
-#     ds_pz = 24
-#     de_pz = 224
+    ds_pz = 18
+    de_pz = 219
 
-#     ds_param = 3
-#     de_param = 9
+    ds_param = 3
+    de_param = 9
 
 # From these values, we can get the number of filters which will be useful for extracting fluxes from the .in file.
 n_bands = de_phot - ds_phot
@@ -220,11 +222,10 @@ if det_list == ['Y', 'J']:
     #filter_dict.pop('f444w')
     print('Removed VIS, Ye, Je, He', 'f115w', 'f150w', 'f277w', 'f444w')
 
-# if 'bd' or 'lya' in output_pdf:
-#     filter_dict.pop('f277w')
-#     filter_dict.pop('HSC-G_DR3')
-#     filter_dict.pop('HSC-R_DR3')
-#     print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+if 'BD' or 'lya' in output_pdf:
+    filter_dict.pop('HSC-G_DR3')
+    filter_dict.pop('HSC-R_DR3')
+    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
 
 # If running only VISTA: Remove items with keys VIS, Ye, Je, He
 if 'no_euclid' in input_name:
@@ -232,6 +233,9 @@ if 'no_euclid' in input_name:
     filter_dict.pop('Ye')
     filter_dict.pop('Je')
     filter_dict.pop('He')
+
+print(filter_dict)
+exit()
 
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -384,8 +388,6 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         model_photometry = mag_to_flux(phot['modelPhot'])
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
-
-
         # Real photometry with upper limits for sigma < 2
         for i in range(len(flux)):
             if sigma[i] < 2:
@@ -463,8 +465,14 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ra = obj['RA'][0]
         dec = obj['DEC'][0]
 
+        contained_in = isCoordInSurveyFootprints(ra, dec)
+
         if det_list == ['Y', 'J']:
-            cutout_fig, cutout_axs = VistaCutout(ra, dec, size=10., save_cutout=False)
+            # Check if object coords are in Euclid footprint
+            if contained_in[0][0] == '0':
+                cutout_fig, cutout_axs = VistaCutout(ra, dec, size=6., save_cutout=False)
+            else:
+                cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
         else:
             cutout_fig, cutout_axs = Cutout(ra, dec, size=10., save_cutout=False)
 

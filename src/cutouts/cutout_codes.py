@@ -292,11 +292,11 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     # Check if all values of contained_in are '0'.
     if np.all(contained_in[0] == '0'):
         print("Cutout not in any survey footprint")
-        return None
+        #return None
     
     if contained_in[0][0] == '0':
         print('Cutout not in Euclid footprint')
-        return None
+        #return None
 
     # Convert RA, DEC to skycoords.
     c = SkyCoord(ra, dec, unit='deg')

@@ -145,12 +145,24 @@ def run_sed_fitting():
     # subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json], check=True)
 
     #! Run the plotting code
-    # plot_script = Path.cwd() / 'plot_SEDs.py'
-    # subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json], check=True)
+    plot_script = Path.cwd() / 'plot_SEDs.py'
+    subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json], check=True)
 
     #! Run the visual selection code
-    visual_script = Path.cwd() / 'visual_selection.py'
-    subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json], check=True)
+    # visual_script = Path.cwd() / 'visual_selection.py'
+    # subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json], check=True)
+
+    #! Run the dusty selection code
+    # dusty_script = Path.cwd() / 'dusty_selection.py'
+    # subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json], check=True)
+
+    #! Run the brown dwarf selection code
+    # brown_dwarf_script = Path.cwd() / 'brown_dwarf_selection.py'
+    # subprocess.run(['python3', str(brown_dwarf_script), filters_json, bools_json, all_filters_json], check=True)
+
+    # #! Run the Lyman-alpha and redshift selection code
+    # lya_script = Path.cwd() / 'lya_and_redshift_selection.py'
+    # subprocess.run(['python3', str(lya_script), filters_json, bools_json, all_filters_json], check=True)
 
 
     return None
