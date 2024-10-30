@@ -47,6 +47,7 @@ def expected_number_galaxies_dpl():
 
     for z in z_values:
         M_lim = absolute_magnitude_limit(z, m_lim)
+        print(f"z = {z:.2f}, M_lim = {M_lim:.2f}")
         # Integrate DPL up to M_lim, from faint limit -17
         phi_integral, _ = quad(dpl_function, -25, M_lim, args=(Phi_star, M_star, alpha, beta))
         # Sum over volume in each redshift slice
