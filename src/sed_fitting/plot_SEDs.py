@@ -18,6 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from selection import generate_selection_name, generate_input_name
 from astropy.coordinates import SkyCoord
 import json
+import matplotlib.ticker as mticker
 
 # Backend for running on queue
 import matplotlib as mpl
@@ -78,9 +79,19 @@ def stellar_type(model):
 def mag_to_flux(mag):
     return 10**(-0.4 * (mag + 48.6))
 
+def mag_to_Jy(m):
+    '''Convert mags and their errors to Jy'''
+    flux = 10**(-0.4*(m+48.6))
+    return flux
+
+def flux_to_mag(flux):
+    '''Convert flux to mag, for the secondary y axis'''
+    mag = -2.5*np.log10(flux)-48.6
+    return mag
+
 #! What is the main object we want to plot? highz, bd, dusty or lya?
 #object_type = 'best_highz'
-object_type = 'BD'
+object_type = 'z7'
 
 #! Label crosstalk?
 label_crosstalk = True
@@ -175,19 +186,19 @@ if 'no_euclid' in input_name:
     de_param = 9
 
 # #! Brown dwarf fitting
-if 'BD' or 'lya' in output_pdf:
-    print('PLOTTING BROWN DWARFS')
-    ds_phot = 9
-    de_phot = 18
+# if 'BD' or 'lya' in output_pdf:
+#     print('PLOTTING BROWN DWARFS')
+#     ds_phot = 9
+#     de_phot = 18
 
-    ds_mod = 219
-    de_mod = -1
+#     ds_mod = 219
+#     de_mod = -1
 
-    ds_pz = 18
-    de_pz = 219
+#     ds_pz = 18
+#     de_pz = 219
 
-    ds_param = 3
-    de_param = 9
+#     ds_param = 3
+#     de_param = 9
 
 # From these values, we can get the number of filters which will be useful for extracting fluxes from the .in file.
 n_bands = de_phot - ds_phot
@@ -222,10 +233,10 @@ if det_list == ['Y', 'J']:
     #filter_dict.pop('f444w')
     print('Removed VIS, Ye, Je, He', 'f115w', 'f150w', 'f277w', 'f444w')
 
-if 'BD' or 'lya' in output_pdf:
-    filter_dict.pop('HSC-G_DR3')
-    filter_dict.pop('HSC-R_DR3')
-    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+# if 'BD' or 'lya' in output_pdf:
+#     filter_dict.pop('HSC-G_DR3')
+#     filter_dict.pop('HSC-R_DR3')
+#     print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
 
 # If running only VISTA: Remove items with keys VIS, Ye, Je, He
 if 'no_euclid' in input_name:
@@ -235,7 +246,6 @@ if 'no_euclid' in input_name:
     filter_dict.pop('He')
 
 print(filter_dict)
-exit()
 
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -453,8 +463,29 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_ylim(3e-32, 1e-29)
         ax1.set_xlim(3000, 40000)
 
+        # Convert the x axis into microns by dividing by 10000
+        ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
+        ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
+
         ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')
-        ax1.set_xlabel(r'$\lambda (\AA)$')
+        #ax1.set_xlabel(r'$\lambda (\AA)$')
+        ax1.set_xlabel(r'$\lambda (\mu m)$')
+
+        # Add magnitude axis
+        secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
+
+        mags = [30, 29, 28, 27, 26, 25, 24, 23, 22]
+        secax.set_yticks(mags)
+
+        secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
+
+        ax1.tick_params(which='major', length=5, width=3)
+        ax1.tick_params(axis='both', which='minor', length=3, width=2)
+
+        secax.tick_params(which='major', length=5, width=3)
+        secax.tick_params(axis='both', which='minor', length=5, width=2)
+
+        secax.set_ylabel(r'$\mathrm{m_{AB}}$')
 
         pdf.savefig(fig)
         plt.close(fig)

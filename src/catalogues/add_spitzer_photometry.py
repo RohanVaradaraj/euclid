@@ -23,17 +23,11 @@ import sep
 
 def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False):
     
-   ''' Code to find the closest depth measurement from my previous analysis. Faster than truely local depths '''
-   
-   import numpy as np
+   ''' Code to find the closest depth measurement from my previous analysis. Faster than truly local depths '''
    
    xgrid = gridTable['x']
    ygrid = gridTable['y']
    keys = gridTable.colnames
-   #print keys
-   #print "Grid params."
-   #print len(xgrid), len(ygrid)
-   #print xgrid[0], ygrid[0], xgrid[1], ygrid[1]
    
    depthsOverField = gridTable['depths']
    
@@ -48,33 +42,21 @@ def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False)
        deltay = np.min(ygrid)
        deltax = np.min(xgrid)
       
-    #print "The delta is ", deltax, deltay
-       #print deltax, np.max(xgrid)
-       #print deltay, np.max(ygrid)
-       #print xgrid[0:10]
-       #print ygrid[0:10]
-    ## loop through the grid instead of each object
        for xi in range(xgrid.size):
            
            xmin = xgrid[xi] - deltax
            xmax = xgrid[xi] + deltax
            ymin = ygrid[xi] - deltay
            ymax = ygrid[xi] + deltay
-           #print xmin, xmax, ymin, ymax
-           #exit()
-           
 
            ii = (x > xmin) & (x <= xmax) & (y > ymin) & (y <= ymax)
            
            depthArray[ii] = depthsOverField[xi]
                
-           # use this to average over nearby pixels.
-           
-               
    else:
        
-   ## Find the closest point to the objects x and y positions
-   ## Loop!
+        ## Find the closest point to the objects x and y positions
+        ## Loop!
        for xi in range(x.size):
            
        ## make a radius array
@@ -91,18 +73,16 @@ def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False)
                
                mini = idx[0:numpoints]
                print("The nearby depths are = ", depthsOverField[mini])
-               print("Before = ", depthsOverField[mini][0])
-           
-           
-       #print "The closest point is ", xgrid[mini], ygrid[mini], " to ", x[xi], y[xi]
+               print("Before = ", depthsOverField[mini][0])      
+
            depthArray[xi] = depthsOverField[mini][0]
-       #exit()
+
    
    return depthArray
 
-# Read in the VISTA/Euclid-selected catalogue
-vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'COSMOS' / 'det_YJHK'
-vista_file = 'COSMOS_DR3_MASKVISTADET_YJHK_1.8as_IRAC2.8as_cgs.fits'
+# Read in the VISTA/Euclid-selected catalogue, the one we need to add the IRAC photometry to!
+vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
+vista_file = 'COSMOSFULL_DR3_UNMASKED_Ks_2024_11_06_2.0as_IRAC_2.8as_ALL.fits'
 vista_cat = Table.read(vista_dir / vista_file)
 
 print(len(vista_cat))
@@ -236,7 +216,7 @@ vista_cat['err_ch2cds'][np.isnan(vista_cat['err_ch2cds'])] = error_ch2
 print('Added missing IRAC errors')
 
 # Save the VISTA catalogue with the IRAC photometry
-vista_cat.write('with_spitzer.fits', format='fits', overwrite=True)
+vista_cat.write(vista_dir /vista_file, format='fits', overwrite=True)
 
 
 

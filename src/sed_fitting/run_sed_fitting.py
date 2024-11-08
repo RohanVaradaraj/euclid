@@ -57,7 +57,7 @@ filters = {
 #     'VIS': {'type': 'non-detection', 'value': 2}, # Might interfere with e.g. z=6.9 candidates
 # }
 
-#! Je
+# #! Je
 # filters = {
 #     'Je': {'type': 'detection', 'value': 5},
 #     'He'  : {'type': 'detection', 'value': 2},

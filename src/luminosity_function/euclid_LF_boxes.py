@@ -76,10 +76,20 @@ z4_lf = z4_gal + z4_agn
 z5_lf = z5_gal + z5_agn
 
 # Bowler+15
-z6_lf = dpl_function(M, 1.9*10**(-4.), -21.20, -2.10, -5.10)
+z6_gal = dpl_function(M, 1.9*10**(-4.), -21.20, -2.10, -5.10)
+
+# Schindler+23
+z6_agn = dpl_function(M, 10**(-8.75), -26.38, -1.70, -3.84)
+
+z6_lf = z6_gal + z6_agn
 
 # Bowler+17
-z7_lf = dpl_function(M, 2.3*10**(-4.), -20.60, -2.19, -4.60)
+z7_gal = dpl_function(M, 2.3*10**(-4.), -20.60, -2.19, -4.60)
+
+# Matsuoka+23
+z7_agn = dpl_function(M, 1.3*10**(-9.), -25.6, -1.20, -3.34)
+
+z7_lf = z7_gal + z7_agn
 
 # Donnan+22
 z8_lf = dpl_function(M, 3.3*10**(-4.), -20.02, -2.04, -4.26)
@@ -104,7 +114,7 @@ phi_values = np.array([2.70e-6, 2.81e-7, 2.37e-8, np.nan])
 phi_errors = np.array([0.66e-6, 1.54e-7, 2.50e-8, np.nan])  
 
 plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='red', 
-             ecolor='red', elinewidth=5, label='Varadaraj+23', markersize=17, markeredgecolor='black')
+             ecolor='red', elinewidth=5, label=r'Varadaraj+23, $z=7$', markersize=17, markeredgecolor='black')
 
 # plt.errorbar(bins_mag[3], 2.07e-8, yerr=0, marker=r'$\downarrow$', color='red', ecolor='red', 
 #              elinewidth=5, markersize=17)

@@ -13,9 +13,107 @@ import numpy as np
 from typing import Optional
 from pathlib import Path
 import os
+import re
 
 vardy_dir = Path.home().parent.parent / 'mnt' / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home().parent.parent / 'euclid'
+
+
+def skip_initial_lines(lines):
+    """Skip the first three uncommented lines."""
+    count = 0
+    for idx, line in enumerate(lines):
+        if not line.startswith("#"):
+            count += 1
+        if count == 3:
+            return lines[idx + 1:]  # Skip three uncommented lines and return the rest
+    return lines
+
+
+
+def detect_section_changes(lines):
+    """Detect the indices where sections change based on line length and abrupt value change."""
+    line_lengths = [len(re.split(r'\s+', line.strip())) for line in lines]
+    section_indices = []
+    
+    # Detect changes in line length
+    for i in range(1, len(line_lengths)):
+        if line_lengths[i] != line_lengths[i - 1]:
+            section_indices.append(i)
+
+    # Detect abrupt change in the first column value (from Redshift PDF to SED)
+    for i in range(1, len(lines)):
+        try:
+            prev_val = float(re.split(r'\s+', lines[i - 1].strip())[0])
+            curr_val = float(re.split(r'\s+', lines[i].strip())[0])
+
+            # Check for a jump in value (e.g., from ~10 to ~1000)
+            if (curr_val - prev_val > 500):
+                section_indices.append(i)
+                break
+        except ValueError:
+            continue
+
+    return sorted(set(section_indices))
+
+
+
+def parse_spec_file(filename):
+    """Parses the SPEC file into multiple sections, handling headers appropriately."""
+    
+    # Read all lines from the file
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    # Skip the first three uncommented lines
+    data_lines = skip_initial_lines(lines)
+    data_lines = data_lines[1:]  # Skip the first line of column names (if it's generic)
+
+    # Detect section changes
+    section_indices = detect_section_changes(data_lines)
+    section_indices.append(len(data_lines))  # Add end of file as the last index
+
+    # Split data into sections based on detected indices
+    sections = []
+    start_idx = 0
+    for end_idx in section_indices:
+        sections.append(data_lines[start_idx:end_idx])
+        start_idx = end_idx
+
+    # Parse sections into Astropy tables
+    tables = {}
+    section_names = ['model', 'phot', 'zpdf', 'sed']
+    
+    for idx, section in enumerate(sections):
+        try:
+            section_name = section_names[idx] if idx < len(section_names) else f"unknown_{idx}"
+
+            # Define column names for each section
+            if section_name == 'model':
+                column_names = [
+                    'ID', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Zsup', 
+                    'Chi2', 'PDF', 'Extlaw', 'EB-V', 'Lir', 'Age', 'Mass', 'SFR', 'SSFR'
+                ]
+            elif section_name == 'phot':
+                column_names = [f'col{i+1}' for i in range(len(section[0].split()))]
+            elif section_name == 'zpdf':
+                column_names = ['z', 'P(z)']
+            elif section_name == 'sed':
+                column_names = ['lambda', 'flux']
+            else:
+                # For unknown sections, use generic column names
+                column_names = [f'col{i+1}' for i in range(len(section[0].split()))]
+
+            # Read the section into data rows
+            data_rows = [re.split(r'\s+', line.strip()) for line in section if line.strip()]
+
+            # Create the table for the section
+            tables[section_name] = Table(rows=data_rows, names=column_names)
+
+        except Exception as e:
+            print(f"Error reading section {section_name}: {e}")
+
+    return tables
 
 
 def remove_items(master_list, items_to_remove):
