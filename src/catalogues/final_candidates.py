@@ -17,6 +17,35 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
+def stellar_type(model):
+    stellar_dict = {
+        1: 'M4',
+        2: 'M5',
+        3: 'M6',
+        4: 'M7',
+        5: 'M8',
+        6: 'M9',
+        7: 'L0',
+        8: 'L1',
+        9: 'L2',
+        10: 'L3',
+        11: 'L4',
+        12: 'L5',
+        13: 'L6',
+        14: 'L7',
+        15: 'L8',
+        16: 'L9',
+        17: 'T0',
+        18: 'T1',
+        19: 'T2',
+        20: 'T3',
+        21: 'T4',
+        22: 'T5',
+        23: 'T6',
+        24: 'T7',
+        25: 'T8',
+    }
+    return stellar_dict[model]
 
 # Name of the directory we want to use to make the catalogue
 folder = 'det_Y_J_z7'
@@ -45,21 +74,54 @@ mask = np.isin(t['ID'], IDs)
 
 t_candidates = t[mask]
 
-file_name = obj_list[0]
-parsed_data = parse_spec_file(file_name)
+# Add new columns to the table for primary solution
+t_candidates['Zphot'] = Column(np.zeros(len(t_candidates)))
+t_candidates['Zinf'] = Column(np.zeros(len(t_candidates)))
+t_candidates['Zsup'] = Column(np.zeros(len(t_candidates)))
+t_candidates['Chi2'] = Column(np.zeros(len(t_candidates)))
 
-print(parsed_data.keys())
+# And for secondary solution
+t_candidates['Zphot_sec'] = Column(np.zeros(len(t_candidates)))
+t_candidates['Chi2_sec'] = Column(np.zeros(len(t_candidates)))
 
-phot_table = parsed_data.get('phot')
-model_table = parsed_data.get('model')
-zpdf_table = parsed_data.get('zpdf')
-sed_table = parsed_data.get('sed')
+# And for stellar solution
+t_candidates['Stellar_model'] = Column(np.zeros(len(t_candidates), dtype='U2'))
+t_candidates['Chi2_star'] = Column(np.zeros(len(t_candidates)))
 
-print(phot_table)
-print(model_table)
-print(zpdf_table)
-print(sed_table)
+# Convert IDs to integers
+IDs = [int(ID) for ID in IDs]
 
+# Loop through the objects in the table and get its SED properties
+for i, ID in enumerate(IDs):
+
+    # Find the row index in the table with this ID
+    row_index = np.where(t_candidates['ID'] == ID)[0]
+
+    # Open the SED solution file
+    file_name = obj_list[i]
+    spec_data = parse_spec_file(file_name)
+
+    # Get model table
+    model_table = spec_data.get('model')
+
+    # Get the properties of the primary solution
+    t_candidates['Zphot'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zphot'][0]
+    t_candidates['Zinf'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zinf'][0]
+    t_candidates['Zsup'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zsup'][0]
+    t_candidates['Chi2'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Chi2'][0]
+
+    # Get the properties of the secondary solution
+    t_candidates['Zphot_sec'][row_index] = model_table[model_table['ID'] == 'GAL-2']['Zphot'][0]
+    t_candidates['Chi2_sec'][row_index] = model_table[model_table['ID'] == 'GAL-2']['Chi2'][0]
+
+    # Get the properties of the stellar solution
+    BD_model = model_table[model_table['ID'] == 'STAR']['Model'][0]
+    BD_type = stellar_type(int(BD_model))
+    t_candidates['Stellar_model'][row_index] = BD_type
+    t_candidates['Chi2_star'][row_index]= model_table[model_table['ID'] == 'STAR']['Chi2'][0]
+
+
+print(t_candidates)
 
 # Now loop through the objects and get the properties of the SED solutions.
 
