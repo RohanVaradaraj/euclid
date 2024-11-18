@@ -75,8 +75,9 @@ for i, ID in enumerate(IDs):
     file_name = obj_list[i]
     spec_data = parse_spec_file(file_name)
 
-    # Get SED table
-    sed = spec_data.get('sed')
+    # Get SED table, high-z solution is the first one
+    sed = spec_data.get('sed')[0]
+
 
     # Get Zphot
     zphot = t['Zphot'][row_index][0]

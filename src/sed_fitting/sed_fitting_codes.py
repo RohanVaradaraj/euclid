@@ -58,6 +58,35 @@ def detect_section_changes(lines):
 
 
 
+def split_sed_section(sed_lines):
+    """Split the 'sed' section into multiple SEDs based on jumps in the wavelength."""
+    sed_sections = []
+    current_sed = []
+    
+    for i, line in enumerate(sed_lines):
+        try:
+            wavelength = float(re.split(r'\s+', line.strip())[0])
+            
+            # Detect the jump in wavelength (e.g., from 500 to 200)
+            if current_sed and wavelength < float(re.split(r'\s+', current_sed[-1].strip())[0]):
+                # New SED detected, save the current one and start a new one
+                sed_sections.append(current_sed)
+                current_sed = []
+
+            # Add the current line to the ongoing SED
+            current_sed.append(line)
+        
+        except ValueError:
+            continue  # Skip lines that don't have a valid wavelength
+            
+    # Add the last SED section
+    if current_sed:
+        sed_sections.append(current_sed)
+    
+    return sed_sections
+
+    
+
 def parse_spec_file(filename):
     """Parses the SPEC file into multiple sections, handling headers appropriately."""
     
@@ -99,12 +128,28 @@ def parse_spec_file(filename):
             elif section_name == 'zpdf':
                 column_names = ['z', 'P(z)']
             elif section_name == 'sed':
-                column_names = ['lambda', 'flux']
+                # Split the 'sed' section into sub-sections
+                sed_sections = split_sed_section(section)
+                sed_tables = []
+
+                for sed_idx, sed_section in enumerate(sed_sections):
+                    # Define columns for SED section
+                    column_names = ['lambda', 'flux']
+                    data_rows = [re.split(r'\s+', line.strip()) for line in sed_section if line.strip()]
+                    
+                    # Create the table for this SED section
+                    sed_table = Table(rows=data_rows, names=column_names)
+                    sed_tables.append(sed_table)
+                
+                # Store the list of SED tables in the main table under 'sed'
+                tables[section_name] = sed_tables
+                continue  # Skip the default handling for 'sed' to avoid overwriting
+
             else:
                 # For unknown sections, use generic column names
                 column_names = [f'col{i+1}' for i in range(len(section[0].split()))]
 
-            # Read the section into data rows
+            # Read the section into data rows (for non-SED sections)
             data_rows = [re.split(r'\s+', line.strip()) for line in section if line.strip()]
 
             # Create the table for the section
@@ -114,6 +159,7 @@ def parse_spec_file(filename):
             print(f"Error reading section {section_name}: {e}")
 
     return tables
+
 
 
 def remove_items(master_list, items_to_remove):
