@@ -30,6 +30,8 @@ if len(sys.argv) > 1:
     bools = json.loads(bools_json)
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
+    run_type_json = sys.argv[4]
+    run_type = json.loads(run_type_json)
 
 #! Set up the directories
 
@@ -44,6 +46,9 @@ base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
 
 # Determine the base folder name
 lbg_dir = 'det_' + '_'.join(detection_filters)
+
+if run_type != '':
+    lbg_dir += '_' + run_type
 
 # Set up the other directories
 bd_dir = lbg_dir + '_bd'

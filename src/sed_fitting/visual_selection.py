@@ -80,12 +80,22 @@ if custom_start == 'y':
     else:
         print(f"ID {custom_id} not found. Starting from saved progress or the beginning.")
 
-
 # Resume from the last processed file
 for i, spec_file in enumerate(spec_files[progress["last_index"]:], start=progress["last_index"]):
     print(f'Object {i + 1} of {len(spec_files)}')
-    ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
+    file_name = spec_file.split('/')[-1]
+    ID = file_name.split('Id')[-1].lstrip('0').split('.spec')[0]
     print('ID:', ID)
+
+    # Count the number of consecutive files that are skipped
+    skipped_count = 0
+    while (good_dir / file_name).exists() or (bad_dir / file_name).exists() or (maybe_dir / file_name).exists():
+        print(f"Skipping {file_name}")
+        skipped_count += 1
+        spec_file = next(spec_files, None)  # Move to next file
+
+    if skipped_count > 0:
+        print(f"Skipped {skipped_count} files.")
 
     # Prompt for input
     user_input = input("Press 'Q' for good, 'W' for maybe, Enter for bad, or type 'STOP' to save and exit: ").strip().lower()

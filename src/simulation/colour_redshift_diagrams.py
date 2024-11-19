@@ -140,4 +140,6 @@ for i in range(2):
 ax[0].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$')
 ax[0].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission')
 ax[0].legend(loc='upper left')
+plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
+plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}.pdf')
 plt.show()

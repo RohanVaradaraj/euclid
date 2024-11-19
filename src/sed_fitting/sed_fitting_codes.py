@@ -155,6 +155,9 @@ def parse_spec_file(filename):
                     # Define columns for SED section
                     column_names = ['lambda', 'flux']
                     data_rows = [re.split(r'\s+', line.strip()) for line in sed_section if line.strip()]
+
+                    # Convert to float
+                    data_rows = [[float(val) for val in row] for row in data_rows]
                     
                     # Create the table for this SED section
                     sed_table = Table(rows=data_rows, names=column_names)
@@ -170,6 +173,11 @@ def parse_spec_file(filename):
 
             # Read the section into data rows (for non-SED sections)
             data_rows = [re.split(r'\s+', line.strip()) for line in section if line.strip()]
+
+            # Convert to float except if any of not allowed value in the string
+            not_allowed = ['GAL-', 'QSO', 'STAR']
+            data_rows = [[val if any([na in val for na in not_allowed]) else float(val) for val in row] for row in data_rows]
+
 
             # Create the table for the section
             tables[section_name] = Table(rows=data_rows, names=column_names)

@@ -41,6 +41,9 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
+# Switch for whether the stamps should be blind to Euclid, i.e. not include at all.
+euclid_blind = True
+
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
     filters = json.loads(filters_json)
@@ -96,8 +99,8 @@ def flux_to_mag(flux):
     return mag
 
 #! What is the main object we want to plot? highz, bd, dusty or lya?
-#object_type = 'best_highz'
-object_type = 'z7'
+object_type = 'best_highz'
+#object_type = 'z7'
 
 #! Label crosstalk?
 label_crosstalk = True
@@ -135,11 +138,14 @@ output_pdf = '_'.join(filename_components) + '.pdf'
 
 print('Saving to: ', output_pdf)
 
-
-# Set up directories
+#! Set up directories
 # zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
-zphot_folder = base_det + f'_{object_type}'
+if run_type != '':
+    zphot_folder = base_det + '_' + run_type + f'_{object_type}'
+else:
+    zphot_folder = base_det + f'_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+print('Taking SEDs from: ', zphot_dir)
 print(zphot_dir)
 
 # Crossmatched catalogue name to get existing sources
@@ -197,6 +203,9 @@ if 'no_euclid' in input_name:
     filter_dict.pop('Je')
     filter_dict.pop('He')
 
+# Get n_in from the length of filter_dict
+n_in = len(filter_dict) * 2
+
 print(filter_dict)
 
 # Load the parent catalogue to get RA,DEC
@@ -222,19 +231,19 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         print(f'Object {i+1} of {len(spec_files)}')
 
         # Read in the .spec file
-        spec_file = parse_spec_file(spec_file)
+        file = parse_spec_file(spec_file)
 
-        phot = spec_file.get('phot')
-        zpdf = spec_file.get('zpdf')
-        sed = spec_file.get('sed')
-        phot = spec_file.get('phot')
+        phot = file.get('phot')
+        zpdf = file.get('zpdf')
+        sed = file.get('sed')
+        params = file.get('model')
 
         # Rename the column names for each table according to names_{} above
-        phot.colnames = names_phot
-        zpdf.colnamess = names_zpdf
-        params.colnames = names_param
+        phot.rename_columns(phot.colnames, names_phot)
+        zpdf.rename_columns(zpdf.colnames, names_zpdf)
+        params.rename_columns(params.colnames, names_param)
         for table in sed:
-            table.colnames = names_sed
+            table.rename_columns(table.colnames, names_sed)
 
         # Get each of the SEDs
         model_wlens = [table['wlen'] for table in sed]
@@ -454,14 +463,15 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         contained_in = isCoordInSurveyFootprints(ra, dec)
 
-        if det_list == ['Y', 'J']:
-            # Check if object coords are in Euclid footprint
-            if contained_in[0][0] == '0':
-                cutout_fig, cutout_axs = VistaCutout(ra, dec, size=6., save_cutout=False)
-            else:
-                cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
+        # Use smaller cutout size for visual inspection
+        cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
+
+        # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
+        if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
+            cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
         else:
-            cutout_fig, cutout_axs = Cutout(ra, dec, size=10., save_cutout=False)
+            cutout_fig, cutout_axs = Cutout(ra, dec, size=cutout_size, save_cutout=False)
+
 
         pdf.savefig(cutout_fig)
         plt.close(cutout_fig)
