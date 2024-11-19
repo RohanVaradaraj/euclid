@@ -22,6 +22,8 @@ if len(sys.argv) > 1:
     bools = json.loads(bools_json)
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
+    run_type_json = sys.argv[4]
+    run_type = json.loads(run_type_json)
 
 #! Output PDF name setup from detection filters
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
@@ -33,15 +35,18 @@ else:
     base_det = 'det_' + '_'.join(stack_filters)
     det_list = stack_filters
 
+# Add run type
+if run_type != '':
+    base_det += f'_{run_type}'
+
 # Directory setup
 zphot_folder = base_det + f'_best_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
-print('Running visual selection on:', zphot_folder)
 
 # Output directories
-good_dir = zphot_dir.parents[0] / (zphot_folder + '_good')
-bad_dir = zphot_dir.parents[0] / (zphot_folder + '_bad')
-maybe_dir = zphot_dir.parents[0] / (zphot_folder + '_maybe')
+good_dir = zphot_dir.parents[0] / (zphot_folder + '_good')      #! det_Y_J_best_highz_good
+bad_dir = zphot_dir.parents[0] / (zphot_folder + '_bad')        #! det_Y_J_best_highz_bad
+maybe_dir = zphot_dir.parents[0] / (zphot_folder + '_maybe')    #! det_Y_J_best_highz_maybe 
 
 # Create directories if they don't exist
 good_dir.mkdir(parents=True, exist_ok=True)
@@ -82,20 +87,26 @@ if custom_start == 'y':
 
 # Resume from the last processed file
 for i, spec_file in enumerate(spec_files[progress["last_index"]:], start=progress["last_index"]):
-    print(f'Object {i + 1} of {len(spec_files)}')
+
     file_name = spec_file.split('/')[-1]
+
+    # Check if the file already exists in any of the directories (good, bad, maybe)
+    if (good_dir / file_name).exists() or (bad_dir / file_name).exists() or (maybe_dir / file_name).exists():
+        # Get the directory where the file exists
+        # if (good_dir / file_name).exists():
+        #     print(f"Skipping {file_name}, exists at {good_dir / file_name}")
+        # elif (bad_dir / file_name).exists():
+        #     print(f"Skipping {file_name}, exists at {bad_dir / file_name}")
+        # elif (maybe_dir / file_name).exists():
+        #     print(f"Skipping {file_name}, exists at {maybe_dir / file_name}")
+        continue 
+
+    page_number = 2*i + 1
+    #print(f'Object {i + 1} of {len(spec_files)}, on page {2*i + 1}')
+    print(f'Object {i + 1} of {len(spec_files)}.')
+    print(f'--- This is on page \033[1m{page_number}\033[0m ---')
     ID = file_name.split('Id')[-1].lstrip('0').split('.spec')[0]
     print('ID:', ID)
-
-    # Count the number of consecutive files that are skipped
-    skipped_count = 0
-    while (good_dir / file_name).exists() or (bad_dir / file_name).exists() or (maybe_dir / file_name).exists():
-        print(f"Skipping {file_name}")
-        skipped_count += 1
-        spec_file = next(spec_files, None)  # Move to next file
-
-    if skipped_count > 0:
-        print(f"Skipped {skipped_count} files.")
 
     # Prompt for input
     user_input = input("Press 'Q' for good, 'W' for maybe, Enter for bad, or type 'STOP' to save and exit: ").strip().lower()

@@ -114,10 +114,12 @@ def run_sed_fitting():
 
     #! ############## Run preparation scripts ##############
 
-    #! Selection
+    #! STEP 1: Selection
     # print("Running selection.py...")
     # selection_script = Path.cwd() / 'selection.py'
     # subprocess.run(['python3', str(selection_script), filters_json], check=True)
+
+    #! STEP 2: Lephare
 
     #! Convert catalogue to lephare format
     # print("Running convert_fits_txt.py...")
@@ -170,13 +172,19 @@ def run_sed_fitting():
 
     # runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir)
 
+    #! STEP 3: Extract good SEDs
+
     #! Extract good SED fits once all of the above have run.
-    # good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-    # subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+    good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
+    subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+
+    #! Step 4: Plotting
 
     #! Run the plotting code
     plot_script = Path.cwd() / 'plot_SEDs.py'
     subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+
+    #! Step 5: Final selection
 
     #! Run the visual selection code
     # visual_script = Path.cwd() / 'visual_selection.py'
@@ -203,29 +211,30 @@ if __name__ == "__main__":
     # run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
     #? Either loop through all the different SED run types
-    # for r in run_types:
+    for r in run_types:
 
-    #     # Update run type
-    #     run_type = r
+        # Update run type
+        run_type = r
 
-    #     #! All filters
-    #     if run_type == '':
-    #         base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 
-    #                     'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
-    #     if run_type == 'with_euclid':
-    #         base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3',
-    #                     'VIS', 'Ye', 'Je', 'He',
-    #                     'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
-    #     if run_type == 'just_euclid':
-    #         base_all_filters = ['VIS', 'Ye', 'Je', 'He']
-    #     if run_type == 'CDS':
-    #         base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3','HSC-Z_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'ch1cds', 'ch2cds']
-    #     if run_type == 'all_filters':
-    #         base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3',
-    #                     'VIS', 'Ye', 'Je', 'He',
-    #                     'f115w', 'f150w', 'f277w', 'f444w',
-    #                     'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
-
+        #! All filters
+        if run_type == '':
+            base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 
+                        'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
+        if run_type == 'with_euclid':
+            base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3',
+                        'VIS', 'Ye', 'Je', 'He',
+                        'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
+        if run_type == 'just_euclid':
+            base_all_filters = ['VIS', 'Ye', 'Je', 'He']
+        if run_type == 'CDS':
+            base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3','HSC-Z_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'ch1cds', 'ch2cds']
+        if run_type == 'all_filters':
+            base_all_filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3',
+                        'VIS', 'Ye', 'Je', 'He',
+                        'f115w', 'f150w', 'f277w', 'f444w',
+                        'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
+          
+        run_sed_fitting()
 
     #     #! First run the normal sed fitting
     #     run_brown_dwarfs = False

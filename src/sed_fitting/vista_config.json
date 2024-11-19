@@ -1,0 +1,23 @@
+{
+  "run_types": [""],
+  "filters": {
+    "": ["HSC-G_DR3", "HSC-R_DR3", "HSC-I_DR3", "HSC-NB0816_DR3", "HSC-Z_DR3", "HSC-NB0921_DR3", "HSC-Y_DR3", "Y", "J", "H", "Ks", "ch1cds", "ch2cds"],
+    "with_euclid": ["HSC-G_DR3", "HSC-R_DR3", "HSC-I_DR3", "HSC-NB0816_DR3", "HSC-Z_DR3", "HSC-NB0921_DR3", "HSC-Y_DR3", "VIS", "Ye", "Je", "He", "Y", "J", "H", "Ks", "ch1cds", "ch2cds"],
+    "just_euclid": ["VIS", "Ye", "Je", "He"],
+    "CDS": ["HSC-G_DR3", "HSC-R_DR3", "HSC-I_DR3", "HSC-Z_DR3", "HSC-Y_DR3", "VIS", "Ye", "Je", "He", "ch1cds", "ch2cds"],
+    "all_filters": ["HSC-G_DR3", "HSC-R_DR3", "HSC-I_DR3", "HSC-NB0816_DR3", "HSC-Z_DR3", "HSC-NB0921_DR3", "HSC-Y_DR3", "VIS", "Ye", "Je", "He", "f115w", "f150w", "f277w", "f444w", "Y", "J", "H", "Ks", "ch1cds", "ch2cds"]
+  },
+  "default_filters": {
+    "Y+J": {"type": "stacked-detection", "value": 5},
+    "HSC-G_DR3": {"type": "non-detection", "value": 2},
+    "HSC-R_DR3": {"type": "non-detection", "value": 2},
+    "HSC-I_DR3": {"type": "non-detection", "value": 2}
+  },
+  "sed_modes": [
+    {"run_brown_dwarfs": false, "run_dusty": false, "run_lya": false},
+    {"run_brown_dwarfs": true, "run_dusty": false, "run_lya": false},
+    {"run_brown_dwarfs": false, "run_dusty": true, "run_lya": false},
+    {"run_brown_dwarfs": false, "run_dusty": false, "run_lya": true}
+  ],
+  "overwrite": false
+}
