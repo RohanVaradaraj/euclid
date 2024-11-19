@@ -57,7 +57,7 @@ def generate_selection_name(base_name, filters):
             parts.append(f"nonDet_{clean_filter_name}")
     return '_'.join(parts) + '.fits'
 
-def generate_input_name(filters, run_brown_dwarfs=False, run_dusty=False, run_lya=False):
+def generate_input_name(filters, run_type, run_brown_dwarfs=False, run_dusty=False, run_lya=False):
     parts = ['det']
     for filter_name, threshold in filters.items():
         clean_filter_name = filter_name.replace('_DR3', '')
@@ -67,6 +67,9 @@ def generate_input_name(filters, run_brown_dwarfs=False, run_dusty=False, run_ly
             stack_filters = filter_name.split('+')
             for stack_filter in stack_filters:
                 parts.append(stack_filter)
+    # Add the run_type to the input name
+    if run_type != '':
+        parts.append(run_type)
     if run_brown_dwarfs:
         return '_'.join(parts) + '_bd.in'
     if run_dusty:

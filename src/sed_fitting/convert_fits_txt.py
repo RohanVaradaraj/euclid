@@ -26,6 +26,8 @@ if len(sys.argv) > 1:
     bools = json.loads(bools_json)
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
+    run_type_json = sys.argv[4]
+    run_type = json.loads(run_type_json)
 
 #! BOOL ARRAY
 #![RUN_BROWN_DWARFS, RUN_DUSTY, RUN_LYA]
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     base_output_name = 'euclid'
 
     # Get input name
-    out_name = generate_input_name(filters, *bools)
+    out_name = generate_input_name(filters, run_type, *bools)
     print(out_name)
 
     # Delete blue filters if we are running fitting for brown dwarfs
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     t = Table.read(cat_dir / cat_name, format='fits', hdu=1)
 
     # Limit to where JWST errors are positive
-    t = t[t['err_f115w'] > 0]
+    #t = t[t['err_f115w'] > 0]
 
     '''CREATE TABLE'''
 

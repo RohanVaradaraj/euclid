@@ -33,6 +33,10 @@ crosstalk_path = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
 sys.path.append(str(crosstalk_path))
 from full_catalogue_codes import label_ct
 
+sed_path = Path.cwd().parents[0] / 'sed_fitting'
+sys.path.append(str(sed_path))
+from sed_fitting_codes import parse_spec_file
+
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
@@ -44,6 +48,8 @@ if len(sys.argv) > 1:
     bools = json.loads(bools_json)
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
+    run_type_json = sys.argv[4]
+    run_type = json.loads(run_type_json)
 
 def stellar_type(model):
     stellar_dict = {
@@ -100,21 +106,35 @@ label_crosstalk = True
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
 
 #! Set up the output PDF name from the det and nondet filters
+# Set up the detection filter base
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
 if len(det_list) != 0:
     base_det = 'det_' + '_'.join(det_list)
-if len(det_list) == 0:
+else:
     stack_list = [f for f, t in filters.items() if t['type'] == 'stacked-detection']
     stack_filters = stack_list[0].split('+')
     base_det = 'det_' + '_'.join(stack_filters)
     det_list = stack_filters
 
+# Set up the non-detection filter base
 base_nondet = 'nonDet_' + '_'.join([f for f, t in filters.items() if t['type'] == 'non-detection'])
-if object_type == 'best_highz':
-    output_pdf = f'{base_det}_{base_nondet}.pdf'
-else:
-    output_pdf = f'{base_det}_{base_nondet}_{object_type}.pdf'
+
+# Collect the components for the filename
+filename_components = [base_det, base_nondet]
+
+# Add object type if available
+if object_type:
+    filename_components.append(object_type)
+
+# Add run_type if available
+if run_type != '':
+    filename_components.append(run_type)
+
+# Construct the final output PDF name
+output_pdf = '_'.join(filename_components) + '.pdf'
+
 print('Saving to: ', output_pdf)
+
 
 # Set up directories
 # zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
@@ -137,74 +157,6 @@ flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
 
 # Directory to read in the .out file
 lephare_out_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
-
-# Determine the number of filters
-
-# Define start and end points of each section in the LePhare .spec file
-ds_phot = 9
-
-print(det_list)
-
-if 'e' in det_list[0]:
-    de_phot = 27
-if det_list == ['Y', 'J']:
-    de_phot = 20
-
-if 'e' in det_list[0]:
-    ds_mod = 228
-if det_list == ['Y', 'J']:
-    ds_mod = 220
-
-de_mod = -1
-
-if 'e' in det_list[0]:
-    ds_pz = 27
-if det_list == ['Y', 'J']:
-    ds_pz = 20
-
-if 'e' in det_list[0]:
-    de_pz = 228
-if det_list == ['Y', 'J']:
-    de_pz = 220
-
-ds_param = 3
-de_param = 9
-
-#! Without euclid
-# Check if 'no_euclid' is in input name
-if 'no_euclid' in input_name:
-    ds_phot = 9
-    de_phot = 24
-
-    ds_mod = 205
-    de_mod = -1
-
-    ds_pz = 24
-    de_pz = 205
-
-    ds_param = 3
-    de_param = 9
-
-# #! Brown dwarf fitting
-# if 'BD' or 'lya' in output_pdf:
-#     print('PLOTTING BROWN DWARFS')
-#     ds_phot = 9
-#     de_phot = 18
-
-#     ds_mod = 219
-#     de_mod = -1
-
-#     ds_pz = 18
-#     de_pz = 219
-
-#     ds_param = 3
-#     de_param = 9
-
-# From these values, we can get the number of filters which will be useful for extracting fluxes from the .in file.
-n_bands = de_phot - ds_phot
-
-# Double the value to correspond to each flux and error
-n_in = 2 * n_bands
 
 # Column names
 names_phot=['phot', 'yerr', 'wlen', 'xerr', 'modelPhot', 'col6', 'col7']
@@ -269,10 +221,24 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
     for i, spec_file in enumerate(spec_files):
         print(f'Object {i+1} of {len(spec_files)}')
 
-        phot = ascii.read(spec_file, format='basic', data_start=ds_phot, data_end=de_phot, delimiter=' ', names=names_phot)
-        zpdf = ascii.read(spec_file, format='basic', data_start=ds_pz, data_end=de_pz, delimiter=' ', names=names_zpdf)
-        sed = ascii.read(spec_file, format='basic', data_start=ds_mod, data_end=de_mod, delimiter=' ', names=names_sed)
-        params = ascii.read(spec_file, format='basic', data_start=ds_param, data_end=de_param, delimiter=' ', names=names_param)
+        # Read in the .spec file
+        spec_file = parse_spec_file(spec_file)
+
+        phot = spec_file.get('phot')
+        zpdf = spec_file.get('zpdf')
+        sed = spec_file.get('sed')
+        phot = spec_file.get('phot')
+
+        # Rename the column names for each table according to names_{} above
+        phot.colnames = names_phot
+        zpdf.colnamess = names_zpdf
+        params.colnames = names_param
+        for table in sed:
+            table.colnames = names_sed
+
+        # Get each of the SEDs
+        model_wlens = [table['wlen'] for table in sed]
+        model_fluxes = [table['flux'] for table in sed]  
 
         # Get the ID of the object from the file name
         ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
@@ -298,10 +264,6 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         flux = np.array(flux)
         error = np.array([np.abs(e) for e in error])
-
-        # Extract each model by finding where wavelength jumps.
-        model_wlens = np.split(sed['wlen'], np.where(np.diff(sed['wlen']) < 0)[0] + 1)
-        model_fluxes = np.split(sed['flux'], np.where(np.diff(sed['wlen']) < 0)[0] + 1)
 
         # Filter centres and widths
         central_wavelengths = [value[0] for value in filter_dict.values()]
@@ -336,11 +298,6 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         dz_inf = round(params['Zinf'][0], 2)
         chi2_1 = round(params['Chi2'][0], 1)
 
-        # Selection criterion for HSC+VISTA+JWST+Euclid
-        # if chi2_1 > 20.4:
-        #     print('Would not be selected as a high-z galaxy')
-        #     continue
-
         print('GAL 1 SOLUTION: ', zphot_1, chi2_1)
 
         #! Read in the secondary solutions from the lephare_out tables
@@ -353,7 +310,6 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         chi2_2 = round(dusty_out[dusty_out['col1'] == int(ID)]['col15'][0], 1)
 
         zphot_2 = round(params['Zphot'][1], 2)
-        #chi2_2 = round(params['Chi2'][1], 1)
 
         print('GAL 2 SOLUTION: ', zphot_2, chi2_2)
 

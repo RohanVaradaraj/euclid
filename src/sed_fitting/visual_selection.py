@@ -33,34 +33,6 @@ else:
     base_det = 'det_' + '_'.join(stack_filters)
     det_list = stack_filters
 
-# Define start and end points of each section in the LePhare .spec file
-ds_phot = 9
-
-if 'e' in det_list[0]:
-    de_phot = 27
-if det_list == ['Y', 'J']:
-    de_phot = 20
-
-if 'e' in det_list[0]:
-    ds_mod = 228
-if det_list == ['Y', 'J']:
-    ds_mod = 220
-
-de_mod = -1
-
-if 'e' in det_list[0]:
-    ds_pz = 27
-if det_list == ['Y', 'J']:
-    ds_pz = 20
-
-if 'e' in det_list[0]:
-    de_pz = 228
-if det_list == ['Y', 'J']:
-    de_pz = 220
-
-ds_param = 3
-de_param = 9
-
 # Directory setup
 zphot_folder = base_det + f'_best_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder

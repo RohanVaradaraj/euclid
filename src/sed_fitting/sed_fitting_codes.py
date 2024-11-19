@@ -19,6 +19,25 @@ vardy_dir = Path.home().parent.parent / 'mnt' / 'vardy' / 'vardygroupshare' / 'd
 euclid_dir = Path.home().parent.parent / 'euclid'
 
 
+
+def generate_input_name(filters, run_type, run_brown_dwarfs=False, run_dusty=False, run_lya=False):
+    
+    parts = ['det'] + filters
+
+    # Add the run_type to the input name
+    if run_type != '':
+        parts.append(run_type)
+    if run_brown_dwarfs:
+        return '_'.join(parts) + '_bd.in'
+    if run_dusty:
+        return '_'.join(parts) + '_dusty.in'
+    if run_lya:
+        return '_'.join(parts) + '_lya.in'
+    if not run_brown_dwarfs and not run_lya and not run_dusty:
+        return '_'.join(parts) + '.in'
+
+
+
 def skip_initial_lines(lines):
     """Skip the first three uncommented lines."""
     count = 0
@@ -85,7 +104,7 @@ def split_sed_section(sed_lines):
     
     return sed_sections
 
-    
+
 
 def parse_spec_file(filename):
     """Parses the SPEC file into multiple sections, handling headers appropriately."""
@@ -369,7 +388,7 @@ def filter_files():
 
 
 
-def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
+def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
     file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05]) -> None:
     """
     Generate a LePhare configuration file.
@@ -525,15 +544,9 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_brown_dwarfs
         f.write('#\n')
         f.write('#-------    Input Catalog Information \n')
 
-        det_string = 'det_' + '_'.join(det_filters)
-        if run_brown_dwarfs:
-            det_string += '_bd.in'
-        if run_lya:
-            det_string += '_lya.in'
-        if run_dusty:
-            det_string += '_dusty.in'
-        if not run_brown_dwarfs and not run_lya and not run_dusty:
-            det_string += '.in'
+
+
+        det_string = generate_input_name(det_filters, run_type, run_brown_dwarfs, run_dusty, run_lya)
         print('####################')
         print(det_string)
 
