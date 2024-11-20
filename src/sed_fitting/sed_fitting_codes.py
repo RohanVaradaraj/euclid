@@ -340,6 +340,10 @@ def filter_widths():
         'HSC-Z_DR3': (0.8912, 0.0773),
         'HSC-NB0921_DR3': (0.9214, 0.0134),
         'HSC-Y_DR3': (0.9780, 0.0783),
+        'VIS': (0.7180, 0.3699),
+        'Ye': (1.0812, 0.2626),
+        'Je': (1.3670, 0.3991),
+        'He': (1.7708, 0.4994),
         'Y': (1.0214, 0.0926),
         'J': (1.2544, 0.1725),
         'H': (1.6465, 0.2916),
@@ -348,10 +352,6 @@ def filter_widths():
         'f150w': (1.501, 0.317),
         'f277w': (2.776, 0.673),
         'f444w': (4.401, 1.023),
-        'VIS': (0.7180, 0.3699),
-        'Ye': (1.0812, 0.2626),
-        'Je': (1.3670, 0.3991),
-        'He': (1.7708, 0.4994),
         'ch1cds': (3.551, 0.750),
         'ch2cds': (4.493, 1.010),
     }
@@ -657,11 +657,10 @@ def LymanAlphaModel(model_number):
     """
     Given the model number of the Lyman-alpha SED fitting, return the equivalent width.
     """
-    # File path setup
+
     lya_doc_dir = Path.cwd().parent / 'galaxy_properties'
     lya_doc = 'lya_lephare_BC03_models.doc'
 
-    # Open and read the file
     with open(lya_doc_dir / lya_doc, 'r') as f:
         lines = f.readlines()
 

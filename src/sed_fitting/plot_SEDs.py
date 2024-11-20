@@ -229,7 +229,7 @@ spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-
 
 with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
-    for i, spec_file in enumerate(spec_files):
+    for i, spec_file in enumerate(spec_files[0:10]):
         print(f'Object {i+1} of {len(spec_files)}')
 
         # Read in the .spec file
