@@ -42,11 +42,16 @@ if run_type != '':
 # Directory setup
 zphot_folder = base_det + f'_best_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+print(f'Checking files in {zphot_dir}')
 
 # Output directories
 good_dir = zphot_dir.parents[0] / (zphot_folder + '_good')      #! det_Y_J_best_highz_good
 bad_dir = zphot_dir.parents[0] / (zphot_folder + '_bad')        #! det_Y_J_best_highz_bad
 maybe_dir = zphot_dir.parents[0] / (zphot_folder + '_maybe')    #! det_Y_J_best_highz_maybe 
+print('They will be saved in:')
+print(good_dir)
+print(bad_dir)
+print(maybe_dir)
 
 # Create directories if they don't exist
 good_dir.mkdir(parents=True, exist_ok=True)
@@ -66,6 +71,9 @@ else:
 # Collect and sort .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
+print(f"Found {len(spec_files)} files.")
+
+exit()
 
 # Check if the user wants to start from a custom ID
 custom_start = input("Do you want to start from a specific ID? (y/n): ").strip().lower()

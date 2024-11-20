@@ -28,6 +28,7 @@ cutout_path = Path.cwd().parents[0] / 'cutouts'
 sys.path.append(str(cutout_path))
 from cutout_codes import *
 from vista_cutouts import *
+from all_cutouts import AllCutout
 
 crosstalk_path = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
 sys.path.append(str(crosstalk_path))
@@ -41,9 +42,6 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
-# Switch for whether the stamps should be blind to Euclid, i.e. not include at all.
-euclid_blind = True
-
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
     filters = json.loads(filters_json)
@@ -53,6 +51,13 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    object_type_json = sys.argv[5]
+    object_type = json.loads(object_type_json)
+
+if run_type == '':
+    euclid_blind = True
+else:
+    euclid_blind = False
 
 def stellar_type(model):
     stellar_dict = {
@@ -97,10 +102,6 @@ def flux_to_mag(flux):
     '''Convert flux to mag, for the secondary y axis'''
     mag = -2.5*np.log10(flux)-48.6
     return mag
-
-#! What is the main object we want to plot? highz, bd, dusty or lya?
-object_type = 'best_highz'
-#object_type = 'z7'
 
 #! Label crosstalk?
 label_crosstalk = True
@@ -158,7 +159,8 @@ crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
-input_name = base_det + '.in'
+input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '.in'
+
 flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
 
 # Directory to read in the .out file
@@ -181,10 +183,10 @@ if 'dusty' not in output_pdf:
     print('Removed f444w, ch1cds, ch2cds')
 
 if det_list == ['Y', 'J']:
-    filter_dict.pop('VIS')
-    filter_dict.pop('Ye')
-    filter_dict.pop('Je')
-    filter_dict.pop('He')
+    # filter_dict.pop('VIS')
+    # filter_dict.pop('Ye')
+    # filter_dict.pop('Je')
+    # filter_dict.pop('He')
     filter_dict.pop('f115w')
     filter_dict.pop('f150w')
     filter_dict.pop('f277w')
@@ -470,8 +472,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
             cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
         else:
-            cutout_fig, cutout_axs = Cutout(ra, dec, size=cutout_size, save_cutout=False)
-
+            cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
 
         pdf.savefig(cutout_fig)
         plt.close(cutout_fig)

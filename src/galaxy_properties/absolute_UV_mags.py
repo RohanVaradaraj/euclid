@@ -15,6 +15,7 @@ from scipy.integrate import simps
 from astropy.cosmology import FlatLambdaCDM
 from scipy import stats
 import matplotlib.pyplot as plt
+import math
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -54,7 +55,7 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_13.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -83,6 +84,12 @@ for i, ID in enumerate(IDs):
     zphot = t['Zphot'][row_index][0]
     zinf = t['Zinf'][row_index][0]
     zsup = t['Zsup'][row_index][0]
+
+    if zinf > zphot:
+        print(f'Zinf is less than Zphot for ID {ID}.')
+        print(f'Zinf: {zinf}, Zphot: {zphot}')
+        t['Zinf'][row_index] = math.floor(zinf * 100) / 100
+        zinf = math.floor(zinf * 100) / 100
 
     # Luminosity distance
     DL = cosmo.luminosity_distance(zphot).value * 10 ** 6 # put into pc
@@ -135,10 +142,11 @@ for i, ID in enumerate(IDs):
     t['dMuv_inf'][row_index] = minus
     t['dMuv_sup'][row_index] = plus
 
-    print(M1500)
-
 # Overwrite table
 t.write(cat_dir / cat_name, format='fits', overwrite=True)
+
+# Split table into where EW is non-zero
+t_lya = t[t['Lyman_alpha_EW'] > 0]
 
 plt.errorbar(
     t['Zphot'], t['Muv'],
@@ -147,6 +155,14 @@ plt.errorbar(
     fmt='o', color='black', markersize=8,
     label='COSMOS',
     alpha=0.8
+)
+
+plt.errorbar(
+    t_lya['Zphot'], t_lya['Muv'],
+    yerr=[t_lya['dMuv_inf'], t_lya['dMuv_sup']],
+    xerr=[t_lya['Zphot']-t_lya['Zinf'], t_lya['Zsup']-t_lya['Zphot']],
+    fmt='D', color='orange', markersize=10,
+    label=r'Lyman-$\alpha$ emitters',
 )
 
 # Load paper 1 galaxies

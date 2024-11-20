@@ -33,6 +33,9 @@ if len(sys.argv) > 1:
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
 
+if run_type != '':
+    run_type_str = '_' + run_type
+
 #! Set up the directories
 
 # Get the detection filters
@@ -47,22 +50,26 @@ base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
 # Determine the base folder name
 lbg_dir = 'det_' + '_'.join(detection_filters)
 
-if run_type != '':
-    lbg_dir += '_' + run_type
-
 # Set up the other directories
-bd_dir = lbg_dir + '_bd'
-dusty_dir = lbg_dir + '_dusty'
-lya_dir = lbg_dir + '_lya'
+bd_dir = lbg_dir + run_type_str + '_bd'
+dusty_dir = lbg_dir + run_type_str + '_dusty'
+lya_dir = lbg_dir + run_type_str + '_lya'
+
+# Need the outside_footprint directory to exclude objects outside the Euclid footprint
+outside_footprint_dir = base_dir / (lbg_dir + '_outside_footprint')
+print(outside_footprint_dir)
 
 # Set up the output directories where good SEDs will be stored
 output_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
 
-lbg_out_dir = lbg_dir + '_best_highz' # Has chi2 < 2sigma threshold
-bd_out_dir = lbg_dir + '_best_bd' # Has chi2 < 10
-dusty_out_dir = lbg_dir + '_best_dusty' # Has chi2_lowz < chi2_highz
-lya_out_dir = lbg_dir + '_best_lya' # Has chi2_lya < chi2_lbg
-pristine_out_dir = lbg_dir + '_pristine' # Satisfies chi2 < 2sigma threshold, chi2_bd < 10, chi2_highz + 4 < chi2_lowz
+lbg_out_dir = lbg_dir + run_type_str + '_best_highz' # Has chi2 < 2sigma threshold
+bd_out_dir = lbg_dir + run_type_str + '_best_bd' # Has chi2 < 10
+dusty_out_dir = lbg_dir + run_type_str + '_best_dusty' # Has chi2_lowz < chi2_highz
+lya_out_dir = lbg_dir + run_type_str + '_best_lya' # Has chi2_lya < chi2_lbg
+pristine_out_dir = lbg_dir + run_type_str + '_pristine' # Satisfies chi2 < 2sigma threshold, chi2_bd < 10, chi2_highz + 4 < chi2_lowz
+
+# Finally modify the lbg dir in place
+lbg_dir += run_type_str
 
 # Create the output directories if they don't exist
 create_dir = lambda dir_name: (output_dir / dir_name).mkdir(parents=True) if not (output_dir / dir_name).exists() else None
@@ -90,6 +97,8 @@ if bools[1] == False:
     filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
     all_filters = remove_items(all_filters, filters_to_remove)
 
+print('All filters:', all_filters)
+
 n = len(all_filters)
 dof = n - 6 # 6 degrees of freedom for the 6 parameters in the SED fitting
 
@@ -104,17 +113,19 @@ print('SED fits must have chi2 < ', two_sigma_thresh, ' to be considered good fi
 cat_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
 
 # Generate the output catalogue names
+
 out_names = {
-    'lbg': 'det_' + '_'.join(detection_filters) + '.out',
-    'bd': 'det_' + '_'.join(detection_filters) + '_bd.out',
-    'dusty': 'det_' + '_'.join(detection_filters) + '_dusty.out',
-    'lya': 'det_' + '_'.join(detection_filters) + '_lya.out'
+    'lbg': 'det_' + '_'.join(detection_filters) + run_type_str + '.out',
+    'bd': 'det_' + '_'.join(detection_filters) + run_type_str + '_bd.out',
+    'dusty': 'det_' + '_'.join(detection_filters) + run_type_str + '_dusty.out',
+    'lya': 'det_' + '_'.join(detection_filters) + run_type_str + '_lya.out'
 }
 
 # Read the tables
 tables = {}
 
 for key, out_name in out_names.items():
+    print(f'Reading {out_name}...')
     tables[key] = ascii.read(cat_dir / out_name, format='no_header')
 
 lbg_table = tables['lbg']
@@ -174,6 +185,8 @@ categories = {
     'Pristine objects': (pristine_ids, pristine_out_dir)
 }
 
+print(len(lbg_ids), 'LBGs')
+
 orig_dir = {
     'LBGs': lbg_dir,
     'BDs': bd_dir,
@@ -182,8 +195,27 @@ orig_dir = {
     'Pristine objects': lbg_dir
 }
 
+# Print the out_dirs of the categories
+for category, (ids, out_dir) in categories.items():
+    print(f'{category} will be copied to {output_dir / out_dir}')
+
+# Print where files will be copied from
+for category, (ids, out_dir) in categories.items():
+    print(f'Files will be copied from {base_dir / orig_dir[category]}')
+
 for category, (ids, out_dir) in categories.items():
     for ID in ids:
+
         file_name = f'Id{str(ID).zfill(9)}.spec'
+        
+        # Check if the file exists
+        if not (base_dir / orig_dir[category] / file_name).exists():
+            print(f'File {file_name} does not exist in {base_dir / orig_dir[category]}')
+            continue
+
+        # If the spec file is in the outside footprint directory, ignore it
+        if (outside_footprint_dir / file_name).exists():
+            continue
+
         os.system(f'cp {str(base_dir / orig_dir[category] / file_name)} {output_dir / out_dir}')
     print(f'Copied {len(ids)} {category} to {output_dir / out_dir}')

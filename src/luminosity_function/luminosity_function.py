@@ -52,7 +52,7 @@ def schechter(phiStar, alpha, M, Mstar):
 
 # Read in the catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_13.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 t = Table.read(cat_dir / cat_name)
 
 # Find the minimum and maximum Muv
@@ -78,8 +78,8 @@ LF_error = np.zeros(len(Muv_bins)-1)
 for i, sub_table in enumerate(binned_tables):
     
     # Print number of galaxies in each bin
-    # print(f'Bin {i} has {len(sub_table)} galaxies')
-    # plt.hist(sub_table['Muv'], bins=np.arange(Muv_min, Muv_max, 0.1), alpha=0.5)
+    #print(f'Bin {i} has {len(sub_table)} galaxies')
+    #plt.hist(sub_table['Muv'], bins=np.arange(Muv_min, Muv_max, 0.1), alpha=0.5)
 
     #! Go through all the objects in the sub-table
     for j, obj in enumerate(sub_table):
@@ -132,6 +132,11 @@ b21y = [1e-6, 4.1e-5, 4.7e-5, 1.98e-4, 2.83e-4, 5.89e-4, 1.172e-3, 1.433e-3, 5.7
 
 b21dy = [2e-6, 1.1e-5, 1.5e-5, 3.6e-5, 6.6e-5, 1.26e-4, 3.36e-4, 4.19e-4, 1.440e-3, 2.9e-3]
 
+# Bowler+17 LF points
+b17x = [-22.86, -22.40, -21.85]
+b17y = [3.59e-7, 1.16e-6, 2.75e-6]
+b17dy = [2.54e-7, 0.58e-6, 1.04e-6]
+
 b21dx = np.ones(len(b21x)) * 0.25
 
 # Print ratio between my LF points and the Harikane+24 LF function at that magnitude
@@ -152,8 +157,12 @@ plt.plot(M, DPLy_h22, color='gray', linewidth=3, label='Harikane+22', alpha=0.5)
 # Bowuens et al. 2021
 plt.errorbar(b21x, b21y, color='orange', yerr=b21dy, label='Bouwens+21', marker='o', markerfacecolor='none', markersize=10, alpha=0.8, linestyle='none')
 
+# Bowler+17
+plt.errorbar(b17x, b17y, color='green', yerr=b17dy, label='Bowler+17', marker='s', markersize=10, alpha=0.8, linestyle='none', zorder=3)
+
+# Varadaraj+23
 plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='black', 
-             ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=13, markeredgecolor='black')
+             ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=13, markeredgecolor='black', zorder=2)
 
 # Plot the LF new points
 plt.errorbar(Muv_bins[:-1], LF_sum, yerr=LF_error, fmt='o', color='red', 

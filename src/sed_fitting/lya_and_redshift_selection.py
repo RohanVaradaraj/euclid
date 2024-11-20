@@ -14,6 +14,12 @@ import sys
 import json
 import shutil
 from astropy.io import ascii
+import sys
+sed_path = Path.cwd().parents[0] / 'sed_fitting'
+sys.path.append(str(sed_path))
+from sed_fitting_codes import parse_spec_file
+
+verbose = False
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -22,21 +28,23 @@ if len(sys.argv) > 1:
     bools = json.loads(bools_json)
     all_filters_json = sys.argv[3]
     all_filters = json.loads(all_filters_json)
+    run_type_json = sys.argv[4]
+    run_type = json.loads(run_type_json)
 
 #! Output PDF name setup from detection filters
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
-if len(det_list) != 0:
+if det_list:
     base_det = 'det_' + '_'.join(det_list)
 else:
-    stack_list = [f for f, t in filters.items() if t['type'] == 'stacked-detection']
-    stack_filters = stack_list[0].split('+')
+    stack_filters = next((f.split('+') for f, t in filters.items() if t['type'] == 'stacked-detection'), [])
     base_det = 'det_' + '_'.join(stack_filters)
     det_list = stack_filters
 
+# Append run type if provided
+base_det += f'_{run_type}' if run_type else ''
+
 # Define start and end points of the SED fitting parameter section in the LePhare .spec file
 names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Zsup', 'Chi2', 'PDF', 'Extlaw', 'EB-V', 'Lir', 'Age', 'Mass', 'SFR', 'SSFR']
-ds_param = 3
-de_param = 9
 
 # Directory setup
 zphot_folder = base_det + '_lyaBase'
@@ -97,16 +105,20 @@ number_not_lya = 0
 
 for i, spec_file in enumerate(spec_files):
 
-    print(f'Object {i + 1} of {len(spec_files)}')
     ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
-    print('ID:', ID)
 
-    params = ascii.read(spec_file, format='basic', data_start=ds_param, data_end=de_param, delimiter=' ', names=names_param)
+    if verbose:
+        print(f'Object {i + 1} of {len(spec_files)}')
+        print('ID:', ID)
+
+    params = parse_spec_file(spec_file).get('model')
+    params.rename_columns(params.colnames, names_param)
 
     # Open original SED. 
     # spec file name is made of 9 digits, with left filled with zeros
     original_sed_file = normal_sed_dir / f'Id{ID.zfill(9)}.spec'
-    original_params = ascii.read(original_sed_file, format='basic', data_start=ds_param, data_end=de_param, delimiter=' ', names=names_param)
+    original_params = parse_spec_file(original_sed_file).get('model')
+    original_params.rename_columns(original_params.colnames, names_param)
 
     # First check if the original SED has z>6.5
     zphot_primary = original_params['Zphot'][0]
@@ -124,7 +136,8 @@ for i, spec_file in enumerate(spec_files):
     # Now, if it is at z<6.5, check if the Lya solution boosts it to z>6.5
     if not is_z7:
 
-        print('Checking Lya solution...')
+        if verbose:
+            print('Checking Lya solution...')
 
         zphot_lya = params['Zphot'][0]
         chi2_lya = params['Chi2'][0]

@@ -651,3 +651,33 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, r
         print(f'Generated LePhare config file: {file_name}')
 
         return None
+
+
+def LymanAlphaModel(model_number):
+    """
+    Given the model number of the Lyman-alpha SED fitting, return the equivalent width.
+    """
+    # File path setup
+    lya_doc_dir = Path.cwd().parent / 'galaxy_properties'
+    lya_doc = 'lya_lephare_BC03_models.doc'
+
+    # Open and read the file
+    with open(lya_doc_dir / lya_doc, 'r') as f:
+        lines = f.readlines()
+
+    # Define a dictionary to map model numbers to equivalent widths
+    model_to_ew = {}
+
+    # Regular expression to extract model number and equivalent width
+    pattern = r'MOD_\d+\s+(\d+).+EW(\d+)A'
+
+    for line in lines[9:-5]:  # Adjust to skip headers and footers
+        match = re.search(pattern, line)
+        if match:
+            model_num = int(match.group(1))  # Extract model number
+            ew = int(match.group(2))        # Extract equivalent width
+            model_to_ew[model_num] = ew
+
+    # Return the equivalent width for the given model number
+    return model_to_ew.get(model_number, None)  # Return None if model not found
+

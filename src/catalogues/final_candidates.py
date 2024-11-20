@@ -15,7 +15,7 @@ import sys
 
 sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
-from sed_fitting_codes import parse_spec_file
+from sed_fitting_codes import parse_spec_file, LymanAlphaModel
 
 def stellar_type(model):
     stellar_dict = {
@@ -47,8 +47,11 @@ def stellar_type(model):
     }
     return stellar_dict[model]
 
+
+
 # Name of the directory we want to use to make the catalogue
 folder = 'det_Y_J_z7'
+lya_folder = 'det_Y_J_lya'
 
 # Parent catalogue from which to get fluxes
 cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
@@ -66,13 +69,19 @@ t = Table.read(cat_dir / cat_name)
 obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 
+# And lyman-alpha emitters
+lya_obj_list = glob.glob(str(obj_dir / lya_folder / '*.spec'))
+lya_IDs = [spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0] for spec_file in lya_obj_list]
+lya_IDs = [int(ID) for ID in lya_IDs]
+
 # Get the IDs
 IDs = [spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0] for spec_file in obj_list]
 
 # Take the objects from the parent catalogue with these IDs
 mask = np.isin(t['ID'], IDs)
+mask_lya = np.isin(t['ID'], lya_IDs)
 
-t_candidates = t[mask]
+t_candidates = t[mask | mask_lya]
 
 # Add new columns to the table for primary solution
 t_candidates['Zphot'] = Column(np.zeros(len(t_candidates)))
@@ -87,6 +96,9 @@ t_candidates['Chi2_sec'] = Column(np.zeros(len(t_candidates)))
 # And for stellar solution
 t_candidates['Stellar_model'] = Column(np.zeros(len(t_candidates), dtype='U2'))
 t_candidates['Chi2_star'] = Column(np.zeros(len(t_candidates)))
+
+# And for the equivalent width of the Lyman-alpha line galaxies
+t_candidates['Lyman_alpha_EW'] = Column(np.zeros(len(t_candidates)))
 
 # Convert IDs to integers
 IDs = [int(ID) for ID in IDs]
@@ -121,9 +133,42 @@ for i, ID in enumerate(IDs):
     t_candidates['Chi2_star'][row_index]= model_table[model_table['ID'] == 'STAR']['Chi2'][0]
 
 
-print(t_candidates)
+#! Now loop through Lya objects
+for i, lya_ID in enumerate(lya_IDs):
 
-# Now loop through the objects and get the properties of the SED solutions.
+    row_index = np.where(t_candidates['ID'] == lya_ID)[0]
+
+    # Open the SED solution file
+    file_name = lya_obj_list[i]
+    spec_data = parse_spec_file(file_name)
+
+    # Get model table
+    model_table = spec_data.get('model')
+
+    model_number = model_table[model_table['ID'] == 'GAL-1']['Model'][0]
+
+    lya_EW = LymanAlphaModel(model_number)
+
+    t_candidates['Lyman_alpha_EW'][row_index] = lya_EW
+
+    # And all the other table params
+    # Get the properties of the primary solution
+    t_candidates['Zphot'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zphot'][0]
+    t_candidates['Zinf'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zinf'][0]
+    t_candidates['Zsup'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Zsup'][0]
+    t_candidates['Chi2'][row_index] = model_table[model_table['ID'] == 'GAL-1']['Chi2'][0]
+
+    # Get the properties of the secondary solution
+    t_candidates['Zphot_sec'][row_index] = model_table[model_table['ID'] == 'GAL-2']['Zphot'][0]
+    t_candidates['Chi2_sec'][row_index] = model_table[model_table['ID'] == 'GAL-2']['Chi2'][0]
+
+    # Get the properties of the stellar solution
+    BD_model = model_table[model_table['ID'] == 'STAR']['Model'][0]
+    BD_type = stellar_type(int(BD_model))
+    t_candidates['Stellar_model'][row_index] = BD_type
+    t_candidates['Chi2_star'][row_index]= model_table[model_table['ID'] == 'STAR']['Chi2'][0]
+
+print(t_candidates)
 
 # Save the new catalogue
 t_candidates.write(cat_dir / 'candidates' / new_cat_name, overwrite=True)
