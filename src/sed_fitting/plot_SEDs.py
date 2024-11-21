@@ -147,7 +147,6 @@ else:
     zphot_folder = base_det + f'_{object_type}'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
-print(zphot_dir)
 
 # Crossmatched catalogue name to get existing sources
 crossmatch_name = 'all_COSMOS_highz.fits'
@@ -159,7 +158,16 @@ crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
-input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '.in'
+if not bools[0]:    
+    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '.in'
+if bools[0]:
+    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_bd' + '.in'
+if bools[1]:
+    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_dusty' + '.in'
+if bools[2]:
+    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_lya' + '.in'
+
+print('Reading in: ', input_name)
 
 flux_table = Table.read(input_dir / input_name, format='ascii.commented_header')
 
@@ -176,7 +184,7 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 filter_dict = filter_widths()
 
 # Remove f444w
-if 'dusty' not in output_pdf:
+if not bools[1]:
     filter_dict.pop('f444w')
     filter_dict.pop('ch1cds')
     filter_dict.pop('ch2cds')
@@ -193,10 +201,10 @@ if det_list == ['Y', 'J']:
     #filter_dict.pop('f444w')
     print('Removed VIS, Ye, Je, He', 'f115w', 'f150w', 'f277w', 'f444w')
 
-# if 'BD' or 'lya' in output_pdf:
-#     filter_dict.pop('HSC-G_DR3')
-#     filter_dict.pop('HSC-R_DR3')
-#     print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+if bools[0]:
+    filter_dict.pop('HSC-G_DR3')
+    filter_dict.pop('HSC-R_DR3')
+    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
 
 # If running only VISTA: Remove items with keys VIS, Ye, Je, He
 if 'no_euclid' in input_name:
@@ -208,7 +216,7 @@ if 'no_euclid' in input_name:
 # Get n_in from the length of filter_dict
 n_in = len(filter_dict) * 2
 
-print(filter_dict)
+print('Filters: ', filter_dict.keys())
 
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -229,7 +237,7 @@ spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-
 
 with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
-    for i, spec_file in enumerate(spec_files[0:10]):
+    for i, spec_file in enumerate(spec_files):
         print(f'Object {i+1} of {len(spec_files)}')
 
         # Read in the .spec file
@@ -263,6 +271,10 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Match ID with the input file to find the object.
         object_flux = flux_table[idx]
+
+        # Print statements to check filters are in correct order.
+        # print(object_flux.colnames)
+        # exit()
 
         # Initialize flux and error arrays, to add .in data.
         flux = []

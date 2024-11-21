@@ -20,6 +20,8 @@ from sed_fitting_codes import parse_spec_file
 
 verbose = False
 
+overwrite = True
+
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
     filters = json.loads(filters_json)
@@ -44,8 +46,6 @@ base_det += f'_{run_type}' if run_type else ''
 
 # Define start and end points of the SED fitting parameter section in the LePhare .spec file
 names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Zsup', 'Chi2', 'PDF', 'Extlaw', 'EB-V', 'Lir', 'Age', 'Mass', 'SFR', 'SSFR']
-ds_param = 3
-de_param = 9
 
 # Directory setup
 zphot_folder = base_det + '_visualSelection'
@@ -90,6 +90,12 @@ dusty_dir = zphot_dir.parents[0] / (base_det + '_dustyInterlopers')
 if not dusty_dir.exists():
     dusty_dir.mkdir(parents=True)
 
+# If overwrite is True, delete all previous files in the above
+if overwrite:
+    for directory in [not_dusty_dir, dusty_dir]:
+        for file in directory.glob('*.spec'):
+            file.unlink()
+            
 # Go through files in visual selection directory
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))

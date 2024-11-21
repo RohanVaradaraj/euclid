@@ -47,7 +47,7 @@ def stellar_type(model):
     }
     return stellar_dict[model]
 
-
+run_type = 'with_euclid'
 
 # Name of the directory we want to use to make the catalogue
 folder = 'det_Y_J_z7'
@@ -59,7 +59,7 @@ cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
 today_date = datetime.datetime.now().strftime('%Y_%m_%d')
 
 # Name of the new catalogue
-new_cat_name = f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_{today_date}.fits'
+new_cat_name = f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_{today_date}_{run_type}.fits' if run_type != '' else f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_{today_date}.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'

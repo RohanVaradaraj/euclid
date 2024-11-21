@@ -19,6 +19,8 @@ from sed_fitting_codes import parse_spec_file
 
 verbose = False 
 
+overwrite = True
+
 def stellar_type(model):
     stellar_dict = {
         1: 'M4',
@@ -109,6 +111,12 @@ bd_dir = zphot_dir.parents[0] / (base_det + '_BD')
 if not bd_dir.exists():
     bd_dir.mkdir(parents=True)
 
+# If overwrite is True, delete all previous files in the above
+if overwrite:
+    for directory in [not_bd_dir, bd_dir]:
+        for file in directory.glob('*.spec'):
+            file.unlink()
+
 # Go through files in visual selection directory
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
@@ -120,6 +128,9 @@ for i, spec_file in enumerate(spec_files):
 
     ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
 
+    # Open the corresponding spec file in the zphot directory
+
+
     if verbose:
         print(f'Object {i + 1} of {len(spec_files)}')
         print('ID:', ID)
@@ -127,10 +138,22 @@ for i, spec_file in enumerate(spec_files):
     params = parse_spec_file(spec_file).get('model')
     params.rename_columns(params.colnames, names_param)
 
+    phot = parse_spec_file(spec_file).get('phot')
+    print(phot)
+    exit()
+
     star = params['Type'][5]
     chi2_star = params['Chi2'][5]
-    # Check if the zphot_primary is larger than zphot_secondary
-    solution_is_BD = chi2_star < 10.
+
+    chi2_highz = params['Chi2'][0]
+
+    # For VISTA samples, use the chi2=10 cut from Bowler+15
+    if run_type == '':
+        solution_is_BD = chi2_star < 10.
+
+    # Otherwise, take as stellar if chi2_star preferred over chi2_highz
+    else:
+        solution_is_BD = chi2_highz > chi2_star
 
     if solution_is_BD:
         number_BD += 1

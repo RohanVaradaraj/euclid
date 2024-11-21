@@ -73,8 +73,6 @@ spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 print(f"Found {len(spec_files)} files.")
 
-exit()
-
 # Check if the user wants to start from a custom ID
 custom_start = input("Do you want to start from a specific ID? (y/n): ").strip().lower()
 if custom_start == 'y':

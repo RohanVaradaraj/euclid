@@ -21,6 +21,8 @@ from sed_fitting_codes import parse_spec_file
 
 verbose = False
 
+overwrite = True
+
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
     filters = json.loads(filters_json)
@@ -88,6 +90,12 @@ if not z7_dir.exists():
 not_z7_dir = zphot_dir.parents[0] / (base_det + '_not_z7')
 if not not_z7_dir.exists():
     not_z7_dir.mkdir(parents=True)
+
+# Clear the directories if we want to overwrite
+if overwrite:
+    for directory in [not_lya_dir, lya_dir, z7_dir, not_z7_dir]:
+        for file in directory.glob('*.spec'):
+            file.unlink()
 
 #! NOTE: _lya means the source has original z below z=6.5 but has a preferred Lya solution that boosts it to z>6.5.
 #! So need to compare to the original SED fitting.

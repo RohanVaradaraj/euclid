@@ -21,14 +21,16 @@ config = {
         "selection": False,     # Initial dropout selection
         "lephare": False,       # Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,  # Take all the good SEDs from the LePhare fitting.
-        "plotting": True,      # Plot the SEDs
+        "plotting": False,      # Plot the SEDs
         "visual_selection": False, # Visual selection of SEDs
-        "final_selection": False  # Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
+        "final_selection": True  # Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
 }
 
+#! IF PLOTTING:
 # Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
-plot_object_type = 'best_highz' # 'best_highz
+# E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
+plot_object_type = 'lya' # 'best_highz # 'best_bd'
 
 # Base filter sets
 base_filters = {
@@ -89,7 +91,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
             subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
         print("Running extract SEDs step...")
         good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-        #subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+        subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
 
     #! Step 4: Run plotting 
     if config["steps"]["plotting"]:
@@ -126,10 +128,10 @@ if __name__ == "__main__":
 
     # Specific combinations of flags
     flag_combinations = [
-        (False, False, False),  # All False = Normal SED fitting
+        #(False, False, False),  # All False = Normal SED fitting
         #(True, False, False),   # Only run_brown_dwarfs = True
         #(False, True, False),   # Only run_dusty = True
-        #(False, False, True)    # Only run_lya = True
+        (False, False, True)    # Only run_lya = True
     ]
 
     # Loop through all combinations of run_types and flag combinations
