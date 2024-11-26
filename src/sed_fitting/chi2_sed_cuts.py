@@ -33,8 +33,7 @@ if len(sys.argv) > 1:
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
 
-if run_type != '':
-    run_type_str = '_' + run_type
+run_type_str = '_' + run_type if run_type != '' else ''
 
 #! Set up the directories
 

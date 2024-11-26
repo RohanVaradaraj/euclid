@@ -50,8 +50,8 @@ def stellar_type(model):
 run_type = 'with_euclid'
 
 # Name of the directory we want to use to make the catalogue
-folder = 'det_Y_J_z7'
-lya_folder = 'det_Y_J_lya'
+folder = f'det_Y_J_{run_type}_z7' if run_type != '' else 'det_Y_J_z7'
+lya_folder = f'det_Y_J_{run_type}_lya' if run_type != '' else 'det_Y_J_lya'
 
 # Parent catalogue from which to get fluxes
 cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'

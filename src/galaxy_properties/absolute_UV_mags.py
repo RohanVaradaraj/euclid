@@ -26,6 +26,8 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
+run_type = 'with_euclid'
+
 def mag_to_flux(m):
     '''Convert mags to flux count'''
     flux = 10**(-0.4*(m+48.6))
@@ -43,7 +45,7 @@ cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 
 #! SED Fitting folder
 # Name of the directory we want to use to make the catalogue
-folder = 'det_Y_J_z7'
+folder = f'det_Y_J_{run_type}_z7' if run_type != '' else 'det_Y_J_z7'
 
 # Get the list of objects that made it through the SED fitting
 obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
@@ -55,7 +57,7 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_21_with_euclid.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'

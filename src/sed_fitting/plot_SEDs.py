@@ -141,10 +141,8 @@ print('Saving to: ', output_pdf)
 
 #! Set up directories
 # zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
-if run_type != '':
-    zphot_folder = base_det + '_' + run_type + f'_{object_type}'
-else:
-    zphot_folder = base_det + f'_{object_type}'
+zphot_folder = base_det + '_' + run_type + f'_{object_type}' if run_type != '' else base_det + f'_{object_type}'
+
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
 

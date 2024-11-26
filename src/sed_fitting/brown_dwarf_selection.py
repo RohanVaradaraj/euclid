@@ -80,6 +80,9 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 zphot_folder = base_det + '_notDustyInterlopers_bdBase'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 
+# Normal SED fitting dir
+lbg_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
+
 # Make zphot
 if not zphot_dir.exists():
     zphot_dir.mkdir(parents=True)
@@ -119,6 +122,7 @@ if overwrite:
 
 # Go through files in visual selection directory
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
+print('Taking files from:', zphot_dir)
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 
 number_BD = 0
@@ -128,9 +132,6 @@ for i, spec_file in enumerate(spec_files):
 
     ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
 
-    # Open the corresponding spec file in the zphot directory
-
-
     if verbose:
         print(f'Object {i + 1} of {len(spec_files)}')
         print('ID:', ID)
@@ -138,14 +139,13 @@ for i, spec_file in enumerate(spec_files):
     params = parse_spec_file(spec_file).get('model')
     params.rename_columns(params.colnames, names_param)
 
-    phot = parse_spec_file(spec_file).get('phot')
-    print(phot)
-    exit()
+    # Open corresponding .spec file in lbg dir
+    lbg_file = lbg_dir / f'Id{ID.zfill(9)}.spec'
+    lbg_params = parse_spec_file(lbg_file).get('model')
+    chi2_highz = lbg_params['Chi2'][0]
 
     star = params['Type'][5]
     chi2_star = params['Chi2'][5]
-
-    chi2_highz = params['Chi2'][0]
 
     # For VISTA samples, use the chi2=10 cut from Bowler+15
     if run_type == '':

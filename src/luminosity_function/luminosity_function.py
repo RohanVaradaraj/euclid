@@ -52,7 +52,7 @@ def schechter(phiStar, alpha, M, Mstar):
 
 # Read in the catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_21_with_euclid.fits'
 t = Table.read(cat_dir / cat_name)
 
 # Find the minimum and maximum Muv
@@ -63,6 +63,7 @@ print(f'Minimum Muv: {Muv_min}, Maximum Muv: {Muv_max}')
 # Make bins of width 0.5 within these limits
 bin_width = 0.5
 Muv_bins = np.arange(Muv_min-0.25, Muv_max+0.25, bin_width)
+print(Muv_bins)
 
 # Split the table into these bins
 binned_tables = []
@@ -139,6 +140,11 @@ b17dy = [2.54e-7, 0.58e-6, 1.04e-6]
 
 b21dx = np.ones(len(b21x)) * 0.25
 
+# UVISTA DR6 LF points
+muv = [-22.79501799, -22.29501799, -21.79501799, -21.29501799, -20.79501799, -20.29501799]
+phi = [4.64101649e-07, 2.33761186e-06, 4.46459736e-06, 1.09373428e-05, 6.40936287e-06]
+phi_err = [4.15105134e-07, 9.35645234e-07, 1.28888147e-06, 2.14176670e-06, 1.75013185e-06]
+
 # Print ratio between my LF points and the Harikane+24 LF function at that magnitude
 ratios = []
 for i, M_ in enumerate(Muv_bins[:-1]):
@@ -166,7 +172,11 @@ plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='
 
 # Plot the LF new points
 plt.errorbar(Muv_bins[:-1], LF_sum, yerr=LF_error, fmt='o', color='red', 
-             ecolor='red', elinewidth=4, label='UltraVISTA DR6, no Euclid', markersize=17, markeredgecolor='black')
+             ecolor='red', elinewidth=4, label=r'UltraVISTA$+Euclid$', markersize=17, markeredgecolor='black')
+
+# Plot the UVISTA DR6 LF points
+plt.errorbar(muv[:-1], phi, yerr=phi_err, fmt='s', color='darkred', 
+             ecolor='darkred', elinewidth=4, label='Only UltraVISTA DR6', markersize=13, markeredgecolor='black')
 
 plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)

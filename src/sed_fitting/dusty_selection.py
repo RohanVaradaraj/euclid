@@ -78,8 +78,6 @@ for file in good_files + maybe_files:
         if verbose:
             print(f'File {file} already exists in zphot_dir.')
 
-
-
 # Make the not dusty directory
 not_dusty_dir = zphot_dir.parents[0] / (base_det + '_notDustyInterlopers')
 if not not_dusty_dir.exists():

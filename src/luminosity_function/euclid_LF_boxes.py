@@ -114,7 +114,7 @@ phi_values = np.array([2.70e-6, 2.81e-7, 2.37e-8, np.nan])
 phi_errors = np.array([0.66e-6, 1.54e-7, 2.50e-8, np.nan])  
 
 plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='red', 
-             ecolor='red', elinewidth=5, label=r'Varadaraj+23, $z=7$', markersize=17, markeredgecolor='black')
+             ecolor='red', elinewidth=5, label=r'Varadaraj+23, $z=7$', markersize=17, markeredgecolor='black', zorder=10)
 
 # plt.errorbar(bins_mag[3], 2.07e-8, yerr=0, marker=r'$\downarrow$', color='red', ecolor='red', 
 #              elinewidth=5, markersize=17)
@@ -128,37 +128,49 @@ plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='
 
 # EDFs, eventually
 M_lim, Phi_min = survey_box_limits(26, 59, 6.5, 7.5)
-plt.plot([M_lim, M_lim], [Phi_min, 1], color='gray', lw=2, alpha=0.9)
-plt.plot([M_lim, -30], [Phi_min, Phi_min], color='gray', lw=2, alpha=0.9)
-plt.text(-20.76, 4e-9, 'Final EDFs', color='gray')
+plt.plot([M_lim, M_lim], [Phi_min, 1], color='black', lw=3.5, alpha=0.9)
+plt.plot([M_lim, -30], [Phi_min, Phi_min], color='black', lw=3.5, alpha=0.9)
+#plt.text(-20.76, 4e-9, 'Final EDFs', color='gray')
+plt.text(-20.76, 1e-9, 'EDFs', color='black')
 
 
 # COSMOS
-M_lim, Phi_min = survey_box_limits(26.4, 4.5, 6.5, 7.5)
-plt.plot([M_lim, M_lim], [Phi_min, 1], 'k', lw=3.5, alpha=0.9) # vertical line
-plt.plot([M_lim, -30], [Phi_min, Phi_min], 'k', lw=3.5, alpha=0.9) # horizontal line
-plt.text(-20.4, 3.1e-8, 'EAFs')
+# M_lim, Phi_min = survey_box_limits(26.4, 4.5, 6.5, 7.5)
+# plt.plot([M_lim, M_lim], [Phi_min, 1], 'k', lw=3.5, alpha=0.9) # vertical line
+# plt.plot([M_lim, -30], [Phi_min, Phi_min], 'k', lw=3.5, alpha=0.9) # horizontal line
+# plt.text(-20.4, 3.1e-8, 'EAFs')
 
 # EDFs, Q1
-M_lim, Phi_min = survey_box_limits(24, 43, 6.5, 7.5)
-plt.plot([M_lim, M_lim], [Phi_min, 1], 'k', lw=3.5, alpha=0.9) # vertical line
-plt.plot([M_lim, -30], [Phi_min, Phi_min], 'k', lw=3.5, alpha=0.9) # horizontal line
-plt.text(-23.5, 5.4e-10, 'EDFs, Q1')
+# M_lim, Phi_min = survey_box_limits(24, 43, 6.5, 7.5)
+# plt.plot([M_lim, M_lim], [Phi_min, 1], 'k', lw=3.5, alpha=0.9) # vertical line
+# plt.plot([M_lim, -30], [Phi_min, Phi_min], 'k', lw=3.5, alpha=0.9) # horizontal line
+# plt.text(-23.5, 5.4e-10, 'EDFs, Q1')
 
 # CWEB
-M_lim, Phi_min = survey_box_limits(28.2, 0.54, 6.5, 7.5)
-plt.plot([M_lim, M_lim], [Phi_min, 1], color='orange', lw=2, alpha=0.8, zorder=-1, linestyle='dotted')
-plt.plot([M_lim, -30], [Phi_min, Phi_min], color='orange', lw=2, alpha=0.8, zorder=-1, linestyle='dotted', label = 'COSMOS-Web, 0.54 deg' + r'$^{2}$')
-#plt.text(-18.7, 1e-5, 'COSMOS-Web \n0.54 deg' + r'$^{2}$', color='orange', fontsize=15)
+# M_lim, Phi_min = survey_box_limits(28.2, 0.54, 6.5, 7.5)
+# plt.plot([M_lim, M_lim], [Phi_min, 1], color='orange', lw=3.5, alpha=0.8, zorder=3) #, linestyle='dotted') # lw = 2 for Euclid version
+# plt.plot([M_lim, -30], [Phi_min, Phi_min], color='orange', lw=3.5, alpha=0.8, zorder=3) #, label = 'COSMOS-Web, 0.54 deg' + r'$^{2}$', linestyle='dotted')
+# plt.text(-18.7, 1e-5, 'COSMOS-Web \n0.54 deg' + r'$^{2}$', color='orange', fontsize=15)
+
+# CWEB + MIRI
+M_lim, Phi_min = survey_box_limits(28.2, 0.19, 6.5, 7.5)
+plt.plot([M_lim, M_lim], [Phi_min, 1], color='orange', lw=3.5, alpha=0.8, zorder=3) #, linestyle='dotted') # lw = 2 for Euclid version
+plt.plot([M_lim, -30], [Phi_min, Phi_min], color='orange', lw=3.5, alpha=0.8, zorder=3) #, label = 'COSMOS-Web, 0.54 deg' + r'$^{2}$', linestyle='dotted')
+plt.text(-18.7, 2e-8, 'COSMOS-Web \n +MIRI \n0.19 deg' + r'$^{2}$', color='orange', fontsize=15)
 
 # UltraVISTA + VIDEO
 M_lim, Phi_min = survey_box_limits(26.2, 10., 6.5, 7.5)
-plt.plot([M_lim, M_lim], [Phi_min, 1], color='deepskyblue', lw=2, alpha=0.8, zorder=-1, linestyle='dotted')
-plt.plot([M_lim, -30], [Phi_min, Phi_min], color='deepskyblue', lw=2, alpha=0.8, zorder=-1, linestyle='dotted', label='VISTA, 10 deg' + r'$^{2}$')
-#plt.text(-18.7, 1e-8, 'VISTA \n10 deg' + r'$^{2}$', color='deepskyblue', fontsize=15)
+plt.plot([M_lim, M_lim], [Phi_min, 1], color='deepskyblue', lw=3.5, alpha=0.8, zorder=3) #, linestyle='dotted')
+plt.plot([M_lim, -30], [Phi_min, Phi_min], color='deepskyblue', lw=3.5, alpha=0.8, zorder=3) #, linestyle='dotted', label='VISTA, 10 deg' + r'$^{2}$')
+plt.text(-20.5, 1e-8, 'VISTA \n10 deg' + r'$^{2}$', color='deepskyblue', fontsize=15)
 
+# MIDIS
+M_lim, Phi_min = survey_box_limits(29.49, 24.9 / 3600, 6.5, 7.5)
+plt.plot([M_lim, M_lim], [Phi_min, 1], color='maroon', lw=3.5, alpha=0.8, zorder=3) #, linestyle='dotted') # lw = 2 for Euclid version
+plt.plot([M_lim, -30], [Phi_min, Phi_min], color='maroon', lw=3.5, alpha=0.8, zorder=3) #, label = 'COSMOS-Web, 0.54 deg' + r'$^{2}$', linestyle='dotted')
+plt.text(-18.7, 2e-6, 'JADES \n24.9 arcmin' + r'$^{2}$', color='maroon', fontsize=15)
 
-plt.xlim(-25.5, -17)
+plt.xlim(-25.5, -16.5)
 plt.yscale('log')
 plt.ylim(1e-11, 5e-2)
 
@@ -168,5 +180,5 @@ plt.ylabel(r'$\Phi \ [N \  / \ \mathrm{mag} \ / \ \mathrm{Mpc}^{3}]$')
 plt.tight_layout()
 
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
-plt.savefig(plot_dir / 'LF_DAWN.pdf')
+plt.savefig(plot_dir / 'LF_STScI.pdf')
 #plt.show()
