@@ -15,13 +15,13 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": '',                 #? Options: '', 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "run_type": 'with_euclid',                 #? Options: '', 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": True,
     "steps": {
         "selection": False,         #? Initial dropout selection
-        "lephare": True,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
+        "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": False,          #? Plot the SEDs
+        "plotting": True,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs
         "final_selection": False    #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
@@ -30,13 +30,15 @@ config = {
 #! Different run types 
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
+#! Whether to run the masking of the data to the euclid footprint
+mask_euclid = True
 
 #! Specific combinations of flags.
 flag_combinations = [
     (False, False, False),  #? All False = Normal SED fitting
-    # (True, False, False),   #? Only run_brown_dwarfs = True
-    # (False, True, False),   #? Only run_dusty = True
-    # (False, False, True)    #? Only run_lya = True
+    #(True, False, False),   #? Only run_brown_dwarfs = True
+    #(False, True, False),   #? Only run_dusty = True
+    #(False, False, True)    #? Only run_lya = True
 ]
 
 #! IF LOOPING RUN TYPES
@@ -46,7 +48,7 @@ loop_run_types = False
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'z7' # 'best_highz # 'best_bd'
+plot_object_type = 'best_highz' # 'best_highz # 'best_bd'
 
 #! Base filter sets
 base_filters = {
@@ -106,9 +108,16 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     run_type_json = json.dumps(run_type)
     object_type_json = json.dumps(plot_object_type)
 
-    print('---------------------------------------------')
-    print(f'Running with config: {run_type}, Brown Dwarfs: {run_brown_dwarfs}, Dusty: {run_dusty}, Lya: {run_lya}')
-    print('---------------------------------------------')
+    run_flag_dict = {
+        [False, False, False]: 'normal SED fitting',
+        [True, False, False]: 'brown dwarf fitting',
+        [False, True, False]: 'low-redshift dusty galaxy fitting',
+        [False, False, True]: 'lyman-alpha emitter fitting'
+    }
+
+    print('------------------------------------------------------------------------------------------')
+    print(f'Running with config: {run_type}, Brown Dwarfs: {run_brown_dwarfs}, Dusty: {run_dusty}, Lya: {run_lya}. So running {run_flag_dict[(run_brown_dwarfs, run_dusty, run_lya)]}')
+    print('------------------------------------------------------------------------------------------')
 
 
 
@@ -116,7 +125,9 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! Step 1: Run dropout selection 
     #! -----------------------------
     if config["steps"]["selection"]:
+
         print("Running selection step...")
+
         selection_script = Path.cwd() / 'selection.py'
         subprocess.run(['python3', str(selection_script), filters_json], check=True)
 
@@ -179,13 +190,23 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! Step 3: Extract good SEDs 
     #! -----------------------------
     if config["steps"]["extract_seds"]:
-        if run_type != '':
-            print('Masking to Euclid/JWST footprint...')
-            mask_script = Path.cwd() / 'mask_euclid_pointing.py'
-            subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
-        print("Running extract SEDs step...")
-        good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-        subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+
+        #? For VISTA+Euclid, get the good SEDs within the Euclid footprint
+        if run_type == 'with_euclid':
+
+            if mask_euclid:
+                print('Extracting good SEDs that are within the Euclid footprint...')
+
+                mask_script = Path.cwd() / 'mask_euclid_pointing.py'
+                subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+
+        #? Otherwise, Extract the SEDs from the chi2 etc.
+        else:
+
+            print("Running extract SEDs step...")
+
+            good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
+            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
 
 
 
@@ -193,7 +214,9 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! Step 4: Run plotting 
     #! -----------------------------
     if config["steps"]["plotting"]:
+
         print("Running plotting step...")
+
         plot_script = Path.cwd() / 'plot_SEDs.py'
         subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json, run_type_json, object_type_json], check=True)
 
@@ -203,7 +226,9 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! Step 5: Run visual selection
     #! -----------------------------
     if config["steps"]["visual_selection"]:
+
         print("Running visual selection step...")
+
         visual_script = Path.cwd() / 'visual_selection.py'
         subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
 

@@ -42,6 +42,8 @@ if len(sys.argv) > 1:
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
 
+overwrite = True
+
 #! Set up the output PDF name from the det and nondet filters
 # Set up the detection filter base
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
@@ -63,7 +65,6 @@ filename_components = [base_det, base_nondet]
 if run_type != '':
     filename_components.append(run_type)
 
-# Construct the final output PDF name
 output_file = '_'.join(filename_components) + '.fits'
 
 print('Saving to: ', output_file)
@@ -73,13 +74,18 @@ if run_type != '':
     zphot_folder = base_det + '_' + run_type
 else:
     zphot_folder = base_det
+
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
 
-# Get filters
-filter_dict = filter_widths()
+# Get corresponding dusty, bd and lya zphot dirs too
+zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + run_type + '_' + folder)
 
-# Load the parent catalogue to get RA,DEC
+dusty_zphot_dir = zphot_dir('dusty')
+bd_zphot_dir = zphot_dir('bd')
+lya_zphot_dir = zphot_dir('lya')
+
+#! Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
 parent_cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 parent_cat_name = generate_selection_name('COSMOS', filters)
@@ -87,11 +93,11 @@ parent_cat_name = generate_selection_name('COSMOS', filters)
 # Load the parent catalogue
 t = Table.read(parent_cat_dir / parent_cat_name)
 
-# Load the Euclid mask (DS9 region file)
+#! Load the Euclid mask (DS9 region file)
 mask_dir = Path.cwd().parents[3] / 'data' / 'masks'
 euclid_mask_file = mask_dir / 'Euclid_square_COSMOS.reg'
 
-# Open a random image to get a WCS
+#! Open a random image to get a WCS
 image_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 image = image_dir / 'UVISTA_Y_DR6.fits'
 with fits.open(str(image)) as hdul:
@@ -106,7 +112,7 @@ euclid_region = regions[0]
 # Extract RA, DEC from the catalogue
 coords = SkyCoord(t['RA'], t['DEC'], unit='deg')
 
-# Use the `contains` method of the region, passing `wcs=None`
+# Use the `contains` method of the region
 mask = [euclid_region.contains(coord, wcs) for coord in coords]
 
 # Unpack the mask
@@ -119,6 +125,10 @@ t_filtered = t[mask]
 print(f"Number of objects within the Euclid mask: {len(t_filtered)}")
 print(f"Number of objects outside the Euclid mask: {len(t) - len(t_filtered)}")
 t_filtered.write(parent_cat_dir / output_file, overwrite=True)
+
+#? We now have the objects in the Euclid mask.
+#? Now, of these, we need those that made the VISTA SED cut.
+vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
 
 # Plot the filtered and unfiltered objects in RA,DEC
 # plt.figure(figsize=(8, 6))
@@ -134,49 +144,77 @@ t_filtered.write(parent_cat_dir / output_file, overwrite=True)
 # New directory to place things outside footprint
 outside_euclid_dir = zphot_dir.parents[0] / (zphot_folder + '_outside_footprint')
 
-# Corresponding directories for the other selections
-dusty_folder = base_det + '_' + run_type + '_dusty'
-dusty_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / dusty_folder
-bd_folder = base_det + '_' + run_type + '_bd'
-bd_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / bd_folder
-lya_folder = base_det + '_' + run_type + '_lya'
-lya_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / lya_folder
+# Corresponding directories for the other selections, to copy into
+base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+folder_creator = lambda folder: base_dir / f"{base_det}_{run_type}_best_{folder}"
+
+highz_dir = folder_creator('highz')
+dusty_dir = folder_creator('dusty')
+bd_dir = folder_creator('bd')
+lya_dir = folder_creator('lya')
+
+# If overwrite, empty the above directories
+if overwrite:
+    for file in highz_dir.glob('*.spec'):
+        file.unlink()
+    for file in dusty_dir.glob('*.spec'):
+        file.unlink()
+    for file in bd_dir.glob('*.spec'):
+        file.unlink()
+    for file in lya_dir.glob('*.spec'):
+        file.unlink()
+    print('Deleted all previous .spec files in the best fit highz, dusty, bd and lya directories.')
 
 # Corresponding not-in-footprint directories for the above
-outside_dusty_dir = dusty_dir.parents[0] / (dusty_folder + '_outside_footprint')
-outside_bd_dir = bd_dir.parents[0] / (bd_folder + '_outside_footprint')
-outside_lya_dir = lya_dir.parents[0] / (lya_folder + '_outside_footprint')
+outside_folder_creator = lambda folder, dir: dir.parents[0] / f"{base_det}_{run_type}_{folder}_outside_footprint"
+
+outside_dusty_dir = outside_folder_creator('dusty', dusty_dir)
+outside_bd_dir = outside_folder_creator('bd', bd_dir)
+outside_lya_dir = outside_folder_creator('lya', lya_dir)
+
 
 # If it doesn't exist, make it
-if not outside_euclid_dir.exists():
-    outside_euclid_dir.mkdir(parents=True)
-if not outside_dusty_dir.exists():
-    outside_dusty_dir.mkdir(parents=True)
-if not outside_bd_dir.exists():
-    outside_bd_dir.mkdir(parents=True)
-if not outside_lya_dir.exists():
-    outside_lya_dir.mkdir(parents=True)
+dirs_to_create = [outside_euclid_dir, outside_dusty_dir, outside_bd_dir, outside_lya_dir]
+
+for dir in dirs_to_create:
+    dir.mkdir(parents=True, exist_ok=True)
+
 
 # Get the .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 
+# If overwrite, delete all files in the outside directories
+if overwrite:
+    dirs_to_clear = [outside_euclid_dir, outside_dusty_dir, outside_bd_dir, outside_lya_dir]
+
+    for dir in dirs_to_clear:
+        for file in dir.glob('*.spec'):
+            file.unlink()
+    print('Deleted all previous .spec files in outside directories.')
+``
+
 # Loop through the files
 for spec_file in spec_files:
     ID = int(spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0])
-    if ID not in t_filtered['ID']:
-        # Move the file to the new directory
-        shutil.move(spec_file, outside_euclid_dir)
 
-        # Also move the corresponding file in the dusty directory
-        if (dusty_dir / spec_file.split('/')[-1]).exists():
-            shutil.move(dusty_dir / spec_file.split('/')[-1], outside_dusty_dir)
-        
-        # Also move the corresponding file in the bd directory
-        if (bd_dir / spec_file.split('/')[-1]).exists():
-            shutil.move(bd_dir / spec_file.split('/')[-1], outside_bd_dir)
-        
-        # Also move the corresponding file in the lya directory
-        if (lya_dir / spec_file.split('/')[-1]).exists():
-            shutil.move(lya_dir / spec_file.split('/')[-1], outside_lya_dir)
+    # Check if the spec file is in vista_dir AND in the filtered catalogue
+    if (ID in t_filtered['ID']) and (vista_dir / spec_file.split('/')[-1]).exists():
+
+        # Copy from zphot_dir to the new directory
+        shutil.copy(spec_file, highz_dir)
+
+        # Copy from dusty_dir to the new directory
+        shutil.copy(dusty_zphot_dir / spec_file.split('/')[-1], dusty_dir)
+
+        # Copy from bd_dir to the new directory
+        shutil.copy(bd_zphot_dir / spec_file.split('/')[-1], bd_dir)
+
+        # Copy from lya_dir to the new directory
+        shutil.copy(lya_zphot_dir / spec_file.split('/')[-1], lya_dir)
 
 
+# Print number of files in each directory
+print(f'Number of files in highz_dir: {len(list(highz_dir.glob("*.spec")))}')
+print(f'Number of files in dusty_dir: {len(list(dusty_dir.glob("*.spec")))}')
+print(f'Number of files in bd_dir: {len(list(bd_dir.glob("*.spec")))}')
+print(f'Number of files in lya_dir: {len(list(lya_dir.glob("*.spec")))}')

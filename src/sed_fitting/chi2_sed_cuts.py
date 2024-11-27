@@ -55,7 +55,7 @@ dusty_dir = lbg_dir + run_type_str + '_dusty'
 lya_dir = lbg_dir + run_type_str + '_lya'
 
 # Need the outside_footprint directory to exclude objects outside the Euclid footprint
-outside_footprint_dir = base_dir / (lbg_dir + '_outside_footprint')
+outside_footprint_dir = base_dir / (lbg_dir + '_' + run_type + '_outside_footprint')
 print(outside_footprint_dir)
 
 # Set up the output directories where good SEDs will be stored
@@ -98,7 +98,15 @@ if bools[1] == False:
 
 print('All filters:', all_filters)
 
+# If running with Euclid, want to ignore Euclid filters for this step.
+if run_type == 'with_euclid':
+    all_filters = remove_items(all_filters, ['VIS', 'Ye', 'Je', 'He'])
+    print('Removed Euclid filters')
+
+print('All filters:', all_filters)
+
 n = len(all_filters)
+
 dof = n - 6 # 6 degrees of freedom for the 6 parameters in the SED fitting
 
 # Compute the 2sigma threshold, which is the chi2 threshold for a 95% confidence interval
@@ -209,12 +217,15 @@ for category, (ids, out_dir) in categories.items():
         
         # Check if the file exists
         if not (base_dir / orig_dir[category] / file_name).exists():
-            print(f'File {file_name} does not exist in {base_dir / orig_dir[category]}')
-            continue
 
-        # If the spec file is in the outside footprint directory, ignore it
-        if (outside_footprint_dir / file_name).exists():
-            continue
-
-        os.system(f'cp {str(base_dir / orig_dir[category] / file_name)} {output_dir / out_dir}')
+            # Check it exisits in the outside directory
+            if not (outside_footprint_dir / file_name).exists():
+                print(f'File {file_name} does not exist in {base_dir / orig_dir[category]} OR in {outside_footprint_dir}')
+                print('This is a problem')
+                continue
+        
+        # Copy through if it exists
+        else:
+            os.system(f'cp {str(base_dir / orig_dir[category] / file_name)} {output_dir / out_dir}')
     print(f'Copied {len(ids)} {category} to {output_dir / out_dir}')
+
