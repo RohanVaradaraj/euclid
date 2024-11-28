@@ -21,8 +21,8 @@ config = {
         "selection": False,         #? Initial dropout selection
         "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": True,          #? Plot the SEDs
-        "visual_selection": False,  #? Visual selection of SEDs
+        "plotting": False,          #? Plot the SEDs
+        "visual_selection": True,  #? Visual selection of SEDs
         "final_selection": False    #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
 }
@@ -109,10 +109,10 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     object_type_json = json.dumps(plot_object_type)
 
     run_flag_dict = {
-        [False, False, False]: 'normal SED fitting',
-        [True, False, False]: 'brown dwarf fitting',
-        [False, True, False]: 'low-redshift dusty galaxy fitting',
-        [False, False, True]: 'lyman-alpha emitter fitting'
+        (False, False, False): 'normal SED fitting',
+        (True, False, False): 'brown dwarf fitting',
+        (False, True, False): 'low-redshift dusty galaxy fitting',
+        (False, False, True): 'lyman-alpha emitter fitting'
     }
 
     print('------------------------------------------------------------------------------------------')

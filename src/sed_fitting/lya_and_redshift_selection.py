@@ -101,7 +101,7 @@ if overwrite:
 #! So need to compare to the original SED fitting.
 normal_sed_dir = zphot_dir.parents[1] / base_det
 
-# Go through files in visual selection directory
+# Go through filesc in visual selection directory
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 
@@ -128,6 +128,10 @@ for i, spec_file in enumerate(spec_files):
     original_params = parse_spec_file(original_sed_file).get('model')
     original_params.rename_columns(original_params.colnames, names_param)
 
+
+    #! -----------------------------------------------------------------------------
+    #! Selection step: Check if z=7, if not check if Lya solution boosts it to z>6.5
+    #! -----------------------------------------------------------------------------
     # First check if the original SED has z>6.5
     zphot_primary = original_params['Zphot'][0]
     chi2_primary = original_params['Chi2'][0]

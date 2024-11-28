@@ -118,7 +118,9 @@ for i, spec_file in enumerate(spec_files):
     zphot_secondary = round(params['Zphot'][1], 2)
     chi2_secondary = round(params['Chi2'][1], 1)
 
-    # Check if the zphot_primary is larger than zphot_secondary
+    #! --------------------------------------------------------------------------
+    #! Selection step: Check if the zphot_primary is larger than zphot_secondary
+    #! --------------------------------------------------------------------------
     solution_is_highz = zphot_primary > zphot_secondary
 
     if solution_is_highz:

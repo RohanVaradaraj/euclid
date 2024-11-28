@@ -114,6 +114,11 @@ bd_dir = zphot_dir.parents[0] / (base_det + '_BD')
 if not bd_dir.exists():
     bd_dir.mkdir(parents=True)
 
+#* Also make a directory for strong brown dwarfs when running the strong/weak BD selection. Copy weak ones into normal BD directory.
+strong_bd_dir = zphot_dir.parents[0] / (base_det + '_strongBD')
+if not strong_bd_dir.exists():
+    strong_bd_dir.mkdir(parents=True)
+
 # If overwrite is True, delete all previous files in the above
 if overwrite:
     for directory in [not_bd_dir, bd_dir]:
@@ -147,23 +152,41 @@ for i, spec_file in enumerate(spec_files):
     star = params['Type'][5]
     chi2_star = params['Chi2'][5]
 
-    # For VISTA samples, use the chi2=10 cut from Bowler+15
-    if run_type == '':
-        solution_is_BD = chi2_star < 10.
+    #! ---------------------------------------------------------------------------------------------------------
+    #! Selection step: VISTA chi2<10, otherwise chi2_star > chi2_highz and then split into strong and weak BDs
+    #! ---------------------------------------------------------------------------------------------------------
 
-    # Otherwise, take as stellar if chi2_star preferred over chi2_highz
+    #! Check if the solution is a Brown Dwarf (BD) or not
+    if run_type == '':
+        #? For VISTA samples, use the chi2=10 cut from Bowler+15
+        solution_is_BD = chi2_star < 10
     else:
+        #? For other run types, compare chi2_highz and chi2_star
         solution_is_BD = chi2_highz > chi2_star
 
+    #* 1) Solution is a brown dwarf
     if solution_is_BD:
-        number_BD += 1
-        # Copy file to bd_dir
-        shutil.copy2(spec_file, bd_dir)
-    else:
-        number_not_BD += 1
-        # Copy file to dusty_dir
-        shutil.copy2(spec_file, not_bd_dir)
+        number_BD += 1  # Increment BD counter
 
+        #? If run type is provided, split into strong and weak BDs
+        if run_type != '':
+            # Split into strong and weak BD based on delta chi2
+            delta_chi2 = chi2_star - chi2_highz
+            if delta_chi2 > 4:
+                solution_strength = 'strong'
+                shutil.copy2(spec_file, strong_bd_dir)  # Copy to strong BD directory
+            else:
+                solution_strength = 'weak'
+                shutil.copy2(spec_file, bd_dir)  # Copy to normal BD directory
+
+        #? Otherwise for VISTA samples, copy to BD directory
+        else:
+            shutil.copy2(spec_file, bd_dir)  # Copy to BD directory for VISTA samples
+    
+    #* 2) Solution is not a brown dwarf
+    else:
+        number_not_BD += 1  # Increment non-BD counter
+        shutil.copy2(spec_file, not_bd_dir)  # Copy to not BD directory
 
     zphot_primary = params['Zphot'][0]
     chi2_primary = params['Chi2'][0]
