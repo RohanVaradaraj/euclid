@@ -80,12 +80,17 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 zphot_folder = base_det + '_notDustyInterlopers_bdBase'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 
-# Normal SED fitting dir
-lbg_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
-
 # Make zphot
 if not zphot_dir.exists():
     zphot_dir.mkdir(parents=True)
+
+# If overwrite, clear the directory
+if overwrite:
+    for file in zphot_dir.glob('*.spec'):
+        file.unlink()
+
+# Normal SED fitting dir
+lbg_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
 
 # Good/maybe files, filenames from the not-dusty low-z interloper directory
 not_dusty_dir = zphot_dir.parents[0] / (base_det + '_notDustyInterlopers')
@@ -133,6 +138,9 @@ spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-
 number_BD = 0
 number_not_BD = 0
 
+number_weak_BD = 0
+number_strong_BD = 0
+
 for i, spec_file in enumerate(spec_files):
 
     ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
@@ -171,12 +179,15 @@ for i, spec_file in enumerate(spec_files):
         #? If run type is provided, split into strong and weak BDs
         if run_type != '':
             # Split into strong and weak BD based on delta chi2
-            delta_chi2 = chi2_star - chi2_highz
+            delta_chi2 = chi2_highz - chi2_star
+            print('For this object:', delta_chi2)
             if delta_chi2 > 4:
                 solution_strength = 'strong'
+                number_strong_BD += 1 # Increment strong BD counter
                 shutil.copy2(spec_file, strong_bd_dir)  # Copy to strong BD directory
             else:
                 solution_strength = 'weak'
+                number_weak_BD += 1  # Increment weak BD counter
                 shutil.copy2(spec_file, bd_dir)  # Copy to normal BD directory
 
         #? Otherwise for VISTA samples, copy to BD directory
@@ -201,6 +212,9 @@ for i, spec_file in enumerate(spec_files):
         print('\n')
 
 print(f'Number of BDs: {number_BD}')
+if run_type != '':
+    print(f'Number of strong BDs: {number_strong_BD}')
+    print(f'Number of weak BDs: {number_weak_BD}')
 print(f'Number of not BDs: {number_not_BD}')
 
 

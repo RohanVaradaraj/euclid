@@ -56,6 +56,11 @@ zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fit
 if not zphot_dir.exists():
     zphot_dir.mkdir(parents=True)
 
+# If overwrite, clear the directory
+if overwrite:
+    for file in zphot_dir.glob('*.spec'):
+        file.unlink()
+
 # Good/maybe files
 not_BD_dir = zphot_dir.parents[0] / (base_det + '_notBD')
 good_files = glob.glob(str(not_BD_dir / '*.spec'))

@@ -27,11 +27,11 @@ euclid_depth_dir = Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catal
 vista_depth_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'depths' / 'COSMOS' / 'catalogues'
 
 #! Read in LBG and BD candidates
-# euclid_lbg_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_21_with_euclid.fits'
-# euclid_bd_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_best_bd_INTERLOPERS_2024_11_26_with_euclid.fits'
+euclid_lbg_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
+euclid_bd_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_BD_INTERLOPERS_2024_11_28_with_euclid.fits'
 
-euclid_lbg_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_LBGs_INTERLOPERS_2024_11_26_with_euclid.fits' #? Visually selected
-euclid_bd_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_BDs_INTERLOPERS_2024_11_26_with_euclid.fits'
+# euclid_lbg_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_LBGs_INTERLOPERS_2024_11_26_with_euclid.fits' #? Visually selected
+# euclid_bd_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_BDs_INTERLOPERS_2024_11_26_with_euclid.fits'
 
 vista_lbg_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 vista_bd_catname = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_BD_INTERLOPERS_2024_11_26.fits'
@@ -109,22 +109,61 @@ vista_bd_fwhms = vista_depth_cat['FWHM_IMAGE'][matched_idx4] * 0.15 # Convert to
 vista_bd_flux = vista_bd[f'flux_{filter_name}e'][d2d < max_distance]
 vista_bd_mag = -2.5 * np.log10(vista_bd_flux) - 48.6
 
+# Find the mean and stdev of the FWHMs
+euclid_lbg_fwhm_mean = np.mean(euclid_lbg_fwhms)
+euclid_lbg_fwhm_std = np.std(euclid_lbg_fwhms)
+
+euclid_bd_fwhm_mean = np.mean(euclid_bd_fwhms)
+euclid_bd_fwhm_std = np.std(euclid_bd_fwhms)
+
+vista_lbg_fwhm_mean = np.mean(vista_lbg_fwhms[vista_lbg_mag < 28])
+vista_lbg_fwhm_std = np.std(vista_lbg_fwhms[vista_lbg_mag < 28])
+
+vista_bd_fwhm_mean = np.mean(vista_bd_fwhms[vista_bd_mag < 28])
+vista_bd_fwhm_std = np.std(vista_bd_fwhms[vista_bd_mag < 28])
+
+# And the mags
+euclid_lbg_mag_mean = np.mean(euclid_lbg_mag)
+euclid_lbg_mag_std = np.std(euclid_lbg_mag)
+
+euclid_bd_mag_mean = np.mean(euclid_bd_mag)
+euclid_bd_mag_std = np.std(euclid_bd_mag)
+
+vista_lbg_mag_std = np.std(vista_lbg_mag[vista_lbg_mag < 28])
+vista_lbg_mag_mean = np.mean(vista_lbg_mag[vista_lbg_mag < 28])
+
+vista_bd_mag_std = np.std(vista_bd_mag[vista_bd_mag < 28])
+vista_bd_mag_mean = np.mean(vista_bd_mag[vista_bd_mag < 28])
+
+
 #! Plot the mag vs FHWM
 plt.figure(figsize=(10, 8))
-plt.scatter(euclid_lbg_mag, euclid_lbg_fwhms, label='Euclid LBG', color='blue', marker='o')
-plt.scatter(euclid_bd_mag, euclid_bd_fwhms, label='Euclid BD', color='red', marker='o')
+plt.scatter(euclid_lbg_mag, euclid_lbg_fwhms, label='Euclid LBG', color='blue', marker='o', alpha=0.4)
+plt.scatter(euclid_bd_mag, euclid_bd_fwhms, label='Euclid BD', color='red', marker='o', alpha=0.4)
+
+plt.errorbar(euclid_lbg_mag_mean, euclid_lbg_fwhm_mean, xerr=euclid_lbg_mag_std, yerr=euclid_lbg_fwhm_std, fmt='o', color='blue', label='Euclid LBG Mean', markersize=17, markeredgecolor='black', elinewidth=4)
+plt.errorbar(euclid_bd_mag_mean, euclid_bd_fwhm_mean, xerr=euclid_bd_mag_std, yerr=euclid_bd_fwhm_std, fmt='o', color='red', label='Euclid BD Mean', markersize=17, markeredgecolor='black', elinewidth=4)
+
 plt.xlabel(f'{filter_name} mag')
 plt.ylabel('FWHM (arcsec)') 
 plt.xlim(23, 28)
+plt.ylim(0.3, 3)
+plt.title('Euclid')
 plt.show()
 plt.close()
 
 plt.figure(figsize=(10, 8))
-plt.scatter(vista_lbg_mag, vista_lbg_fwhms, label='Vista LBG', color='blue', marker='o')
-plt.scatter(vista_bd_mag, vista_bd_fwhms, label='Vista BD', color='red', marker='o')
+plt.scatter(vista_lbg_mag, vista_lbg_fwhms, label='Vista LBG', color='blue', marker='o', alpha=0.4)
+plt.scatter(vista_bd_mag, vista_bd_fwhms, label='Vista BD', color='red', marker='o', alpha=0.4)
+
+plt.errorbar(vista_lbg_mag_mean, vista_lbg_fwhm_mean, xerr=vista_lbg_mag_std, yerr=vista_lbg_fwhm_std, fmt='o', color='blue', label='Vista LBG Mean', markersize=17, markeredgecolor='black', elinewidth=4)
+plt.errorbar(vista_bd_mag_mean, vista_bd_fwhm_mean, xerr=vista_bd_mag_std, yerr=vista_bd_fwhm_std, fmt='o', color='red', label='Vista BD Mean', markersize=17, markeredgecolor='black', elinewidth=4)
+
 plt.xlabel(f'{filter_name} mag')
 plt.ylabel('FWHM (arcsec)') 
+plt.title('VISTA')
 plt.xlim(23, 28)
+plt.ylim(0.3, 3)
 plt.show()
 plt.close()
 

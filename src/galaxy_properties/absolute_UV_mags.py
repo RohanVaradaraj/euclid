@@ -57,7 +57,7 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_21_with_euclid.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -153,7 +153,7 @@ t_lya = t[t['Lyman_alpha_EW'] > 0]
 plt.errorbar(
     t['Zphot'], t['Muv'],
     yerr=[t['dMuv_inf'], t['dMuv_sup']],
-    xerr=[t['Zphot']-t['Zinf'], t['Zsup']-t['Zphot']],
+    xerr=[np.abs(t['Zphot']-t['Zinf']), np.abs(t['Zsup']-t['Zphot'])],
     fmt='o', color='black', markersize=8,
     label='COSMOS',
     alpha=0.8
@@ -162,7 +162,7 @@ plt.errorbar(
 plt.errorbar(
     t_lya['Zphot'], t_lya['Muv'],
     yerr=[t_lya['dMuv_inf'], t_lya['dMuv_sup']],
-    xerr=[t_lya['Zphot']-t_lya['Zinf'], t_lya['Zsup']-t_lya['Zphot']],
+    xerr=[np.abs(t_lya['Zphot']-t_lya['Zinf']), np.abs(t_lya['Zsup']-t_lya['Zphot'])],
     fmt='D', color='orange', markersize=10,
     label=r'Lyman-$\alpha$ emitters',
 )

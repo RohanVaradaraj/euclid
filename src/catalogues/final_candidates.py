@@ -51,7 +51,7 @@ def stellar_type(model):
 run_type = 'with_euclid'
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'really_good_LBGs'
+run_flag = 'BD'
 
 # Only get lya if we are looking at the LBG sample
 run_lya = (run_flag == 'z7')

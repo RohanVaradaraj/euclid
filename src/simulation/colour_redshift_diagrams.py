@@ -18,7 +18,7 @@ Avs = np.arange(0, 0.7, 0.1)
 ages = np.array([50, 100, 150, 200, 300, 400, 500])
 
 # Broad redshift range of interest
-redshift = '8'
+redshift = '7'
 
 z_lower = 4.9
 z_upper = 10.0
@@ -141,5 +141,59 @@ ax[0].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$')
 ax[0].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission')
 ax[0].legend(loc='upper left')
 plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
-plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}.pdf')
+#plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}.pdf')
+
+# Add the LAE object
+lae_z = 7.19309
+lae_dz_sup = 7.30626
+lae_dz_inf = 7.03676
+dz_sup = lae_dz_sup - lae_z
+dz_inf = lae_z - lae_dz_inf
+
+# get colours
+cat_dir = Path.cwd().parent.parent / 'data' / 'catalogues'
+t = Table.read(cat_dir / 'COSMOS_5sig_Ye_2sig_Y_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits')
+
+t = t[t['ID'] == 178396]
+
+# Fluxes
+y_flux = t['flux_HSC-Y_DR3']
+Ye_flux = t['flux_Ye']
+Y_flux = t['flux_Y']
+
+y_err = t['err_HSC-Y_DR3']
+Ye_err = t['err_Ye']
+Y_err = t['err_Y']
+
+# Flux to magnitude conversion
+def flux_to_mag(flux):
+    return -2.5 * np.log10(flux)
+
+# Magnitude errors from flux and flux errors
+def mag_error(flux, flux_err):
+    return (2.5 / np.log(10)) * (flux_err / flux)
+
+# Calculate magnitudes
+y_mag = flux_to_mag(y_flux)
+Ye_mag = flux_to_mag(Ye_flux)
+Y_mag = flux_to_mag(Y_flux)
+
+# Calculate magnitude errors
+y_mag_err = mag_error(y_flux, y_err)
+Ye_mag_err = mag_error(Ye_flux, Ye_err)
+
+# Magnitude difference and its error
+y_minus_Ye = y_mag - Ye_mag
+Y_minus_Ye = Y_mag - Ye_mag
+
+# Error on the difference
+Y_minus_Ye_err = np.sqrt(Ye_mag_err**2 + Ye_mag_err**2)
+y_minus_Ye_err = np.sqrt(y_mag_err**2 + Ye_mag_err**2)
+
+# Plot the LAE object
+ax[0].errorbar(lae_z, y_minus_Ye, yerr=y_minus_Ye_err, xerr=[[dz_inf], [dz_sup]], fmt='o', color='red', markersize=12, markeredgecolor='black', elinewidth=4)
+ax[1].errorbar(lae_z, Y_minus_Ye, yerr=Y_minus_Ye_err, xerr=[[dz_inf], [dz_sup]], fmt='o', color='red', markersize=12, markeredgecolor='black', elinewidth=4)
+
+plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}_WITH_LAE.pdf')
+
 plt.show()

@@ -52,7 +52,7 @@ def schechter(phiStar, alpha, M, Mstar):
 
 # Read in the catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_21_with_euclid.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
 t = Table.read(cat_dir / cat_name)
 
 # Find the minimum and maximum Muv
@@ -79,7 +79,7 @@ LF_error = np.zeros(len(Muv_bins)-1)
 for i, sub_table in enumerate(binned_tables):
     
     # Print number of galaxies in each bin
-    #print(f'Bin {i} has {len(sub_table)} galaxies')
+    print(f'Bin {i} has {len(sub_table)} galaxies')
     #plt.hist(sub_table['Muv'], bins=np.arange(Muv_min, Muv_max, 0.1), alpha=0.5)
 
     #! Go through all the objects in the sub-table

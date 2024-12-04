@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-reproject the euclid images to the VISTA images
+reproject the euclid/jwst images to the VISTA images (also aligning uvista dr6 back to dr5 since everything else is alinged to dr5)
 
 Created: Friday 14th June 2024.
 """

@@ -146,12 +146,15 @@ zphot_folder = base_det + '_' + run_type + f'_{object_type}' if run_type != '' e
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
 
-# Set up the dusty and brown dwarf dir to get the same correspoinding SEDs
+# Set up the dusty, brown dwarf and lbg dir to get the same corresponding SEDs
 dusty_folder = base_det + '_' + run_type + '_dusty' if run_type != '' else base_det + '_dusty'
 dusty_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / dusty_folder
 
 bd_folder = base_det + '_' + run_type + '_bd' if run_type != '' else base_det + '_bd'
 bd_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / bd_folder
+
+lbg_folder = base_det+ '_' + run_type if run_type != '' else base_det
+lbg_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / lbg_folder
 
 # Crossmatched catalogue name to get existing sources
 crossmatch_name = 'all_COSMOS_highz.fits'
@@ -245,7 +248,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
     for i, spec_file in enumerate(spec_files):
         print(f'Object {i+1} of {len(spec_files)}')
 
-        # Read in the .spec file
+        #? Read in the .spec file
         file = parse_spec_file(spec_file)
 
         phot = file.get('phot')

@@ -140,3 +140,22 @@ for i, spec_file in enumerate(spec_files[progress["last_index"]:], start=progres
 if progress["last_index"] >= len(spec_files) - 1:
     progress_file.unlink(missing_ok=True)
     print("All files processed. Progress file cleared.")
+
+# Once it is all done, copy files from good and maybe directories into the visual selection directory
+print('All objects visually inspected! Well done. That was probably quite long.')
+
+visual_dir = zphot_dir.parents[0] / (base_det + f'_visualSelection')
+if not visual_dir.exists():
+    visual_dir.mkdir(parents=True)
+
+# Copy good files
+good_files = glob.glob(str(good_dir / '*.spec'))
+for file in good_files:
+    shutil.copy(file, visual_dir)
+
+# Copy maybe files
+maybe_files = glob.glob(str(maybe_dir / '*.spec'))
+for file in maybe_files:
+    shutil.copy(file, visual_dir)
+
+print(f"Good/maybe .spec files copied to {visual_dir}.")
