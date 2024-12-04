@@ -1,0 +1,7 @@
+luminosity_function:
+  type: "DPL"
+  alpha: -2.08
+  beta: -4.81
+  M_star: -21.01
+  phi_star: 10**(-3.74)
+  Muv_range: [-25, -18]  # Minimum and maximum flux values

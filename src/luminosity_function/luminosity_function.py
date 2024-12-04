@@ -19,7 +19,7 @@ def dpl(phiStar, alpha, beta, M, Mstar):
 
     ''' Produces DPL given parameters alpha, beta, normalisation phi*, char. mag. M* and mag array M. '''
 
-    numerator = phiStar
+    numerator = np.log(10) * phiStar / 2.5
 
     denomA = 10 ** (0.4 * (alpha + 1) * (M - Mstar))
     denomB = 10 ** (0.4 * (beta + 1)  * (M - Mstar))
