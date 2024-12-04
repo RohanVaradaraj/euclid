@@ -31,3 +31,6 @@
 /plots/seds/*
 
 /plots/
+
+# Ignore images for the injection recovery
+/src/injection_recovery/images
