@@ -35,3 +35,5 @@
 # Ignore images for the injection recovery
 /src/injection_recovery/images
 /src/injection_recovery/catalogues
+/src/injection_recovery/shell_scripts
+/src/injection_recovery/*.fits
