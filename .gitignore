@@ -34,3 +34,4 @@
 
 # Ignore images for the injection recovery
 /src/injection_recovery/images
+/src/injection_recovery/catalogues
