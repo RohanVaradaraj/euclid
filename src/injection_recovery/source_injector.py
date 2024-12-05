@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 from scipy.constants import physical_constants
 from pathlib import Path
 from scipy.integrate import simps
-
+from photutils.aperture import CircularAperture
+from astropy.io import fits
 
 
 class SourceInjector:
@@ -23,42 +24,42 @@ class SourceInjector:
         Initialize the SourceInjector with the necessary parameters.
         
         :param samples: Number of samples to draw from the luminosity function.
-        :param z_range: Range of redshift values to draw from.
+        :param zmin: Minimum redshift value.
+        :param zmax: Maximum redshift value.
         :param beta_mean: Mean value of the beta slope.
         :param beta_std: Standard deviation of the beta slope.
         :param filters: Dictionary of filter responses.
+        :param image_size: Size of the images (in arcminutes).
+        :param n_images: Number of images to generate.
+        :param base_image: Path to the base image.
         """
         self.samples = samples
         self.zmin = params['zmin']
         self.zmax = params['zmax']
+        self.dz = params['dz']
         self.beta_mean = params['beta_mean']
         self.beta_std = params['beta_std']
         self.filters = params['filters']
+        self.image_size = params['image_size_arcmin']
+        self.n_images = params['n_images']
+        self.base_image = params['base_image']
 
         filter_dir = Path.home() / 'lephare' / 'lephare_dev' / 'filt'
 
-        #! Read in the filter response curves
+        # Read in the filter response curves
         filter_response_curves = {}
-
-        filter_dict = filter_files()
-        
-        # Get filter file paths from self.filter keys
+        filter_dict = filter_files()  # Assuming this function exists
         filters = {band: filter_dict[band] for band in self.filters}
-        print(filters)
         
         for filter_name, filter_path in filters.items():
-
-            # Open the filter response curve
             filter_data = np.genfromtxt(filter_dir / filter_path)
-
-            # Add the filter response curve to the dictionary
             filter_response_curves[filter_name] = filter_data
         
         self.filter_response_curves = filter_response_curves
 
-        #! Cosmology
+        # Cosmology
         self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
-    
+
 
 
     def draw_parameters(self):
@@ -68,9 +69,23 @@ class SourceInjector:
         :return: Arrays of redshifts and beta slopes.
         """
         n = len(self.samples)
-        z = np.random.uniform(self.zmin, self.zmax, n)
-        beta = np.random.normal(self.beta_mean, self.beta_std, n)
-        return z, beta
+        
+        # Define a grid for redshift with dz = 0.05
+        z_grid = np.arange(self.zmin, self.zmax + self.dz, self.dz)
+
+        z_prob = np.ones_like(z_grid)  # Uniform distribution over z_grid
+        
+        # Normalize the probability distribution to form a valid CDF
+        z_cdf = np.cumsum(z_prob) / np.sum(z_prob)
+        
+        # Sample redshifts from the grid using inverse transform sampling
+        uniform_randoms = np.random.uniform(0, 1, n)
+        z_samples = np.interp(uniform_randoms, z_cdf, z_grid)
+
+        # Draw beta slopes from a normal distribution
+        beta_samples = np.random.normal(self.beta_mean, self.beta_std, n)
+        
+        return z_samples, beta_samples
 
 
 
@@ -99,9 +114,6 @@ class SourceInjector:
         frequencies = c / wavelengths  # Frequencies in Hz
         flux = flux * c / (frequencies[None, :]**2)
 
-        print(flux.shape)
-        print(wavelengths.shape)
-
         return wavelengths, flux
 
 
@@ -120,9 +132,11 @@ class SourceInjector:
         tophat_filter = np.zeros_like(sed_fluxes)
         filter_mask = (sed_wavelengths >= 1450 * (1 + z[:, None])) & (sed_wavelengths <= 1550 * (1 + z[:, None]))
         tophat_filter[filter_mask] = 1
+        # Area of filter
+        tophat_area = simps(tophat_filter, sed_wavelengths, axis=1)
 
         # Flux in the tophat filter
-        flux_tophat = np.trapz(sed_fluxes * tophat_filter, sed_wavelengths, axis=1) / 100  # Width of the filter
+        flux_tophat = np.trapz(sed_fluxes * tophat_filter, sed_wavelengths, axis=1) / tophat_area # Width of the filter
 
         # Luminosity distance
         DL = self.cosmo.luminosity_distance(z).value * 10**6  # in pc
@@ -139,7 +153,8 @@ class SourceInjector:
         return scaled_fluxes
 
 
-    def calculate_fluxes(self, sed_wavelengths, sed_fluxes):
+
+    def calculate_fluxes(self, sed_wavelengths, sed_fluxes, average=True):
         """
         Calculate the fluxes in the filters for all samples in a vectorized way.
         
@@ -167,49 +182,160 @@ class SourceInjector:
 
             fluxes[filter_name] = flux
 
+        # Get average fluxes if required
+        if average:
+            # Get the combined filter name from the keys - append them
+            combined_filter = ''.join(filter_name for filter_name, _ in self.filter_response_curves.items())
+            fluxes[combined_filter] = np.sum([fluxes[filter_name] for filter_name in self.filters], axis=0)
+            self.combined_filter = combined_filter
+        else:
+            self.combined_filter = None
+
         return fluxes
 
 
-    def inject_sources(self, image, n_sources, Muv_range):
-        """
-        Inject n_sources into the image based on the randomly generated parameters.
-        
-        :param image: The 2D image where sources will be injected.
-        :param n_sources: The number of sources to inject.
-        :param Muv_range: The range of Muv values (for scaling).
-        :return: The image with the injected sources.
-        """
-        for _ in range(n_sources):
-            z, beta = self.draw_parameters()
-            Muv = np.random.uniform(Muv_range[0], Muv_range[1])  # Random Muv for each source
-            
-            # Generate and scale the SED
-            sed_wavelengths, sed_flux = self.generate_sed(z, beta)
-            scaled_flux = self.scale_sed_to_muv(sed_wavelengths, sed_flux, Muv)
-            
-            # Calculate magnitudes in the Y and J bands
-            magnitudes = self.calculate_magnitudes(sed_wavelengths, scaled_flux)
-            
-            # Here you would inject the source into the image (e.g., adding a point source)
-            # Example: you could inject this source into a random location
-            x_pos, y_pos = np.random.randint(0, image.shape[1]), np.random.randint(0, image.shape[0])
-            self._inject_single_source(image, x_pos, y_pos, magnitudes, sed_wavelengths, scaled_flux)
-        
-        return image
 
-    def _inject_single_source(self, image, x, y, magnitudes, sed_wavelengths, scaled_flux):
+    def generate_random_positions(self, image_size):
         """
-        Helper function to inject a single source into the image.
+        Generate random positions for the sources within the image.
         
-        :param image: The image to inject the source into.
-        :param x, y: The position of the source.
-        :param magnitudes: Magnitudes of the source in Y, J bands.
-        :param sed_wavelengths: Wavelengths of the scaled SED.
-        :param scaled_flux: Scaled fluxes for the source.
+        :param image_size: Size of the image in pixels.
+        :return: Arrays of x and y positions.
         """
-        # This could be a simple Gaussian, point source, or more complex PSF
-        # Add a point source at (x, y) with the calculated magnitude
-        pass
+
+        # Convert image size from arcmin to pixels
+        image_size = image_size * 60 / 0.15
+
+        x = np.random.randint(0, image_size, len(self.samples))
+        y = np.random.randint(0, image_size, len(self.samples))
+
+        return x, y
+
+
+
+    def get_psf(self):
+        """
+        Add PSF to the class.
+        """
+
+        psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / 'COSMOS' / 'ref_psf'
+        hdu = fits.open(psf_dir / 'Y_DR6_psf.fits')
+        psf = hdu[0].data
+
+        self.psf = psf
+
+        return None
+
+
+
+    def measure_psf_flux(self):
+
+        # Place 1.8 arcsec diameter aperture at centre of image
+        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=1.8 / 0.15)
+
+        # Measure the flux in the aperture
+        flux, _ = aperture.do_photometry(self.psf)
+
+        # PSF correction
+        flux /= 0.69
+
+        return flux
+
+    
+    
+    def scale_psf_to_Muv(self, fluxes):
+        """
+        Scale the N = len(samples) psfs we will inject into the image to the desired Y+J band magnitude.
+
+        :param fluxes: Array of fluxes in Y+J.
+        :return: Array of scaled PSFs.
+        """
+
+        # Get the PSF flux
+        psf_flux = self.measure_psf_flux()
+
+        # Check if there exists a combined filter
+        if self.combined_filter is None:
+            fluxes = fluxes[self.filters]
+        else:
+            fluxes = fluxes[self.combined_filter]
+
+        vista_zpt = 30.
+
+        # Convert the cgs fluxes to counts, which are the units of the image
+        fluxes *= 10** ((48.6 + vista_zpt)/2.5)
+
+        # Calculate the scaling factor
+        scaling_factors = fluxes / psf_flux
+
+        # Make N copies of the PSF
+        scaled_psfs = np.array([scaling_factors[i] * self.psf for i in range(len(scaling_factors))])
+
+        return scaled_psfs
+
+
+
+    def inject_sources(self, image_name, x_positions, y_positions, scaled_psfs, overwrite=False):
+        """
+        Inject the sources into the image at the given positions.
+        
+        :param image_name: Path to the FITS file containing the image to inject the sources into.
+        :param x_positions: Array of x positions.
+        :param y_positions: Array of y positions.
+        :param scaled_psfs: List or array of scaled PSFs.
+        :return: None. Saves the injected image to disk.
+        """
+
+        image_dir = Path.cwd() / 'images' / 'cutouts' 
+        injected_dir = Path.cwd() / 'images' / 'injected'
+
+        if overwrite:
+            for file in injected_dir.glob('*'):
+                file.unlink()
+
+        # Open the image
+        with fits.open(image_dir / image_name) as hdul:
+            image = hdul[0].data
+            header = hdul[0].header
+
+        image_height, image_width = image.shape
+        n_psfs = len(scaled_psfs)
+
+        # Create a blank overlay to hold the injections
+        overlay = np.zeros_like(image)
+
+        # Iterate over each PSF (vectorization limited by differing injection positions)
+        for i in range(n_psfs):
+            psf = scaled_psfs[i]
+            x = x_positions[i]
+            y = y_positions[i]
+
+            # Get PSF size
+            psf_height, psf_width = psf.shape
+
+            # Ensure injection is within bounds, and calculate slices for both PSF and image
+            x_start, x_end = max(0, x - psf_width // 2), min(image_width, x + psf_width // 2)
+            y_start, y_end = max(0, y - psf_height // 2), min(image_height, y + psf_height // 2)
+
+            # Adjust psf_x and psf_y slices based on the image slices
+            psf_x_start = max(0, psf_width // 2 - x)
+            psf_x_end = psf_x_start + (x_end - x_start)
+
+            psf_y_start = max(0, psf_height // 2 - y)
+            psf_y_end = psf_y_start + (y_end - y_start)
+
+            # Ensure the slices match in size
+            overlay[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
+
+        # Add the overlay to the image
+        image += overlay
+
+        # Save the injected image
+        hdu = fits.PrimaryHDU(image, header=header)
+        hdu.writeto(injected_dir / image_name, overwrite=True)
+
+        return None
+
 
 
 #! Testing
@@ -248,6 +374,8 @@ if __name__ == '__main__':
     # plt.xlim(3000, 40000)
     #plt.show()
 
+
+    #! Testing injection
 
 
 

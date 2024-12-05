@@ -5,6 +5,13 @@ Created: Wednesday 4th December 2024.
 """
 
 import yaml
+from astropy.io import fits
+from pathlib import Path
+from astropy.wcs import WCS
+from astropy.nddata import Cutout2D
+import numpy as np
+
+data_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 
 def load_config(config_file):
     """
@@ -48,3 +55,58 @@ def filter_files():
     }
 
     return filt_files
+
+
+
+def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrite=False):
+    """
+    Extract a subimage from a larger image.
+    
+    :param image: The image to extract the subimage from.
+    :param x: The x-coordinate of the subimage center.
+    :param y: The y-coordinate of the subimage center.
+    :param size: The size of the subimage, in arcmin
+    """
+
+    cutout_path = Path.cwd() / 'images' / 'cutouts'
+    cutout_path.mkdir(parents=True, exist_ok=True)
+
+    # Delete files in cutout_path if overwrite is True
+    if overwrite:
+        for file in cutout_path.glob('*'):
+            file.unlink()
+
+    image_dir = data_dir / image
+
+    with fits.open(image_dir) as hdul:
+        data = hdul[0].data
+        header = hdul[0].header
+
+    wcs = WCS(header)
+
+    pix_size = 0.15 # arcsec / pix
+
+    image_size = image_size * 60 / pix_size # convert to pixels
+
+    for i in range(n_images):
+        print(f"Generating image {i+1}/{n_images}")
+        if random:
+            x = np.random.randint(image_size/2 +100, data.shape[1]-(image_size/2+100))
+            y = np.random.randint(image_size/2 +200, data.shape[0]-(image_size/2+100))   # avoid edges
+    
+        cutout = Cutout2D(data, (x, y), (image_size, image_size), wcs=wcs)
+
+        # Save the cutout to a new FITS file
+        image_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin.fits'
+        
+        # Save
+        hdu = fits.PrimaryHDU(cutout.data, header=cutout.wcs.to_header())
+        hdu.writeto(cutout_path / image_name, overwrite=True)
+
+    return None
+
+
+
+if __name__ == "__main__":
+
+    cutout_subimage('UVISTA_YJ_DR6.fits', 5000, 5000, 10, random=True)

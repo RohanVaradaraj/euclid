@@ -4,9 +4,9 @@ Contains the LuminosityFunction class for drawing objects from this M distributi
 Created: Wednesday 4th December 2024.
 """
 
-from utils import load_config
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import load_config
 
 class LuminosityFunction:
     def __init__(self, params):
@@ -17,19 +17,18 @@ class LuminosityFunction:
         self.phi_star = eval(params['phi_star'])
         self.Muv_range = params['Muv_range']
         self.n_samples = params['n_samples']
+        self.dMuv = params['dMuv']
 
 
     def phi(self, M):
         """
         Compute the value of the luminosity function at M.
         """
-
         const = np.log(10) * self.phi_star / 2.5
         alpha_cpt = 10 ** ( 0.4*(self.alpha+1) * (M-self.M_star))
         beta_cpt = 10 ** ( 0.4*(self.beta+1) * (M-self.M_star))
 
         denominator = alpha_cpt + beta_cpt
-        
         return const / denominator
 
 
@@ -38,7 +37,7 @@ class LuminosityFunction:
         """
         Compute the luminosity function over the magnitude range, for plotting.
         """
-        M_values = np.linspace(self.Muv_range[0], self.Muv_range[1], num_points)
+        M_values = np.arange(self.Muv_range[0], self.Muv_range[1], self.dMuv)
         phi_values = [self.phi(M) for M in M_values]
         return M_values, phi_values
 
@@ -49,7 +48,7 @@ class LuminosityFunction:
         Convert the luminosity function to a probability density function.
         """
         return self.phi(M) / self._integrate_phi()
-    
+
 
 
     def _integrate_phi(self):
@@ -57,42 +56,50 @@ class LuminosityFunction:
         Numerically integrate the luminosity function over the magnitude range.
         """
         return np.trapz(
-            [self.phi(M) for M in np.linspace(self.Muv_range[0], self.Muv_range[1], 1000)],
-            np.linspace(self.Muv_range[0], self.Muv_range[1], 1000))
+            [self.phi(M) for M in np.arange(self.Muv_range[0], self.Muv_range[1], self.dMuv)],
+            np.arange(self.Muv_range[0], self.Muv_range[1], self.dMuv))
 
 
 
-    def sample_luminosities(self, n_samples=self.n_samples):
+    def sample_luminosities(self):
         """
-        Sample mags from the double power-law distribution.
+        Sample Muv from the luminosity function using inverse transform sampling.
         """
-        # Generate the CDF
-        M_values = np.linspace(self.Muv_range[0], self.Muv_range[1], 1000)
-        phi_values = [self.phi(M) for M in M_values]
+        M_values = np.arange(self.Muv_range[0], self.Muv_range[1], self.dMuv)
+        phi_values = np.array([self.phi(M) for M in M_values])
+        
+        # Normalize the phi values to create a cumulative distribution
         cdf = np.cumsum(phi_values) / np.sum(phi_values)
-        
-        # Invert the CDF to draw samples
-        uniform_randoms = np.random.uniform(0, 1, n_samples)
-        samples = np.interp(uniform_randoms, cdf, M_values)
-        
-        return samples
+
+        # Use vectorized interpolation to generate samples
+        uniform_randoms = np.random.uniform(0, 1, self.n_samples)
+        samples_Muv = np.interp(uniform_randoms, cdf, M_values)
+
+        return samples_Muv
+
 
 
 if __name__ == "__main__":
-
+    # Load configuration from YAML or other source
     config = load_config("config.yaml")
     
     luminosity_function_params = config['luminosity_function']
     luminosity_function = LuminosityFunction(luminosity_function_params)
 
-    print(luminosity_function.phi(-23))
+    # Sample Muv values
+    M_samples = luminosity_function.sample_luminosities()
 
-    sample = luminosity_function.sample_luminosities(1000000)
-    print(sample)
-    plt.hist(sample, bins=1000, density=True)
+    # Plot histogram of M_samples
+    plt.hist(M_samples, bins=100, density=True, alpha=0.6, color='g', label='Muv Samples')
 
-    # Plot normalised lf dist to compare with hist
+    # Plot normalised luminosity function for Muv to compare with the histogram
     M_values, phi_values = luminosity_function.distribution()
-    plt.plot(M_values, phi_values/np.max(phi_values), label='Luminosity function')
+    plt.plot(M_values, np.array(phi_values)/np.max(phi_values), label='Luminosity Function')
     plt.yscale('log')
+    plt.xlabel("Magnitude (Muv)")
+    plt.ylabel("Probability Density")
+    plt.legend()
     plt.show()
+
+    # Print some sample Muv values for verification
+    print(f"Sample Muv values: {M_samples[:10]}")
