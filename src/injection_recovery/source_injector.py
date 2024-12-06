@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Creates source injection class.
 
@@ -16,7 +18,7 @@ from pathlib import Path
 from scipy.integrate import simps
 from photutils.aperture import CircularAperture
 from astropy.io import fits
-
+from astropy.wcs import WCS
 
 class SourceInjector:
     def __init__(self, samples, params):
@@ -297,6 +299,7 @@ class SourceInjector:
         with fits.open(image_dir / image_name) as hdul:
             image = hdul[0].data
             header = hdul[0].header
+            wcs = WCS(header)
 
         image_height, image_width = image.shape
         n_psfs = len(scaled_psfs)
@@ -334,7 +337,7 @@ class SourceInjector:
         hdu = fits.PrimaryHDU(image, header=header)
         hdu.writeto(injected_dir / image_name, overwrite=True)
 
-        return None
+        return wcs
 
 
 

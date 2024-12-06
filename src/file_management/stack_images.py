@@ -225,7 +225,7 @@ for i, fieldName in enumerate(fields):
     if filter3 == 'None' and filter4 == 'None':
         #fits.writeto(stackDir / '{0}_{1}{2}_STACK_WHT.fits'.format(fieldName.upper(), name1, name2), weightSum, wheader1, overwrite=True)
         #fits.writeto(stackDir / f'Euclid_{filter1}{filter2}_vista_matched_WHT.fits', weightSum, wheader1, overwrite=True)
-        fits.writeto(stackDir / f'UVISTA_{filter1}{filter2}_DR6_wht.fits', finalImage, header1, overwrite=True)
+        fits.writeto(stackDir / f'UVISTA_{filter1}{filter2}_DR6_wht.fits', weightSum, header1, overwrite=True)
     if filter3 != 'None':
         #fits.writeto(stackDir / '{0}_{1}{2}{3}_STACK_WHT.fits'.format(fieldName.upper(), filter1, filter2, filter3), weightSum, wheader1, overwrite=True)
         #fits.writeto(stackDir / f'Euclid_{filter1}{filter2}{filter3}_vista_matched_WHT.fits', weightSum, wheader1, overwrite=True)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Combines all components into one high-level workflow.
 
@@ -18,7 +20,6 @@ import glob
 from astropy.table import Table
 import os
 
-
 def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
 
     #! Read in config file
@@ -30,9 +31,8 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
     se_config = config['source_extraction']
     batch_size = se_config['batch_size']
 
-
-    print('Generating cutouts of base image')
-    cutout_subimage(base_image, image_size, n_images, random=True, overwrite=overwrite)
+    #print('Generating cutouts of base image')
+    #cutout_subimage(base_image, image_size, n_images, random=True, overwrite=overwrite)
 
     #! Get all images to inject into
     image_dir = Path.cwd() / 'images' / 'cutouts'
@@ -65,26 +65,36 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
         #! Get random positions
         x, y = source_injector.generate_random_positions(image_size)
 
+        # A;
+
         #! Get PSF fluxes corresponding to input Muv
         source_injector.get_psf()
         scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes)
 
         #! Inject sources
-        source_injector.inject_sources(image_name, x, y, scaled_psfs)
+        wcs = source_injector.inject_sources(image_name, x, y, scaled_psfs, overwrite=overwrite)
+        
+        #! Convert x,y to RA, Dec
+        ra, dec = wcs.all_pix2world(x, y, 0)
 
         #! Save the input values as an astropy table
-        t = Table([x, y, Muv_sample, z, beta, filter_fluxes['YJ']], names=('x', 'y', 'Muv', 'z', 'beta_slope', 'flux_YJ'))
+        t = Table([x, y, ra, dec, Muv_sample, z, beta, filter_fluxes['YJ']], names=('x', 'y', 'RA', 'DEC', 'Muv', 'z', 'beta_slope', 'flux_YJ'))
         table_name = image_name.replace('.fits', '_input_values.fits')
         t.write(str(cat_dir / table_name), overwrite=overwrite)
 
-    ! Run Source Extractor!
+    #! Run Source Extractor!
     source_extractor = SourceExtractor(images)
+
+    # If overwrite, clear the output catalogues
+    if overwrite:
+        for file in glob.glob(str(Path.cwd() / 'catalogues' / 'output' / '*.fits')):
+            os.remove(file)
 
     #? Batch
     batches = source_extractor.batch_image_list(batch_size)
 
     #! Run SE batches on queue!
-    source_extractor.execute_se_batches(batch_size,'YJ', 1.8, queue='berg', overwrite=True, check_interval=30)
+    source_extractor.execute_se_batches(batch_size,'YJ', 1.8, queue='normal', overwrite=True, check_interval=30)
 
 
     

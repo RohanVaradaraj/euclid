@@ -17,8 +17,8 @@ source_injection:
   dz: 0.05
   filters: ['Y', 'J']
   image_size_arcmin: 10
-  n_images: 1000
+  n_images: 100
   base_image: "UVISTA_YJ_DR6.fits"
 
 source_extraction:
-  batch_size: 100
+  batch_size: 20

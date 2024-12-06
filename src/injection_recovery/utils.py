@@ -70,6 +70,8 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
 
     cutout_path = Path.cwd() / 'images' / 'cutouts'
     cutout_path.mkdir(parents=True, exist_ok=True)
+    weight_path = Path.cwd() / 'images' / 'cutouts' / 'weights'
+    weight_path.mkdir(parents=True, exist_ok=True)
 
     # Delete files in cutout_path if overwrite is True
     if overwrite:
@@ -77,12 +79,18 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
             file.unlink()
 
     image_dir = data_dir / image
+    weight_dir = data_dir / image.split('.fits')[0] + '_wht.fits'
 
     with fits.open(image_dir) as hdul:
         data = hdul[0].data
         header = hdul[0].header
 
+    with fits.open(weight_dir) as hdul:
+        weight = hdul[0].data
+        weight_header = hdul[0].header
+
     wcs = WCS(header)
+    wcs_weight = WCS(weight_header)
 
     pix_size = 0.15 # arcsec / pix
 
@@ -95,13 +103,19 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
             y = np.random.randint(image_size/2 +200, data.shape[0]-(image_size/2+100))   # avoid edges
     
         cutout = Cutout2D(data, (x, y), (image_size, image_size), wcs=wcs)
+        weight_cutout = Cutout2D(weight, (x, y), (image_size, image_size), wcs=wcs_weight)
 
         # Save the cutout to a new FITS file
         image_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin.fits'
+        weight_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin_wht.fits'
         
         # Save
         hdu = fits.PrimaryHDU(cutout.data, header=cutout.wcs.to_header())
         hdu.writeto(cutout_path / image_name, overwrite=True)
+
+        # And weight
+        hdu = fits.PrimaryHDU(weight_cutout.data, header=weight_cutout.wcs.to_header())
+        hdu.writeto(weight_path / weight_name, overwrite=True)
 
     return None
 

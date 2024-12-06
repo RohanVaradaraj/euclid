@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Contains source extraction class.
 
@@ -55,10 +57,9 @@ class SourceExtractor:
             f"-MAG_ZEROPOINT 30.0 "
             f"-PHOT_APERTURES {apStringPix} "
             f"-CHECKIMAGE_TYPE SEGMENTATION "
-            f"-WEIGHT_TYPE NONE "
+            f"-WEIGHT_TYPE MAP_WEIGHT "
+            f"-WEIGHT_IMAGE {str(image_dir / 'wht' / image_name.split('.fits')[0] + '_wht.fits')} "
         )
-        print(command)
-        exit()
 
         shellFile = shell_dir / f"run_se_{image_name.split('/')[-1].split('.fits')[0]}.sh"
         with open(shellFile, 'w') as f:
@@ -113,7 +114,7 @@ class SourceExtractor:
             while incomplete:
                 incomplete = False
                 for image_name in batch:
-                    expected_cat = output_dir / (image_name.split('.fits')[0] + '_cat.fits')
+                    expected_cat = output_dir / (image_name.split('/')[-1].split('.fits')[0] + '_cat.fits')
                     if not expected_cat.is_file():
                         incomplete = True
                         break

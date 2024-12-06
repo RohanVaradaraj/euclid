@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Contains the LuminosityFunction class for drawing objects from this M distribution.
 
