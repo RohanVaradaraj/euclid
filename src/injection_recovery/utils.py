@@ -75,11 +75,13 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
 
     # Delete files in cutout_path if overwrite is True
     if overwrite:
-        for file in cutout_path.glob('*'):
+        for file in cutout_path.glob('*.fits'):
+            file.unlink()
+        for file in weight_path.glob('*.fits'):
             file.unlink()
 
     image_dir = data_dir / image
-    weight_dir = data_dir / image.split('.fits')[0] + '_wht.fits'
+    weight_dir = data_dir / (image.split('.fits')[0] + '_wht.fits')
 
     with fits.open(image_dir) as hdul:
         data = hdul[0].data

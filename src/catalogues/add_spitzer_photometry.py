@@ -85,6 +85,11 @@ vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'oth
 vista_file = 'COSMOSFULL_DR3_UNMASKED_Ks_2024_11_06_2.0as_IRAC_2.8as_ALL.fits'
 vista_cat = Table.read(vista_dir / vista_file)
 
+#! LAE
+vista_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+vista_file = 'LAE.fits'
+vista_cat = Table.read(vista_dir / vista_file)
+
 print(len(vista_cat))
 print(vista_cat.colnames)
 

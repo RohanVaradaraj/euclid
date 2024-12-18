@@ -310,7 +310,6 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
     spitzer_stack = np.sum([cutout_ch1.data, cutout_ch2.data], axis=0) / 2.
     spitzer_stack = Cutout2D(spitzer_stack, c, size=size/pix_scale, wcs=cutout_ch1.wcs)
 
-
     #! Plot
     cutout_titles = [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$', 'ch1', 'ch2', 'NB0816', 'NB0921', 'HSC-GRI', 'Y', 'J', 'H', 'K', r'GRI$_{\sigma}$', 'HSC-Z', 'HSC-Y']
     cutouts = [cutout_VIS, cutout_Ye, cutout_Je, cutout_He, cutout_ch1, cutout_ch2, cutout_grNB0816, cutout_grNB0921, optical_stack, cutout_grY, cutout_grJ, cutout_grH, cutout_grK, smooth_optical_stack, cutout_grZ, cutout_gry]
@@ -329,11 +328,19 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         ax[i//8, i%8].set_yticks([])
         ax[i//8, i%8].set_title(cutout_titles[i])
 
+        # If the title has 'ch', draw a red circle of diameter 2.8 arcsec at the centre
+        # if 'ch' in cutout_titles[i]:
+        #     circle = plt.Circle((cutout.data.shape[0]//2, cutout.data.shape[1]//2), 1.4/pix_scale, color='red', fill=False, lw=2)
+        #     ax[i//8, i%8].add_artist(circle)
+
         # Remove axis labels
         ax[i//8, i%8].set_xticks([])
         ax[i//8, i%8].set_yticks([])
 
     plt.tight_layout()
+    plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
+    plt.savefig(plot_dir / f'LAE_stamps_10arcsec.pdf')
+    plt.show()
 
     return fig, ax
     #plt.show()
@@ -521,32 +528,32 @@ if __name__ == '__main__':
     # print(t['flux_Ye'])
 
     #! My LAE candidate
-    # ra = [150.11833152095758]
-    # dec = [2.2522416552619746]
-    # ID = [178396]
+    ra = [150.11833152095758]
+    dec = [2.2522416552619746]
+    ID = [178396]
 
     #! Stars
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
 
-    # Sort by class_star
-    t.sort('CLASS_STAR', reverse=True)
-    print(len(t))
+    # # Sort by class_star
+    # t.sort('CLASS_STAR', reverse=True)
+    # print(len(t))
 
-    t = t[t['CLASS_STAR'] < 0.99]
+    # t = t[t['CLASS_STAR'] < 0.99]
 
-    STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
-    t = t[STARS]
+    # STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
+    # t = t[STARS]
 
-    print(len(t))
+    # print(len(t))
 
-    #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
+    # #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
 
-    ra = t['RA']
-    dec = t['DEC']
-    class_star = t['CLASS_STAR']
-    flag = t['FLAGS']
-    elong = t['ELONGATION']
-    fwhm = t['FWHM_IMAGE']
+    # ra = t['RA']
+    # dec = t['DEC']
+    # class_star = t['CLASS_STAR']
+    # flag = t['FLAGS']
+    # elong = t['ELONGATION']
+    # fwhm = t['FWHM_IMAGE']
 
 
     ############! GET CUTOUTS ############
@@ -566,10 +573,10 @@ if __name__ == '__main__':
         #print(muv[i])
 
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
-        print(class_star[i], flag[i], elong[i], fwhm[i])
-        Cutout(ra[i], dec[i], size=6., save_cutout=False)
+        #print(class_star[i], flag[i], elong[i], fwhm[i])
+        #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i])
+        AllCutout(ra[i], dec[i], size=10., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

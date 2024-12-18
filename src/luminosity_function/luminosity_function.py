@@ -171,12 +171,12 @@ plt.errorbar(bins_mag[:3], phi_values[:3], yerr=phi_errors[:3], fmt='o', color='
              ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=13, markeredgecolor='black', zorder=2)
 
 # Plot the LF new points
-plt.errorbar(Muv_bins[:-1], LF_sum, yerr=LF_error, fmt='o', color='red', 
-             ecolor='red', elinewidth=4, label=r'UltraVISTA$+Euclid$', markersize=17, markeredgecolor='black')
+# plt.errorbar(Muv_bins[:-1], LF_sum, yerr=LF_error, fmt='o', color='red', 
+#              ecolor='red', elinewidth=4, label=r'UltraVISTA$+Euclid$', markersize=17, markeredgecolor='black')
 
 # Plot the UVISTA DR6 LF points
-plt.errorbar(muv[:-1], phi, yerr=phi_err, fmt='s', color='darkred', 
-             ecolor='darkred', elinewidth=4, label='Only UltraVISTA DR6', markersize=13, markeredgecolor='black')
+plt.errorbar(muv[:-1], phi, yerr=phi_err, fmt='o', color='red', 
+             ecolor='red', elinewidth=4, label='UltraVISTA DR6', markersize=17, markeredgecolor='black')
 
 plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)
@@ -189,8 +189,10 @@ plt.ylim(1e-10, 1e-2)
 
 plt.ylim([10**(-10), 0.03])
 plt.legend(loc='upper left', fontsize=15)
-
+plt.tight_layout()
 plt.yscale('log')
+plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
+plt.savefig(plot_dir / 'LF_UVISTA.pdf')
 plt.show()
 
 

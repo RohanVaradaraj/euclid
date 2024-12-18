@@ -705,7 +705,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         plt.suptitle(plot_title)
 
     plt.tight_layout()
-    #plt.show()
+    plt.savefig(plot_dir / f'LAE_stamps_Euclid_CWEB_6arcsec.pdf')
+    plt.show()
 
     if save_cutout:
         plot_title = str(plot_title)
@@ -898,32 +899,32 @@ if __name__ == '__main__':
     # print(t['flux_Ye'])
 
     #! My LAE candidate
-    # ra = [150.11833152095758]
-    # dec = [2.2522416552619746]
-    # ID = [178396]
+    ra = [150.11833152095758]
+    dec = [2.2522416552619746]
+    ID = [178396]
 
     #! Stars
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
 
-    # Sort by class_star
-    t.sort('CLASS_STAR', reverse=True)
-    print(len(t))
+    # # Sort by class_star
+    # t.sort('CLASS_STAR', reverse=True)
+    # print(len(t))
 
-    t = t[t['CLASS_STAR'] < 0.99]
+    # t = t[t['CLASS_STAR'] < 0.99]
 
-    STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
-    t = t[STARS]
+    # STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
+    # t = t[STARS]
 
-    print(len(t))
+    # print(len(t))
 
-    #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
+    # #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
 
-    ra = t['RA']
-    dec = t['DEC']
-    class_star = t['CLASS_STAR']
-    flag = t['FLAGS']
-    elong = t['ELONGATION']
-    fwhm = t['FWHM_IMAGE']
+    # ra = t['RA']
+    # dec = t['DEC']
+    # class_star = t['CLASS_STAR']
+    # flag = t['FLAGS']
+    # elong = t['ELONGATION']
+    # fwhm = t['FWHM_IMAGE']
 
 
     ############! GET CUTOUTS ############
@@ -943,10 +944,10 @@ if __name__ == '__main__':
         #print(muv[i])
 
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
-        print(class_star[i], flag[i], elong[i], fwhm[i])
-        Cutout(ra[i], dec[i], size=6., save_cutout=False)
+        #print(class_star[i], flag[i], elong[i], fwhm[i])
+        #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i])
+        Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

@@ -156,7 +156,7 @@ plt.errorbar(
     xerr=[np.abs(t['Zphot']-t['Zinf']), np.abs(t['Zsup']-t['Zphot'])],
     fmt='o', color='black', markersize=8,
     label='COSMOS',
-    alpha=0.8
+    alpha=0.5
 )
 
 plt.errorbar(
@@ -212,10 +212,13 @@ plt.errorbar(
 plt.gca().invert_yaxis()
 plt.xlabel(r'$z_{\rm phot}$')
 plt.ylabel(r'$M_{\rm UV}$')
-plt.legend()
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.xlim(6.0, 7.6)
+plt.ylim(-19.8, -25.4)
+plot_dir = Path.cwd().parents[1] /'plots' / 'LF'
+plt.savefig(plot_dir / 'z_Muv_sample.pdf')
 plt.show()
-
-
 
 
  

@@ -530,7 +530,7 @@ def makeLBG(redshift: float, SFH_component: str, Muv: float = None,
 
 #? --------------------------------------------------------------------------
 #? Uncomment this to do some plotting checks on top of filter response curves
-#__name__ = '__none__'
+__name__ = '__none__'
 #? --------------------------------------------------------------------------
 
 
@@ -1161,53 +1161,103 @@ if __name__ == '__none__':
 #! ----------------------------------------
 #! -------- PLOTTING ON FILTERS -----------
 #! ----------------------------------------
-    bds = loadBrownDwarfTemplates(spectral_types=['M'], sub_types=[5])
+    # bds = loadBrownDwarfTemplates(spectral_types=['M'], sub_types=[5])
+
+    # plot_dir = Path.cwd().parent.parent / 'plots' / 'filters'
+
+    # # Plot BD templates
+    # for spectral_type, (wavelength, flux) in bds.items():
+
+    #     # Make figure
+    #     plt.figure(figsize=(10, 6))
+
+    #     for redshift in np.arange(6.5, 7.5, 0.1):
+
+    #         print(f'Making figure at z={redshift:.2f}')
+
+    #         # Make LBG model
+    #         wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
+    #             dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5, Muv=-21.)
+            
+    #         LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+
+    #         wlen = np.array(wlen)
+    #         LBG_flux = np.array(LBG_flux)            
+
+    #         # Filters
+    #         euclid_filters = getFilters('euclid', plot=True, plot_kwargs={'linewidth': 4, 'alpha':0.6, 'color': 'blue'})
+    #         vista_filters = getFilters('vista', plot=True, plot_kwargs={'linewidth': 4, 'alpha':0.6, 'color': 'orange'})
+
+    #         # Get the magnitudes
+    #         mags = convolveFilters([vista_filters, euclid_filters], {redshift: (wlen, LBG_flux)})
+
+    #         # # Dummy plots for filter labels
+    #         plt.plot([], [], label='Euclid', color='blue', linewidth=2.5, alpha=0.6)
+    #         plt.plot([], [], label='VISTA', color='orange', linewidth=2.5, alpha=0.6)
+
+    #         # # Brown dwarf template
+    #         plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.8, linewidth=2.5)
+            
+    #         # LBG model
+    #         plt.plot(wlen, LBG_flux/np.max(LBG_flux), label='LBG', color='red', alpha=0.9, linewidth=5)
+
+    #         plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
+    #         plt.ylabel('Relative Transmission/Flux')
+    #         plt.xlim(5000, 25000)
+
+    #         # Convert x axis to microns
+    #         plt.gca().set_xticklabels([f'{x/10000:.1f}' for x in plt.gca().get_xticks()])
+
+    #         plt.ylim(0, 1.15)
+    #         #plt.legend(loc='upper right')
+    #         plt.tight_layout()
+
+    #         plt.savefig(plot_dir.parent / 'LBG_models' / f'z{redshift:.2f}_LBG.png')
+    #         #plt.close()
+
+    #     plt.show()
+
+
+    bds = loadBrownDwarfTemplates(spectral_types=['L'], sub_types=[7])
+
+    plot_dir = Path.cwd().parent.parent / 'plots' / 'filters'
 
     # Plot BD templates
     for spectral_type, (wavelength, flux) in bds.items():
 
         # Make figure
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(12, 6))
 
-        for redshift in np.arange(6.5, 7.5, 0.1):
 
-            print(f'Making figure at z={redshift:.2f}')
+        # Filters
+        euclid_filters = getFilters('euclid', plot=True, plot_kwargs={'linewidth': 4, 'alpha':0.6, 'color': 'blue'})
+        vista_filters = getFilters('vista', plot=True, plot_kwargs={'linewidth': 4, 'alpha':0.6, 'color': 'orange'})
 
-            # Make LBG model
-            wlen, LBG_flux = makeLBG(redshift=redshift, SFH_component='constant', age=(0, 13.8), massformed=10.5, metallicity=0.2, 
-                dust_type='Calzetti', Av=0.2, nebular=True, logU=-2.5, Muv=-21.)
-            
-            LBG_flux = powerLawSpectrum(wlen, 1e-30, -2., redshift=redshift)
+        # # Dummy plots for filter labels
+        plt.plot([], [], label='Euclid', color='blue', linewidth=4, alpha=0.6)
+        plt.plot([], [], label='VISTA', color='orange', linewidth=4, alpha=0.6)
 
-            wlen = np.array(wlen)
-            LBG_flux = np.array(LBG_flux)            
+        # # Brown dwarf template
+        plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.9, linewidth=4.5)
+        
+        # LBG model
+        # plt.plot(wlen, LBG_flux/np.max(LBG_flux), label='LBG', color='red', alpha=0.9, linewidth=5)
 
-            # Filters
-            euclid_filters = getFilters('euclid', plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'blue'})
-            vista_filters = getFilters('vista', plot=True, plot_kwargs={'linewidth': 2.5, 'alpha':0.6, 'color': 'orange'})
+        plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$')
+        plt.ylabel('Relative Transmission/Flux')
+        plt.xlim(5000, 25000)
 
-            # Get the magnitudes
-            mags = convolveFilters([vista_filters, euclid_filters], {redshift: (wlen, LBG_flux)})
+        # Convert x axis to microns
+        plt.gca().set_xticklabels([f'{x/10000:.1f}' for x in plt.gca().get_xticks()])
 
-            # # Dummy plots for filter labels
-            plt.plot([], [], label='Euclid', color='blue', linewidth=2.5, alpha=0.6)
-            plt.plot([], [], label='VISTA', color='orange', linewidth=2.5, alpha=0.6)
+        plt.ylim(0, 1.15)
+        plt.legend(loc='upper right')
+        plt.tight_layout()
 
-            # # Brown dwarf template
-            #plt.plot(wavelength, flux/np.max(flux), label=f'{spectral_type} dwarf', color='red', alpha=0.8, linewidth=2.5)
-            
-            # LBG model
-            plt.plot(wlen, LBG_flux/np.max(LBG_flux), label='LBG', color='red', alpha=0.8, linewidth=2.5)
 
-            plt.xlabel(r'$\lambda \ (\AA)$')
-            plt.ylabel('Relative Transmission/Flux')
-            plt.xlim(5000, 25000)
-            plt.ylim(0, 1.15)
-            #plt.legend(loc='upper right')
-            plt.tight_layout()
+        plt.savefig(plot_dir / f'{spectral_type}_BD_filters.pdf')
+        #plt.close()
 
-            #plt.savefig(plot_dir.parent / 'LBG_models' / f'z{redshift:.2f}_LBG.png')
-            #plt.close()
 
         plt.show()
 

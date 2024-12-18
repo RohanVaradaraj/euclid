@@ -50,6 +50,9 @@ class SourceExtractor:
             print(f"Catalog {output_cat} exists. Skipping.")
             return None
 
+        weight_dir = Path.cwd() / 'images' / 'cutouts' / 'weights'
+        weight_name = image_name.split('/')[-1].split('.fits')[0] + '_wht.fits'
+
         command = (
             f"/mnt/users/videouser/sextractor/bin/sex  {str(image_dir / image_name)} "
             f"-c {str(input_sex)} "
@@ -57,8 +60,9 @@ class SourceExtractor:
             f"-MAG_ZEROPOINT 30.0 "
             f"-PHOT_APERTURES {apStringPix} "
             f"-CHECKIMAGE_TYPE SEGMENTATION "
+            f"-CHECKIMAGE_NAME seg.fits "
             f"-WEIGHT_TYPE MAP_WEIGHT "
-            f"-WEIGHT_IMAGE {str(image_dir / 'wht' / image_name.split('.fits')[0] + '_wht.fits')} "
+            f"-WEIGHT_IMAGE {weight_dir / weight_name} "
         )
 
         shellFile = shell_dir / f"run_se_{image_name.split('/')[-1].split('.fits')[0]}.sh"
