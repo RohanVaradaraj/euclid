@@ -37,3 +37,6 @@
 /src/injection_recovery/catalogues
 /src/injection_recovery/shell_scripts
 /src/injection_recovery/*.fits
+
+# Ignore bagpipes outputs
+/src/sed_fitting/pipes/*
