@@ -66,8 +66,9 @@ if run_type != '':
     filename_components.append(run_type)
 
 output_file = '_'.join(filename_components) + '.fits'
+print('Output file: ', output_file)
 
-print('Saving to: ', output_file)
+
 
 #! Set up directories
 if run_type != '':
@@ -79,16 +80,20 @@ zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / zphot_fol
 print('Taking SEDs from: ', zphot_dir)
 
 # Get corresponding dusty, bd and lya zphot dirs too
-zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + run_type + '_' + folder)
+if run_type != '':
+    make_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + run_type + '_' + folder) 
+else:
+    make_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + folder) 
 
-dusty_zphot_dir = zphot_dir('dusty')
-bd_zphot_dir = zphot_dir('bd')
-lya_zphot_dir = zphot_dir('lya')
+dusty_zphot_dir = make_zphot_dir('dusty')
+bd_zphot_dir = make_zphot_dir('bd')
+lya_zphot_dir = make_zphot_dir('lya')
 
 #! Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
 parent_cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 parent_cat_name = generate_selection_name('COSMOS', filters)
+print('Loading parent catalogue: ', parent_cat_name)
 
 # Load the parent catalogue
 t = Table.read(parent_cat_dir / parent_cat_name)
@@ -130,6 +135,10 @@ t_filtered.write(parent_cat_dir / output_file, overwrite=True)
 #? Now, of these, we need those that made the VISTA SED cut.
 vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
 
+#? If masking the VISTA only, take from the initial run.
+if run_type == '':
+    vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / base_det
+
 # Plot the filtered and unfiltered objects in RA,DEC
 # plt.figure(figsize=(8, 6))
 # plt.scatter(t['RA'], t['DEC'], s=3, label='All UVISTA objects')
@@ -139,6 +148,7 @@ vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fit
 # plt.gca().invert_xaxis()
 # plt.legend()
 # plt.show()
+# exit()
 
 #! Loop through the sed directory and move those outside the mask to a new directory
 # New directory to place things outside footprint
@@ -146,12 +156,20 @@ outside_euclid_dir = zphot_dir.parents[0] / (zphot_folder + '_outside_footprint'
 
 # Corresponding directories for the other selections, to copy into
 base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
-folder_creator = lambda folder: base_dir / f"{base_det}_{run_type}_best_{folder}"
+if run_type != '':
+    folder_creator = lambda folder: base_dir / f"{base_det}_{run_type}_best_{folder}"
+else:
+    folder_creator = lambda folder: base_dir / f"{base_det}_best_{folder}"
 
 highz_dir = folder_creator('highz')
 dusty_dir = folder_creator('dusty')
 bd_dir = folder_creator('bd')
 lya_dir = folder_creator('lya')
+
+print('Copying SEDs to: ', highz_dir)
+print('Copying SEDs to: ', dusty_dir)
+print('Copying SEDs to: ', bd_dir)
+print('Copying SEDs to: ', lya_dir)
 
 # If overwrite, empty the above directories
 if overwrite:
@@ -166,12 +184,14 @@ if overwrite:
     print('Deleted all previous .spec files in the best fit highz, dusty, bd and lya directories.')
 
 # Corresponding not-in-footprint directories for the above
-outside_folder_creator = lambda folder, dir: dir.parents[0] / f"{base_det}_{run_type}_{folder}_outside_footprint"
+if run_type != '':
+    outside_folder_creator = lambda folder, dir: dir.parents[0] / f"{base_det}_{run_type}_{folder}_outside_footprint"
+else:
+    outside_folder_creator = lambda folder, dir: dir.parents[0] / f"{base_det}_{folder}_outside_footprint"
 
 outside_dusty_dir = outside_folder_creator('dusty', dusty_dir)
 outside_bd_dir = outside_folder_creator('bd', bd_dir)
 outside_lya_dir = outside_folder_creator('lya', lya_dir)
-
 
 # If it doesn't exist, make it
 dirs_to_create = [outside_euclid_dir, outside_dusty_dir, outside_bd_dir, outside_lya_dir]
@@ -191,7 +211,6 @@ if overwrite:
         for file in dir.glob('*.spec'):
             file.unlink()
     print('Deleted all previous .spec files in outside directories.')
-``
 
 # Loop through the files
 for spec_file in spec_files:

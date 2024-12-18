@@ -15,13 +15,13 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": 'with_euclid',                 #? Options: '', 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "run_type": '',                 #? Options: '', 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": True,
     "steps": {
         "selection": False,         #? Initial dropout selection
         "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": True,          #? Plot the SEDs
+        "plotting": False,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs
         "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
@@ -31,7 +31,7 @@ config = {
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
 #! Whether to run the masking of the data to the euclid footprint
-mask_euclid = True
+mask_euclid = False
 
 #! Specific combinations of flags.
 flag_combinations = [
@@ -48,7 +48,7 @@ loop_run_types = False
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'z7' # 'best_highz # 'best_bd'
+plot_object_type = 'best_highz' # 'best_bd'
 
 #! Base filter sets
 base_filters = {
@@ -191,14 +191,14 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! -----------------------------
     if config["steps"]["extract_seds"]:
 
-        #? For VISTA+Euclid, get the good SEDs within the Euclid footprint
-        if run_type == 'with_euclid':
+        #? For VISTA+Euclid, get the good SEDs within the Euclid footprint. Don't need to run chi2_sed_cuts.py on top.
+        #if run_type == 'with_euclid':
 
-            if mask_euclid:
-                print('Extracting good SEDs that are within the Euclid footprint...')
+        if mask_euclid:
+            print('Extracting good SEDs that are within the Euclid footprint...')
 
-                mask_script = Path.cwd() / 'mask_euclid_pointing.py'
-                subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+            mask_script = Path.cwd() / 'mask_euclid_pointing.py'
+            subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
 
         #? Otherwise, Extract the SEDs from the chi2 etc.
         else:

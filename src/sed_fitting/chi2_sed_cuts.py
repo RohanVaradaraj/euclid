@@ -55,8 +55,10 @@ dusty_dir = lbg_dir + run_type_str + '_dusty'
 lya_dir = lbg_dir + run_type_str + '_lya'
 
 # Need the outside_footprint directory to exclude objects outside the Euclid footprint
-outside_footprint_dir = base_dir / (lbg_dir + '_' + run_type + '_outside_footprint')
-print(outside_footprint_dir)
+if run_type != '':
+    outside_footprint_dir = base_dir / (lbg_dir + '_' + run_type_str + '_outside_footprint')
+else:
+    outside_footprint_dir = base_dir / (lbg_dir + '_outside_footprint')
 
 # Set up the output directories where good SEDs will be stored
 output_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
