@@ -95,7 +95,10 @@ if overwrite:
             file.unlink()
             
 # Go through files in visual selection directory
-spec_files = glob.glob(str(zphot_dir / '*.spec'))
+# spec_files = glob.glob(str(zphot_dir / '*.spec'))
+# spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
+
+spec_files = glob.glob(str(good_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 
 number_low_z = 0

@@ -204,7 +204,7 @@ if det_list == ['Y', 'J']:
     filter_dict.pop('f150w')
     filter_dict.pop('f277w')
     #filter_dict.pop('f444w')
-    print('Removed VIS, Ye, Je, He', 'f115w', 'f150w', 'f277w', 'f444w')
+    print('f115w', 'f150w', 'f277w', 'f444w')
 
 if bools[0]:
     filter_dict.pop('HSC-G_DR3')
@@ -212,7 +212,7 @@ if bools[0]:
     print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
 
 # If running only VISTA: Remove items with keys VIS, Ye, Je, He
-if 'no_euclid' in input_name:
+if ('no_euclid' in input_name) or (run_type == ''):
     filter_dict.pop('VIS')
     filter_dict.pop('Ye')
     filter_dict.pop('Je')
@@ -244,6 +244,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
     for i, spec_file in enumerate(spec_files):
         print(f'Object {i+1} of {len(spec_files)}')
+        print(spec_file)
 
         # Read in the .spec file
         file = parse_spec_file(spec_file)
@@ -276,8 +277,11 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Match ID with the input file to find the object.
         object_flux = flux_table[idx]
+        
+        # Take values of astropy row and put into array
+        object_flux = np.array(object_flux[:])
 
-        # Print statements to check filters are in correct order.
+        #? Print statements to check filters are in correct order.
         # print(object_flux.colnames)
         # exit()
 
@@ -390,7 +394,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         if int(zphot_2) == -1:
             secondary_is_stellar = True
 
-        #chi2_star = round(params['Chi2'][-1], 1)
+        chi2_star = round(params['Chi2'][-1], 1)
         print('STELLAR SOLUTION: ', chi2_star)
 
         stellar_model = params['Model'][-1]

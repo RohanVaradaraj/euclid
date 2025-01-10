@@ -339,8 +339,8 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
 
     plt.tight_layout()
     plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
-    plt.savefig(plot_dir / f'LAE_stamps_10arcsec.pdf')
-    plt.show()
+    #plt.savefig(plot_dir / f'LAE_stamps_10arcsec.pdf')
+    #plt.show()
 
     return fig, ax
     #plt.show()

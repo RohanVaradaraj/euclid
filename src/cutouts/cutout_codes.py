@@ -705,8 +705,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         plt.suptitle(plot_title)
 
     plt.tight_layout()
-    plt.savefig(plot_dir / f'LAE_stamps_Euclid_CWEB_6arcsec.pdf')
-    plt.show()
+    #plt.savefig(plot_dir / f'LAE_stamps_Euclid_CWEB_6arcsec.pdf')
+    #plt.show()
 
     if save_cutout:
         plot_title = str(plot_title)
@@ -948,7 +948,7 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
         Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
-        #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
+        #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   #
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 
 
