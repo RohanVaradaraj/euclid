@@ -127,7 +127,7 @@ yerr_upper = []
 mag_to_use = VISTA_J_mags
 
 # Plot fraction of is_bd in euclid over is_bd in vista in bins of magnitude
-bins = np.arange(np.min(mag_to_use), np.max(mag_to_use), 0.4)
+bins = np.arange(np.min(mag_to_use), np.max(mag_to_use), 0.3)
 
 c = 0.68 # Confidence level
 
@@ -168,14 +168,15 @@ fig, ax1 = plt.subplots(figsize=(8, 6))
 ax1.errorbar(bins[:-1], fraction_bd, yerr=[yerr_lower, yerr_upper], 
              fmt='o-', color='black', capsize=3, capthick=2, linewidth=3, markersize=10)
 ax1.set_xlabel(r'$J$ (AB mag)')
-ax1.set_ylabel('Fraction of BDs Identified by Both Euclid and VISTA')
+ax1.set_ylabel('VISTA BD identification success rate')
 
 # Create a secondary x-axis for absolute UV magnitude at z=7
 secax = ax1.secondary_xaxis('top', functions=(apparent_to_absolute, absolute_to_apparent))
 
 secax.set_xlabel(r'$M_{\mathrm{UV}}$')
 secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
-
+plot_dir = Path.cwd().parents[1] / 'plots' / 'brown_dwarfs'
+plt.savefig(plot_dir / 'BD_identification_rate_VISTA.pdf')
 plt.show()
 
 
