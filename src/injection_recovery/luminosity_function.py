@@ -77,6 +77,9 @@ class LuminosityFunction:
         uniform_randoms = np.random.uniform(0, 1, self.n_samples)
         samples_Muv = np.interp(uniform_randoms, cdf, M_values)
 
+        # Snap samples_Muv to the Muv grid
+        samples_Muv = np.round(samples_Muv / self.dMuv) * self.dMuv
+
         return samples_Muv
 
 
@@ -92,7 +95,7 @@ if __name__ == "__main__":
     M_samples = luminosity_function.sample_luminosities()
 
     # Plot histogram of M_samples
-    plt.hist(M_samples, bins=100, density=True, alpha=0.6, color='g', label='Muv Samples')
+    plt.hist(M_samples, bins=100, alpha=0.6, color='g', label='Muv Samples', density=False)
 
     # Plot normalised luminosity function for Muv to compare with the histogram
     M_values, phi_values = luminosity_function.distribution()

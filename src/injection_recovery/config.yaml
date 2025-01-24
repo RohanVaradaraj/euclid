@@ -4,20 +4,20 @@ luminosity_function:
   beta: -4.81
   M_star: -21.01
   phi_star: 10**(-3.74)
-  Muv_range: [-25, -20]  # Minimum and maximum mag values
+  Muv_range: [-23, -20]  # Minimum and maximum mag values
   reference: "Harikane+24"
-  n_samples: 1000
+  n_samples: 100000
   dMuv: 0.1
 
 source_injection:
   beta_mean: -2
   beta_std: 0.2
-  zmin: 6.5
-  zmax: 7.5
+  zmin: 6.25
+  zmax: 7.75
   dz: 0.05
   filters: ['Y', 'J']
   image_size_arcmin: 10
-  n_images: 1000
+  n_images: 1
   base_image: "UVISTA_YJ_DR6.fits"
 
 source_extraction:

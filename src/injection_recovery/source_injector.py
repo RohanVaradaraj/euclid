@@ -19,6 +19,7 @@ from scipy.integrate import simps
 from photutils.aperture import CircularAperture
 from astropy.io import fits
 from astropy.wcs import WCS
+from luminosity_function import LuminosityFunction
 
 class SourceInjector:
     def __init__(self, samples, params):
@@ -75,14 +76,11 @@ class SourceInjector:
         # Define a grid for redshift with dz = 0.05
         z_grid = np.arange(self.zmin, self.zmax + self.dz, self.dz)
 
-        z_prob = np.ones_like(z_grid)  # Uniform distribution over z_grid
-        
-        # Normalize the probability distribution to form a valid CDF
-        z_cdf = np.cumsum(z_prob) / np.sum(z_prob)
-        
-        # Sample redshifts from the grid using inverse transform sampling
-        uniform_randoms = np.random.uniform(0, 1, n)
-        z_samples = np.interp(uniform_randoms, z_cdf, z_grid)
+        # Draw redshifts from a uniform distribution
+        z_samples = np.random.uniform(self.zmin, self.zmax, n)
+
+        # Then snap the redshifts to the grid
+        z_samples = np.round(z_samples / self.dz) * self.dz
 
         # Draw beta slopes from a normal distribution
         beta_samples = np.random.normal(self.beta_mean, self.beta_std, n)
@@ -233,19 +231,19 @@ class SourceInjector:
     def measure_psf_flux(self):
 
         # Place 1.8 arcsec diameter aperture at centre of image
-        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=1.8 / 0.15)
+        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=0.9 / 0.15)
 
         # Measure the flux in the aperture
         flux, _ = aperture.do_photometry(self.psf)
 
         # PSF correction
-        flux /= 0.69
+        flux /= 0.72
 
         return flux
 
     
     
-    def scale_psf_to_Muv(self, fluxes):
+    def scale_psf_to_Muv(self, fluxes, Muv, z):
         """
         Scale the N = len(samples) psfs we will inject into the image to the desired Y+J band magnitude.
 
@@ -253,22 +251,33 @@ class SourceInjector:
         :return: Array of scaled PSFs.
         """
 
-        # Get the PSF flux
-        psf_flux = self.measure_psf_flux()
+        # Get the PSF flux, to be scaled
+        flux_count = self.measure_psf_flux()
 
         # Check if there exists a combined filter
         if self.combined_filter is None:
             fluxes = fluxes[self.filters]
+            target_mags = -2.5 * np.log10(fluxes) - 48.6
         else:
             fluxes = fluxes[self.combined_filter]
+            target_mags = -2.5 * np.log10(fluxes) - 48.6
 
         vista_zpt = 30.
 
-        # Convert the cgs fluxes to counts, which are the units of the image
-        fluxes *= 10** ((48.6 + vista_zpt)/2.5)
+        # Convert flux count to flux
+        flux = flux_count  * 10 **(-0.4 * (vista_zpt + 48.6))
+
+        # Compute apparent magnitude, to be rescaled to mags
+        app_mag = -2.5 * np.log10(flux) - 48.6
+
+        # Get luminosity distance
+        DL = self.cosmo.luminosity_distance(z).value * 10**6  # in pc
+
+        # # Compute absolute magnitude
+        abs_mag = app_mag - 5 * np.log10(DL / 10) + 2.5 * np.log10(1 + z)
 
         # Calculate the scaling factor
-        scaling_factors = fluxes / psf_flux
+        scaling_factors = 10 ** (0.4 * (app_mag - Muv))
 
         # Make N copies of the PSF
         scaled_psfs = np.array([scaling_factors[i] * self.psf for i in range(len(scaling_factors))])
@@ -277,17 +286,19 @@ class SourceInjector:
 
 
 
-    def inject_sources(self, image_name, x_positions, y_positions, scaled_psfs, overwrite=False):
+    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False):
         """
-        Inject the sources into the image at the given positions.
-        
+        Inject the sources into the image at the given positions, accounting for noise
+        by remeasuring the flux and adjusting the injection.
+
         :param image_name: Path to the FITS file containing the image to inject the sources into.
         :param x_positions: Array of x positions.
         :param y_positions: Array of y positions.
+        :param Muv_array: Array of Muv magnitudes.
+        :param z_array: Array of redshifts.
         :param scaled_psfs: List or array of scaled PSFs.
         :return: None. Saves the injected image to disk.
         """
-
         image_dir = Path.cwd() / 'images' / 'cutouts' 
         injected_dir = Path.cwd() / 'images' / 'injected'
 
@@ -307,11 +318,13 @@ class SourceInjector:
         # Create a blank overlay to hold the injections
         overlay = np.zeros_like(image)
 
-        # Iterate over each PSF (vectorization limited by differing injection positions)
+        # Iterate over each PSF
         for i in range(n_psfs):
             psf = scaled_psfs[i]
             x = x_positions[i]
             y = y_positions[i]
+            Muv = Muv_array[i]
+            z = z_array[i]
 
             # Get PSF size
             psf_height, psf_width = psf.shape
@@ -327,7 +340,7 @@ class SourceInjector:
             psf_y_start = max(0, psf_height // 2 - y)
             psf_y_end = psf_y_start + (y_end - y_start)
 
-            # Ensure the slices match in size
+            # Add the PSF to the overlay
             overlay[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
 
         # Add the overlay to the image
@@ -345,14 +358,19 @@ class SourceInjector:
 if __name__ == '__main__':
 
     config = load_config("config.yaml")
+    lf_config = config['luminosity_function']
     injection_config = config['source_injection']
 
-    Muv_sample = np.linspace(-22, -20, 5)
+    luminosity_function = LuminosityFunction(lf_config)
+    Muv_sample = luminosity_function.sample_luminosities()
+    #Muv_sample = np.linspace(-22, -20, 5)
+
     source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
     z, beta = source_injector.draw_parameters()
-    # plt.hist(z)
-    # plt.hist(beta)
-    # plt.show()
+    plt.hist(z, bins=100)
+    #plt.hist(beta, bins=100)
+    plt.show()
+    exit()
     wavelengths, fluxes = source_injector.generate_seds(z, beta)
     scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
     filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
