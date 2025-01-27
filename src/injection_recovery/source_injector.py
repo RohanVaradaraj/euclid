@@ -206,8 +206,11 @@ class SourceInjector:
         # Convert image size from arcmin to pixels
         image_size = image_size * 60 / 0.15
 
-        x = np.random.randint(0, image_size, len(self.samples))
-        y = np.random.randint(0, image_size, len(self.samples))
+        # Buffer for PSF size
+        psf_buffer = (75 // 2) + 1
+
+        x = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
+        y = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
 
         return x, y
 
@@ -228,7 +231,7 @@ class SourceInjector:
 
 
 
-    def measure_psf_flux(self):
+    def measure_psf_flux(self, plot=False):
 
         # Place 1.8 arcsec diameter aperture at centre of image
         aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=0.9 / 0.15)
@@ -236,8 +239,11 @@ class SourceInjector:
         # Measure the flux in the aperture
         flux, _ = aperture.do_photometry(self.psf)
 
-        # PSF correction
-        flux /= 0.72
+        # Draw aperture on PSF
+        if plot:
+            plt.imshow(self.psf, origin='lower')
+            aperture.plot(color='red')
+            plt.show()
 
         return flux
 
@@ -267,6 +273,9 @@ class SourceInjector:
         # Convert flux count to flux
         flux = flux_count  * 10 **(-0.4 * (vista_zpt + 48.6))
 
+        # PSF correction
+        flux /= 0.72
+
         # Compute apparent magnitude, to be rescaled to mags
         app_mag = -2.5 * np.log10(flux) - 48.6
 
@@ -277,7 +286,7 @@ class SourceInjector:
         abs_mag = app_mag - 5 * np.log10(DL / 10) + 2.5 * np.log10(1 + z)
 
         # Calculate the scaling factor
-        scaling_factors = 10 ** (0.4 * (app_mag - Muv))
+        scaling_factors = 10 ** (0.4 * (abs_mag - Muv))
 
         # Make N copies of the PSF
         scaled_psfs = np.array([scaling_factors[i] * self.psf for i in range(len(scaling_factors))])
@@ -285,38 +294,48 @@ class SourceInjector:
         return scaled_psfs
 
 
-
-    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False):
+    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False, plot_each_source=False):
         """
-        Inject the sources into the image at the given positions, accounting for noise
-        by remeasuring the flux and adjusting the injection.
+        Inject sources into the image and adjust the corresponding inverse variance weight image.
 
         :param image_name: Path to the FITS file containing the image to inject the sources into.
+        :param weight_name: Path to the FITS file containing the weight image.
         :param x_positions: Array of x positions.
         :param y_positions: Array of y positions.
         :param Muv_array: Array of Muv magnitudes.
         :param z_array: Array of redshifts.
         :param scaled_psfs: List or array of scaled PSFs.
-        :return: None. Saves the injected image to disk.
+        :param overwrite: Whether to overwrite existing files.
+        :return: None. Saves the injected image and weight image to disk.
         """
-        image_dir = Path.cwd() / 'images' / 'cutouts' 
+        image_dir = Path.cwd() / 'images' / 'cutouts'
         injected_dir = Path.cwd() / 'images' / 'injected'
 
         if overwrite:
-            for file in injected_dir.glob('*'):
+            for file in injected_dir.glob('*.fits'):
+                file.unlink()
+            for file in injected_dir.glob('weights/*.fits'):
                 file.unlink()
 
-        # Open the image
+        # Open the science image
         with fits.open(image_dir / image_name) as hdul:
             image = hdul[0].data
             header = hdul[0].header
             wcs = WCS(header)
 
+        # Open the weight image
+        weight_name = image_name.split('.fits')[0] + '_wht.fits'
+        with fits.open(image_dir / 'weights' / weight_name) as hdul_weight:
+            weight_image = hdul_weight[0].data
+
         image_height, image_width = image.shape
+        print(image.shape)
         n_psfs = len(scaled_psfs)
 
-        # Create a blank overlay to hold the injections
+        # Create blank overlays to hold the injections
         overlay = np.zeros_like(image)
+
+        weight_overlay = np.zeros_like(weight_image)
 
         # Iterate over each PSF
         for i in range(n_psfs):
@@ -328,6 +347,7 @@ class SourceInjector:
 
             # Get PSF size
             psf_height, psf_width = psf.shape
+            psf_half_height, psf_half_width = psf_height // 2, psf_width // 2
 
             # Ensure injection is within bounds, and calculate slices for both PSF and image
             x_start, x_end = max(0, x - psf_width // 2), min(image_width, x + psf_width // 2)
@@ -340,17 +360,103 @@ class SourceInjector:
             psf_y_start = max(0, psf_height // 2 - y)
             psf_y_end = psf_y_start + (y_end - y_start)
 
-            # Add the PSF to the overlay
-            overlay[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
+            x_min = x - psf_half_width
+            x_max = x + psf_half_width + 1
+            y_min = y - psf_half_height
+            y_max = y + psf_half_height + 1
 
-        # Add the overlay to the image
+
+            print('Image number:' , i)
+            print('Inject at:', x, y)
+            print(x_start, x_end, y_start, y_end)
+
+            # Add the PSF to the overlay for the science image
+            #overlay[y_start:y_end+1, x_start:x_end+1] += psf #[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
+            #overlay[y_min:y_max, x_min:x_max] += psf
+            overlay[x_min:x_max, y_min:y_max] += psf
+
+
+            # Update the weight image
+            for yy in range(y_start, y_end):
+                for xx in range(x_start, x_end):
+                    # Original variance
+                    sigma_original = 1 / np.sqrt(weight_image[yy, xx]) if weight_image[yy, xx] > 0 else np.inf
+                    #print(sigma_original)
+                    # PSF flux at this pixel
+                    psf_flux = psf[yy - y_start + psf_y_start, xx - x_start + psf_x_start]
+                    # Flux contribution from the PSF
+                    psf_flux = psf[yy - y_start + psf_y_start, xx - x_start + psf_x_start]
+                    #print(psf_flux)
+                    # Convert psf flux back into flux count
+                    psf_flux = psf_flux * 10**(-0.4*(48.6+30))
+                    #print(psf_flux)
+                    # New variance and weight
+                    sigma_new = np.sqrt(sigma_original**2 + psf_flux)
+                    #print(sigma_new)
+                    weight_overlay[yy, xx] = 1 / sigma_new**2 if sigma_new > 0 else 0
+
+
+        # Add the overlays to the original images
         image += overlay
+        weight_image = np.where(weight_overlay > 0, weight_overlay, weight_image)
+
+        #! Plot the injected sources
+        if plot_each_source:
+            cutout_size = 500
+            for i in range(len(x_positions)):
+
+                x_center, y_center = x_positions[i], y_positions[i]
+                cutout = image[
+                    y_center - cutout_size // 2 : y_center + cutout_size // 2,
+                    x_center - cutout_size // 2 : x_center + cutout_size // 2,
+                ]
+                cutout_weight = weight_image[
+                    y_center - cutout_size // 2 : y_center + cutout_size // 2,
+                    x_center - cutout_size // 2 : x_center + cutout_size // 2,  
+                ]                
+
+                #* SCI
+                plt.figure(figsize=(6, 6))
+                plt.imshow(cutout, origin='lower', vmin=0, vmax=2, cmap='viridis')
+                
+                # Add crosshair
+                center = cutout_size // 2
+                cross_length = 7
+                gap = 3  # Gap around the center
+
+                plt.plot(np.arange(center + gap, center + cross_length), [center] * (cross_length - gap),  color='white', linewidth=1.5)
+                plt.plot([center] * (cross_length - gap), np.arange(center + gap, center + cross_length), color='white', linewidth=1.5)
+                
+                plt.title(f'Muv: {Muv_array[i]:.2f}, z: {z_array[i]:.2f}', fontsize=12)
+                plt.show()
+                plt.close()
+
+                #* WHT
+                plt.figure(figsize=(6, 6))
+                plt.imshow(cutout_weight, origin='lower', cmap='viridis')
+                
+                # Add crosshair
+                center = cutout_size // 2
+                cross_length = 7
+                gap = 3  # Gap around the center
+
+                plt.plot(np.arange(center + gap, center + cross_length), [center] * (cross_length - gap),  color='white', linewidth=1.5)
+                plt.plot([center] * (cross_length - gap), np.arange(center + gap, center + cross_length), color='white', linewidth=1.5)
+                
+                plt.title(f'Muv: {Muv_array[i]:.2f}, z: {z_array[i]:.2f}', fontsize=12)
+                plt.show()
+                plt.close()
 
         # Save the injected image
-        hdu = fits.PrimaryHDU(image, header=header)
-        hdu.writeto(injected_dir / image_name, overwrite=True)
+        hdu_image = fits.PrimaryHDU(image, header=header)
+        hdu_image.writeto(injected_dir / image_name, overwrite=True)
+
+        # Save the updated weight image
+        hdu_weight = fits.PrimaryHDU(weight_image, header=header)
+        hdu_weight.writeto(injected_dir / 'weights' / weight_name, overwrite=True)
 
         return wcs
+
 
 
 
@@ -360,6 +466,7 @@ if __name__ == '__main__':
     config = load_config("config.yaml")
     lf_config = config['luminosity_function']
     injection_config = config['source_injection']
+    image_size = injection_config['image_size_arcmin']
 
     luminosity_function = LuminosityFunction(lf_config)
     Muv_sample = luminosity_function.sample_luminosities()
@@ -367,36 +474,38 @@ if __name__ == '__main__':
 
     source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
     z, beta = source_injector.draw_parameters()
-    plt.hist(z, bins=100)
+    #plt.hist(z, bins=100)
     #plt.hist(beta, bins=100)
-    plt.show()
-    exit()
+    #plt.show()
+
     wavelengths, fluxes = source_injector.generate_seds(z, beta)
     scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
     filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
 
+    #! Plotting synthetic SEDs and fluxes
     # x_Y = np.full(len(Muv_sample), 10214)
     # x_J = np.full(len(Muv_sample), 12544)
     # plt.plot(wavelengths, scaled_fluxes.T)
     # plt.scatter(x_Y, filter_fluxes['Y'], color='red')
     # plt.scatter(x_J, filter_fluxes['J'], color='red')
-    
-    # for i, Muv in enumerate(samples):
-    #     wavelengths, flux = source_injector.generate_sed(z[i], beta[i])
-    #     scaled_flux = source_injector.scale_sed_to_muv(wavelengths, flux, Muv, z[i])
-    #     fluxes = source_injector.calculate_fluxes(wavelengths, scaled_flux)
-
-        # plt.plot(wavelengths, scaled_flux, label=f'Muv = {Muv:.2f}')
-        # plt.scatter([10214], fluxes['Y'], label='Y', color='red')
-        # plt.scatter([12544], fluxes['J'], label='J', color='red')
-
     # plt.yscale('log')
     # plt.ylim(3e-32, 1e-29)
     # plt.xlim(3000, 40000)
-    #plt.show()
+    # plt.show()
 
+    #! Plotting injected sources
+    x, y = source_injector.generate_random_positions(image_size)
 
-    #! Testing injection
+    #! Get PSF fluxes corresponding to input Muv
+    source_injector.get_psf()
+    scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
+
+    #! Inject sources
+    image_name = 'UVISTA_YJ_DR6_cutout_2423_18243_4000_pix_10_arcmin.fits'
+    wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs, overwrite=True, plot_each_source=True)
+    
+    #! Convert x,y to RA, Dec
+    ra, dec = wcs.all_pix2world(x, y, 0)
 
 
 

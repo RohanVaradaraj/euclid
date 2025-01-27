@@ -45,7 +45,7 @@ SEEING_FWHM	0.7	        # stellar FWHM in arcsec
 STARNNW_NAME	$EXTRACTOR_DIR/default.nnw	# Neural-Network_Weight table filename
 
 #------------------------------ Background -----------------------------------
-BACK_SIZE	32		# Background mesh: <size> or <width>,<height>
+BACK_SIZE	64		# Background mesh: <size> or <width>,<height>
 BACK_FILTERSIZE	9		# Background filter: <size> or <width>,<height>
 
 BACKPHOTO_TYPE	LOCAL		# can be "GLOBAL" or "LOCAL" (*)
@@ -60,7 +60,7 @@ CHECKIMAGE_TYPE NONE     # can be one of "NONE", "BACKGROUND",
 				# "-OBJECTS", "SEGMENTATION", "APERTURES",
 				# or "FILTERED" (*)
 CHECKIMAGE_NAME	r2_UDS-DR8-J_bin2x2seg.fits    # Filename 
-`
+
 #--------------------- Memory (change with caution!) -------------------------
 
 MEMORY_OBJSTACK	65000		# number of objects in stack

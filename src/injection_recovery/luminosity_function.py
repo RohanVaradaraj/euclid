@@ -63,22 +63,35 @@ class LuminosityFunction:
 
 
 
-    def sample_luminosities(self):
+    def sample_luminosities(self, uniform=True):
         """
         Sample Muv from the luminosity function using inverse transform sampling.
+
+        Parameters:
+            uniform (bool): Whether to sample from a uniform distribution.
+
+        Returns:
+            samples_Muv (array): The sampled Muv values.
         """
         M_values = np.arange(self.Muv_range[0], self.Muv_range[1], self.dMuv)
         phi_values = np.array([self.phi(M) for M in M_values])
+
+        if uniform:
+            samples_Muv = np.random.uniform(self.Muv_range[0], self.Muv_range[1], self.n_samples)
+
+            # Snap samples_Muv to the Muv grid
+            samples_Muv = np.round(samples_Muv / self.dMuv) * self.dMuv
         
-        # Normalize the phi values to create a cumulative distribution
-        cdf = np.cumsum(phi_values) / np.sum(phi_values)
+        else:
+            # Normalize the phi values to create a cumulative distribution
+            cdf = np.cumsum(phi_values) / np.sum(phi_values)
 
-        # Use vectorized interpolation to generate samples
-        uniform_randoms = np.random.uniform(0, 1, self.n_samples)
-        samples_Muv = np.interp(uniform_randoms, cdf, M_values)
+            # Use vectorized interpolation to generate samples
+            uniform_randoms = np.random.uniform(0, 1, self.n_samples)
+            samples_Muv = np.interp(uniform_randoms, cdf, M_values)
 
-        # Snap samples_Muv to the Muv grid
-        samples_Muv = np.round(samples_Muv / self.dMuv) * self.dMuv
+            # Snap samples_Muv to the Muv grid
+            samples_Muv = np.round(samples_Muv / self.dMuv) * self.dMuv
 
         return samples_Muv
 
@@ -92,7 +105,7 @@ if __name__ == "__main__":
     luminosity_function = LuminosityFunction(luminosity_function_params)
 
     # Sample Muv values
-    M_samples = luminosity_function.sample_luminosities()
+    M_samples = luminosity_function.sample_luminosities(uniform=True)
 
     # Plot histogram of M_samples
     plt.hist(M_samples, bins=100, alpha=0.6, color='g', label='Muv Samples', density=False)
