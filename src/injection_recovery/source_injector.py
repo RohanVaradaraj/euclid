@@ -206,8 +206,8 @@ class SourceInjector:
         # Convert image size from arcmin to pixels
         image_size = image_size * 60 / 0.15
 
-        # Buffer for PSF size
-        psf_buffer = (75 // 2) + 1
+        # Buffer for PSF size, plus some extra pixels
+        psf_buffer = (75 // 2) + 20
 
         x = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
         y = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
@@ -296,25 +296,22 @@ class SourceInjector:
 
     def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False, plot_each_source=False):
         """
-        Inject sources into the image and adjust the corresponding inverse variance weight image.
+        Inject sources into the image.
 
         :param image_name: Path to the FITS file containing the image to inject the sources into.
-        :param weight_name: Path to the FITS file containing the weight image.
         :param x_positions: Array of x positions.
         :param y_positions: Array of y positions.
         :param Muv_array: Array of Muv magnitudes.
         :param z_array: Array of redshifts.
         :param scaled_psfs: List or array of scaled PSFs.
         :param overwrite: Whether to overwrite existing files.
-        :return: None. Saves the injected image and weight image to disk.
+        :return: wcs of new imahe. Saves the injected image to disk.
         """
         image_dir = Path.cwd() / 'images' / 'cutouts'
         injected_dir = Path.cwd() / 'images' / 'injected'
 
         if overwrite:
             for file in injected_dir.glob('*.fits'):
-                file.unlink()
-            for file in injected_dir.glob('weights/*.fits'):
                 file.unlink()
 
         # Open the science image
@@ -323,19 +320,11 @@ class SourceInjector:
             header = hdul[0].header
             wcs = WCS(header)
 
-        # Open the weight image
-        weight_name = image_name.split('.fits')[0] + '_wht.fits'
-        with fits.open(image_dir / 'weights' / weight_name) as hdul_weight:
-            weight_image = hdul_weight[0].data
-
         image_height, image_width = image.shape
-        print(image.shape)
         n_psfs = len(scaled_psfs)
 
         # Create blank overlays to hold the injections
         overlay = np.zeros_like(image)
-
-        weight_overlay = np.zeros_like(weight_image)
 
         # Iterate over each PSF
         for i in range(n_psfs):
@@ -365,40 +354,22 @@ class SourceInjector:
             y_min = y - psf_half_height
             y_max = y + psf_half_height + 1
 
+            if plot_each_source:
+                # Print useful information for checking plots
+                print('Image number:' , i+1)
+                print('Inject at:', x, y)
+                print(x_start, x_end, y_start, y_end)
 
-            print('Image number:' , i)
-            print('Inject at:', x, y)
-            print(x_start, x_end, y_start, y_end)
+                # Check if image is empty at these coords
+                image_sum = np.sum(image[y_start:y_end, x_start:x_end])
+                print('Image sum:', image_sum)
+            
 
             # Add the PSF to the overlay for the science image
-            #overlay[y_start:y_end+1, x_start:x_end+1] += psf #[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
-            #overlay[y_min:y_max, x_min:x_max] += psf
-            overlay[x_min:x_max, y_min:y_max] += psf
-
-
-            # Update the weight image
-            for yy in range(y_start, y_end):
-                for xx in range(x_start, x_end):
-                    # Original variance
-                    sigma_original = 1 / np.sqrt(weight_image[yy, xx]) if weight_image[yy, xx] > 0 else np.inf
-                    #print(sigma_original)
-                    # PSF flux at this pixel
-                    psf_flux = psf[yy - y_start + psf_y_start, xx - x_start + psf_x_start]
-                    # Flux contribution from the PSF
-                    psf_flux = psf[yy - y_start + psf_y_start, xx - x_start + psf_x_start]
-                    #print(psf_flux)
-                    # Convert psf flux back into flux count
-                    psf_flux = psf_flux * 10**(-0.4*(48.6+30))
-                    #print(psf_flux)
-                    # New variance and weight
-                    sigma_new = np.sqrt(sigma_original**2 + psf_flux)
-                    #print(sigma_new)
-                    weight_overlay[yy, xx] = 1 / sigma_new**2 if sigma_new > 0 else 0
-
+            overlay[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
 
         # Add the overlays to the original images
         image += overlay
-        weight_image = np.where(weight_overlay > 0, weight_overlay, weight_image)
 
         #! Plot the injected sources
         if plot_each_source:
@@ -424,36 +395,27 @@ class SourceInjector:
                 cross_length = 7
                 gap = 3  # Gap around the center
 
-                plt.plot(np.arange(center + gap, center + cross_length), [center] * (cross_length - gap),  color='white', linewidth=1.5)
-                plt.plot([center] * (cross_length - gap), np.arange(center + gap, center + cross_length), color='white', linewidth=1.5)
+                plt.plot(np.arange(center + gap, center + cross_length), [center] * (cross_length - gap),  color='red', linewidth=1.5)
+                plt.plot([center] * (cross_length - gap), np.arange(center + gap, center + cross_length), color='red', linewidth=1.5)
                 
                 plt.title(f'Muv: {Muv_array[i]:.2f}, z: {z_array[i]:.2f}', fontsize=12)
                 plt.show()
                 plt.close()
 
-                #* WHT
-                plt.figure(figsize=(6, 6))
-                plt.imshow(cutout_weight, origin='lower', cmap='viridis')
-                
-                # Add crosshair
-                center = cutout_size // 2
-                cross_length = 7
-                gap = 3  # Gap around the center
+        # Plot the full image and draw big crosshairs at each source
+        if plot_each_source:
+            plt.figure(figsize=(10, 10))
+            plt.imshow(image, origin='lower', vmin=0, vmax=2, cmap='viridis')
 
-                plt.plot(np.arange(center + gap, center + cross_length), [center] * (cross_length - gap),  color='white', linewidth=1.5)
-                plt.plot([center] * (cross_length - gap), np.arange(center + gap, center + cross_length), color='white', linewidth=1.5)
-                
-                plt.title(f'Muv: {Muv_array[i]:.2f}, z: {z_array[i]:.2f}', fontsize=12)
-                plt.show()
-                plt.close()
+            for i in range(len(x_positions)):
+                x_center, y_center = x_positions[i], y_positions[i]
+                plt.plot(x_center, y_center, 'rx', markersize=10)
+            
+            plt.show()
 
         # Save the injected image
         hdu_image = fits.PrimaryHDU(image, header=header)
         hdu_image.writeto(injected_dir / image_name, overwrite=True)
-
-        # Save the updated weight image
-        hdu_weight = fits.PrimaryHDU(weight_image, header=header)
-        hdu_weight.writeto(injected_dir / 'weights' / weight_name, overwrite=True)
 
         return wcs
 
@@ -501,7 +463,7 @@ if __name__ == '__main__':
     scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
 
     #! Inject sources
-    image_name = 'UVISTA_YJ_DR6_cutout_2423_18243_4000_pix_10_arcmin.fits'
+    image_name = 'UVISTA_YJ_DR6_cutout_3745_21800_4000_pix_10_arcmin.fits'
     wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs, overwrite=True, plot_each_source=True)
     
     #! Convert x,y to RA, Dec

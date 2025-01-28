@@ -1,2 +1,0 @@
-#!/bin/bash
-/mnt/users/videouser/sextractor/bin/sex  /mnt/vardy/vardygroupshare/rohan/euclid/src/injection_recovery/images/cutouts/UVISTA_YJ_DR6_cutout_28738_21620_4000_pix_10_arcmin.fits -c /mnt/vardy/vardygroupshare/rohan/euclid/src/injection_recovery/video_mine.sex -CATALOG_NAME /mnt/vardy/vardygroupshare/rohan/euclid/src/injection_recovery/images/cutouts/UVISTA_YJ_DR6_cutout_28738_21620_4000_pix_10_arcmin_cat.fits -MAG_ZEROPOINT 30.0 -PHOT_APERTURES 12.00 -CHECKIMAGE_TYPE SEGMENTATION -WEIGHT_TYPE NONE 

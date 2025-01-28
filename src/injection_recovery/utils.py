@@ -100,7 +100,6 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
     pix_size = 0.15 # arcsec / pix
 
     image_size = image_size * 60 / pix_size # convert to pixels
-    print(f"Image size in pixels: {image_size}")
 
     # Get some key information from the original header that doesn't make it into the cutout header
     equinox = header['EQUINOX']
@@ -118,8 +117,6 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
         # Convert x,y to RA,DEC as a SkyCoord object
         coord = SkyCoord.from_pixel(x, y, wcs)
         ra, dec = coord.to_string('hmsdms').split(' ')
-
-        print(f"RA, Dec: {ra}, {dec}")
 
         cutout = Cutout2D(data, coord, (image_size, image_size), wcs=wcs)
         weight_cutout = Cutout2D(weight, coord, (image_size, image_size), wcs=wcs_weight)
