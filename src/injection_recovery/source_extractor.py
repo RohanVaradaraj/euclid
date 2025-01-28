@@ -41,7 +41,7 @@ class SourceExtractor:
         os.environ['EXTRACTOR_DIR'] = '/mnt/users/videouser/sextractor/share/sextractor'
 
         with fits.open(image_dir / image_name) as hdulist:
-            pixScale = abs(hdulist[0].header['PC2_2']) * 3600.0  # Convert degrees to arcseconds/pixel
+            pixScale = abs(hdulist[0].header['CD2_2']) * 3600.0  # Convert degrees to arcseconds/pixel
 
         apStringPix = f'{apDiameterAS / pixScale:.2f}'
         output_cat = image_name.split('/')[-1].split('.fits')[0] + '_cat.fits'

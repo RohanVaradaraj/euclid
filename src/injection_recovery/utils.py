@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.visualization.wcsaxes import WCSAxes
 from matplotlib.patches import Rectangle
+from astropy.coordinates import SkyCoord
 
 data_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 
@@ -60,10 +61,11 @@ def filter_files():
     return filt_files
 
 
+
 def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrite=False):
     """
-    Extract a subimage from a larger image and plot the footprint of the original and cutouts in RA, Dec.
-    
+    Extract a subimage from a larger image.
+
     :param image: The image to extract the subimage from.
     :param x: The x-coordinate of the subimage center.
     :param y: The y-coordinate of the subimage center.
@@ -95,167 +97,70 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
         weight_header = hdu_w[0].header
         wcs_weight = WCS(weight_header)
 
-    pix_size = 0.15  # arcsec / pix
-    image_size = image_size * 60 / pix_size  # convert to pixels
+    pix_size = 0.15 # arcsec / pix
+
+    image_size = image_size * 60 / pix_size # convert to pixels
     print(f"Image size in pixels: {image_size}")
 
-    # Get reference pixel from image
-    crpix_x = header['CRPIX1']
-    crpix_y = header['CRPIX2']
-
-    crval_ra, crval_dec = wcs.all_pix2world(crpix_x, crpix_y, 0)
-    print(f"CRVAL from wcs: {crval_ra}, {crval_dec}")
-
-    crval1 = header['CRVAL1']
-    crval2 = header['CRVAL2']
-    print(f"CRVAL from header: {crval1}, {crval2}")
-
-    # Prepare for plotting
-    # fig = plt.figure(figsize=(10, 10))
-    # ax = fig.add_subplot(1, 1, 1, projection=wcs)
-    # ax.imshow(data, origin='lower', cmap='gray', alpha=0.5)
-    # ax.set_xlabel('RA')
-    # ax.set_ylabel('Dec')
-
-    # # Plot original image footprint
-    # ax.set_title('Original Image and Cutout Footprints')
-    # ax.grid(color='white', ls='dotted')
+    # Get some key information from the original header that doesn't make it into the cutout header
+    equinox = header['EQUINOX']
+    exptime = header['EXPTIME']
+    gain = header['GAIN']
+    saturate = header['SATURATE']
 
     for i in range(n_images):
-        print(f"Generating image {i + 1}/{n_images}")
+        print(f"Generating image {i+1}/{n_images}")
         if random:
-            x = np.random.randint(image_size / 2 + 100, data.shape[1] - (image_size / 2 + 100))
-            y = np.random.randint(image_size / 2 + 200, data.shape[0] - (image_size / 2 + 100))  # avoid edges
+            #! Note: these x,y are in terms of the original image pixel basis
+            x = np.random.randint(image_size/2 +100, data.shape[1]-(image_size/2+100))
+            y = np.random.randint(image_size/2 +200, data.shape[0]-(image_size/2+100))   # avoid edges
 
-        # Convert x, y to RA, DEC
-        ra, dec = wcs.all_pix2world(x, y, 0)
+        # Convert x,y to RA,DEC as a SkyCoord object
+        coord = SkyCoord.from_pixel(x, y, wcs)
+        ra, dec = coord.to_string('hmsdms').split(' ')
+
         print(f"RA, Dec: {ra}, {dec}")
 
-        cutout = Cutout2D(data, (x, y), (image_size, image_size), wcs=wcs)
-        weight_cutout = Cutout2D(weight, (x, y), (image_size, image_size), wcs=wcs_weight)
+        cutout = Cutout2D(data, coord, (image_size, image_size), wcs=wcs)
+        weight_cutout = Cutout2D(weight, coord, (image_size, image_size), wcs=wcs_weight)
 
         # Save the cutout to a new FITS file
         image_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin.fits'
         weight_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin_wht.fits'
 
-        # Reset reference pixel
-        cutout.wcs.wcs.crpix = [image_size / 2, image_size / 2]
+        cutout_header = cutout.wcs.to_header()
 
-        # Get CRVALs from original image at this position
-        cutout.wcs.wcs.crval = [ra, dec]
+        # Add some key information to the header
+        #cutout_header['EQUINOX'] = equinox
+        cutout_header['EXPTIME'] = exptime
+        cutout_header['GAIN'] = gain
+        cutout_header['SATURATE'] = saturate
 
-        print(cutout.wcs.to_header())
+        # Remove some unnecessary header information
+        cutout_header.remove('LONPOLE')
+        cutout_header.remove('LATPOLE')
+        cutout_header.remove('MJDREF')
+
+        # rename PC1_1 to CD1_1 etc
+        cutout_header['CD1_1'] = cutout_header['PC1_1']
+        cutout_header['CD1_2'] = 0.0
+        cutout_header['CD2_1'] = 0.0
+        cutout_header['CD2_2'] = cutout_header['PC2_2']
+
+        # And remove the original PCi_j
+        cutout_header.remove('PC1_1')
+        cutout_header.remove('PC2_2')
 
         # Save
-        hdu = fits.PrimaryHDU(cutout.data, header=cutout.wcs.to_header())
+        hdu = fits.PrimaryHDU(cutout.data, header=cutout_header)
         hdu.writeto(cutout_path / image_name, overwrite=True)
 
         # And weight
-        hdu = fits.PrimaryHDU(weight_cutout.data, header=weight_cutout.wcs.to_header())
+        hdu = fits.PrimaryHDU(weight_cutout.data, header=cutout_header)
         hdu.writeto(weight_path / weight_name, overwrite=True)
 
-        # Plot the cutout footprint as a rectangle
-        ra_min, dec_min = wcs.all_pix2world(x - image_size / 2, y - image_size / 2, 0)
-        ra_max, dec_max = wcs.all_pix2world(x + image_size / 2, y + image_size / 2, 0)
-
-    #     ax.add_patch(Rectangle(
-    #         (ra_min, dec_min),
-    #         ra_max - ra_min,
-    #         dec_max - dec_min,
-    #         edgecolor='red',
-    #         facecolor='none',
-    #         lw=2,
-    #         label=f'Cutout {i + 1}'
-    #     ))
-
-    # plt.legend()
-    # plt.show()
 
     return None
-
-# def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrite=False):
-#     """
-#     Extract a subimage from a larger image.
-    
-#     :param image: The image to extract the subimage from.
-#     :param x: The x-coordinate of the subimage center.
-#     :param y: The y-coordinate of the subimage center.
-#     :param size: The size of the subimage, in arcmin
-#     """
-
-#     cutout_path = Path.cwd() / 'images' / 'cutouts'
-#     cutout_path.mkdir(parents=True, exist_ok=True)
-#     weight_path = Path.cwd() / 'images' / 'cutouts' / 'weights'
-#     weight_path.mkdir(parents=True, exist_ok=True)
-
-#     # Delete files in cutout_path if overwrite is True
-#     if overwrite:
-#         for file in cutout_path.glob('*.fits'):
-#             file.unlink()
-#         for file in weight_path.glob('*.fits'):
-#             file.unlink()
-
-#     image_dir = data_dir / image
-#     weight_dir = data_dir / (image.split('.fits')[0] + '_wht.fits')
-
-#     with fits.open(image_dir) as hdu:
-#         data = hdu[0].data
-#         header = hdu[0].header
-#         wcs = WCS(header)
-
-#     with fits.open(weight_dir) as hdu_w:
-#         weight = hdu_w[0].data
-#         weight_header = hdu_w[0].header
-#         wcs_weight = WCS(weight_header)
-
-#     pix_size = 0.15 # arcsec / pix
-
-#     image_size = image_size * 60 / pix_size # convert to pixels
-#     print(f"Image size in pixels: {image_size}")
-
-#     # Get reference pixel from image
-#     print('Original image size:', data.shape)
-#     crpix_x = header['CRPIX1']
-#     crpix_y = header['CRPIX2']
-
-#     print(f"CRPIX: {crpix_x}, {crpix_y}")
-
-#     for i in range(n_images):
-#         print(f"Generating image {i+1}/{n_images}")
-#         if random:
-#             x = np.random.randint(image_size/2 +100, data.shape[1]-(image_size/2+100))
-#             y = np.random.randint(image_size/2 +200, data.shape[0]-(image_size/2+100))   # avoid edges
-
-#         # Convert x,y to RA,DEC
-#         ra, dec = wcs.all_pix2world(x, y, 0)
-#         print(f"RA, Dec: {ra}, {dec}")
-    
-#         cutout = Cutout2D(data, (x, y), (image_size, image_size), wcs=wcs)
-#         weight_cutout = Cutout2D(weight, (x, y), (image_size, image_size), wcs=wcs_weight)
-
-#         # Save the cutout to a new FITS file
-#         image_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin.fits'
-#         weight_name = image.split('.fits')[0] + f'_cutout_{int(x)}_{int(y)}_{int(image_size)}_pix_{int(image_size * pix_size / 60)}_arcmin_wht.fits'
-
-#         # Reset reference pixel
-#         cutout.wcs.wcs.crpix = [image_size/2, image_size/2]
-
-#         # Get CRVALs from original image at this position
-#         cutout.wcs.wcs.crval = [ra, dec]
-
-#         print(cutout.wcs.to_header())
-
-
-#         # Save
-#         hdu = fits.PrimaryHDU(cutout.data, header=cutout.wcs.to_header())
-#         hdu.writeto(cutout_path / image_name, overwrite=True)
-
-#         # And weight
-#         hdu = fits.PrimaryHDU(weight_cutout.data, header=weight_cutout.wcs.to_header())
-#         hdu.writeto(weight_path / weight_name, overwrite=True)
-
-
-#     return None
 
 
 
