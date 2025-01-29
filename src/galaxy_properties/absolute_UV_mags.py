@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import math
 
 plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 15})
+plt.rcParams.update({'font.size': 20})
 plt.rcParams['figure.dpi'] = 100
 
 import sys
@@ -26,7 +26,7 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
-run_type = 'with_euclid'
+run_type = ''
 
 def mag_to_flux(m):
     '''Convert mags to flux count'''
@@ -57,7 +57,7 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -150,63 +150,55 @@ t.write(cat_dir / cat_name, format='fits', overwrite=True)
 # Split table into where EW is non-zero
 t_lya = t[t['Lyman_alpha_EW'] > 0]
 
+plt.figure(figsize=(12, 8))
+
+#! paper 1 galaxies
+paper1_dir = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
+dataCDFS = Table.read(paper1_dir / 'vmax_CDFS_comp.txt', format='ascii.commented_header')
+dataXMM = Table.read(paper1_dir / 'vmax_XMM_comp.txt', format='ascii.commented_header')
+
+errorXMM = Table.read(paper1_dir / 'errorsMin_primary_XMM.txt', format='ascii.commented_header')
+errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.commented_header')
+
+
+plt.errorbar(dataXMM['z'], dataXMM['Muv'], xerr=(errorXMM['zinf'], errorXMM['zsup']), yerr=(np.abs(errorXMM['Muv_inf']), errorXMM['Muv_sup']), 
+    color='black', alpha=1, linestyle='none', marker='^', markersize=12, elinewidth=2.5,
+    label='Varadaraj+23, XMM')
+
+
+plt.errorbar(dataCDFS['z'], dataCDFS['Muv'], xerr=(errorCDFS['zinf'], errorCDFS['zsup']), yerr=(np.abs(errorCDFS['Muv_inf']), errorCDFS['Muv_sup']), 
+    color='black', marker='s', alpha=1, linestyle='none', markersize=12, elinewidth=2.5,
+    label='Varadaraj+23, CDFS')
+
+
+#! UltraVISTA
+
 plt.errorbar(
     t['Zphot'], t['Muv'],
     yerr=[t['dMuv_inf'], t['dMuv_sup']],
     xerr=[np.abs(t['Zphot']-t['Zinf']), np.abs(t['Zsup']-t['Zphot'])],
-    fmt='o', color='black', markersize=8,
-    label='COSMOS',
-    alpha=0.5
+    fmt='o', color='dodgerblue', markersize=16,
+    alpha=0.8, markeredgecolor='none', elinewidth=2.5,
 )
 
 plt.errorbar(
     t_lya['Zphot'], t_lya['Muv'],
     yerr=[t_lya['dMuv_inf'], t_lya['dMuv_sup']],
     xerr=[np.abs(t_lya['Zphot']-t_lya['Zinf']), np.abs(t_lya['Zsup']-t_lya['Zphot'])],
-    fmt='D', color='orange', markersize=10,
-    label=r'Lyman-$\alpha$ emitters',
+    fmt='D', color='red', markersize=16, alpha=1., markeredgecolor='none', elinewidth=2.5,
 )
 
-# Load paper 1 galaxies
-cdfs_cands = Table.read('CDFS_cands.fits')
-xmm_cands = Table.read('XMM_cands.fits')
+# Bouwens 2021
 
-xmm_zphot = np.array(xmm_cands['zphot'])
-xmm_Muv = np.array(xmm_cands['Muv'])
-xmm_z_inf = np.array(xmm_cands['z_inf'])
-xmm_z_sup = np.array(xmm_cands['s_sup'])
+dataBouwens = Table.read(paper1_dir.parent / 'ref_catalogues' / 'bouwens21_z7.dat', format='ascii.commented_header')
+plt.scatter(dataBouwens['col11'], dataBouwens['Muv'], label='Bouwens+21', s=40, color='gray', alpha=0.4, zorder=-1, edgecolor='none')
 
-cdfs_zphot = np.array(cdfs_cands['zphot'])
-cdfs_Muv = np.array(cdfs_cands['Muv'])
-cdfs_z_inf = np.array(cdfs_cands['z_inf'])
-cdfs_z_sup = np.array(cdfs_cands['s_sup'])
 
-xmm_zphot = xmm_zphot.astype(float)
-xmm_Muv = xmm_Muv.astype(float)
-xmm_z_inf = xmm_z_inf.astype(float)
-xmm_z_sup = xmm_z_sup.astype(float)
+# Make ticks thicker
+plt.tick_params(which='major', length=10, width=3)
 
-cdfs_zphot = cdfs_zphot.astype(float)
-cdfs_Muv = cdfs_Muv.astype(float)
-cdfs_z_inf = cdfs_z_inf.astype(float)
-cdfs_z_sup = cdfs_z_sup.astype(float)
-
-# Red circles for XMM
-plt.errorbar(
-    xmm_zphot, xmm_Muv,
-    xerr=[xmm_z_inf, xmm_z_sup],
-    fmt='o', color='red', markersize=10,
-    label='XMM'
-)
-
-# Blue squares for CDFS
-plt.errorbar(
-    cdfs_zphot, cdfs_Muv,
-    xerr=[cdfs_z_inf, cdfs_z_sup],
-    fmt='s', color='blue', markersize=10,
-    label='CDFS'
-)
-
+# Add minor ticks
+plt.tick_params(axis='both', which='minor', length=5, width=2)
 
 # Reverse y axis
 plt.gca().invert_yaxis()
@@ -215,7 +207,7 @@ plt.ylabel(r'$M_{\rm UV}$')
 plt.legend(loc='upper left')
 plt.tight_layout()
 plt.xlim(6.0, 7.6)
-plt.ylim(-19.8, -25.4)
+plt.ylim(-19.8, -24.1)
 plot_dir = Path.cwd().parents[1] /'plots' / 'LF'
 plt.savefig(plot_dir / 'z_Muv_sample.pdf')
 plt.show()

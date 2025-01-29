@@ -30,7 +30,7 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
 
-run_type = 'with_euclid'
+run_type = ''
 
 def mag_to_flux(m):
 	'''Convert mags to flux'''
@@ -62,11 +62,16 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
+#cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 t = Table.read(cat_dir / cat_name)
+
+# If there isn't a completeness column, add it
+if 'completeness' not in t.colnames:
+    t['completeness'] = Column(np.zeros(len(t)), name='completeness', dtype=float)
 
 #! Add a column for zmax if it doesnt exist already
 if 'zmax' not in t.colnames:
@@ -120,10 +125,11 @@ zmin = 6.50
 zmax = 7.50
 
 #! Vmax parameters
-#cosmos_area = 1.7214634933517867 # UVISTA 
-cosmos_area = 0.6536 # Euclid
+cosmos_area = 1.7214634933517867 # UVISTA 
+#cosmos_area = 0.6536 # Euclid
 #covering_fraction = 0.8 # UVISTA
-covering_fraction = 0.84 # Euclid 
+#covering_fraction = 0.84 # Euclid 
+covering_fraction = 1.0 # =1 since accounted for in injection recovery
 cosmos_area *= covering_fraction
 
 ratios = []

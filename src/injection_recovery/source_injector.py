@@ -416,7 +416,7 @@ class SourceInjector:
         # Save the injected image
         hdu_image = fits.PrimaryHDU(image, header=header)
         hdu_image.writeto(injected_dir / image_name, overwrite=True)
-
+        
         return wcs
 
 

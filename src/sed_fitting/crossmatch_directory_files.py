@@ -8,34 +8,75 @@ Created: Wednesday 18th December 2024.
 
 import os
 from pathlib import Path
+from astropy.table import Table
+import shutil
+
+dir_to_dir = False
+cat_to_dir = True
 
 overwrite = True
 
-# base sed directory
-base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+#! Original functionality of dir to dir
+if dir_to_dir:
 
-#! Input directories here
+    # base sed directory
+    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
 
-# The directory to copy files from
-dir_to_copy_from = base_dir / 'det_Y_J_with_euclid_bd'
+    #! Input directories here
 
-# The directory which files will be matched with
-dir_to_match_with = base_dir / 'best_fits' / 'det_Y_J_BD'
+    # The directory to copy files from
+    dir_to_copy_from = base_dir / 'det_Y_J_with_euclid_bd'
 
-# The directory to copy files to
-dir_to_copy_to = base_dir / 'best_fits' / 'det_Y_J_BD_PLUS_EUCLID_PHOT'
+    # The directory which files will be matched with
+    dir_to_match_with = base_dir / 'best_fits' / 'det_Y_J_BD'
 
-# If overwrite, empty
-if overwrite:
-    for file in dir_to_copy_to.glob('*.spec'):
-        file.unlink()
-    print('Deleted all previous .spec files in the target directory.')
+    # The directory to copy files to
+    dir_to_copy_to = base_dir / 'best_fits' / 'det_Y_J_BD_PLUS_EUCLID_PHOT'
 
-# Get the files in the directories
-files_to_copy_from = os.listdir(dir_to_copy_from)
-files_to_match_with = os.listdir(dir_to_match_with)
+    # If overwrite, empty
+    if overwrite:
+        for file in dir_to_copy_to.glob('*.spec'):
+            file.unlink()
+        print('Deleted all previous .spec files in the target directory.')
 
-# Copy the files
-for file in files_to_copy_from:
-    if file in files_to_match_with:
-        os.system(f"cp {dir_to_copy_from}/{file} {dir_to_copy_to}/{file}")
+    # Get the files in the directories
+    files_to_copy_from = os.listdir(dir_to_copy_from)
+    files_to_match_with = os.listdir(dir_to_match_with)
+
+    # Copy the files
+    for file in files_to_copy_from:
+        if file in files_to_match_with:
+            os.system(f"cp {dir_to_copy_from}/{file} {dir_to_copy_to}/{file}")
+
+
+#! Copy files from a directory corresponding to those in a catalogue, into another directory
+if cat_to_dir:
+
+    # Base SED directory
+    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+
+    # Directory to copy files from
+    dir_to_copy_from = base_dir / 'det_Y_J'
+
+    # Catalogue to read IDs from
+    cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
+    t = Table.read(cat_dir / cat_name)
+    IDs = t['ID']
+
+    # Directory to copy files to
+    dir_to_copy_to = base_dir / 'best_fits' / 'det_Y_J_z7'
+
+    for ID in IDs:
+
+        ID = str(ID)
+
+        # Use IDs to generate file names
+        file_name = f'Id{ID.zfill(9)}.spec'
+
+        # Copy the file safely
+        if (dir_to_copy_from / file_name).exists():
+            shutil.copy(dir_to_copy_from / file_name, dir_to_copy_to)
+        else:
+            print(f'File {file_name} does not exist in {dir_to_copy_from}.')
+

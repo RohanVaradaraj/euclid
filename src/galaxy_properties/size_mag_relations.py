@@ -103,8 +103,11 @@ def plot_fwhm_vs_mag(mags, fwhms, color, marker, size, alpha, zorder, label=None
 # --- Plot CWEB PSF sizes ---
 fwhm_median = np.load('cweb_psfs_euclid_fwhm_median.npy')
 fwhm_std = np.load('cweb_psfs_euclid_fwhm_std.npy')
-fwhm_upper = fwhm_median + fwhm_std
-fwhm_lower = fwhm_median - fwhm_std
+fwhm_1sigma = np.load('cweb_psfs_euclid_fwhm_1sigma.npy')
+fwhm_upper = fwhm_1sigma[1] + fwhm_median
+fwhm_lower = fwhm_median - fwhm_1sigma[0]
+# fwhm_upper = fwhm_median + fwhm_std
+# fwhm_lower = fwhm_median - fwhm_std
 bins = np.arange(20, 30, 0.5)
 plt.fill_between(bins[:-1], fwhm_upper, fwhm_lower, color='black', alpha=0.2, edgecolor='none', zorder=0)
 
@@ -153,7 +156,7 @@ ax2.tick_params(axis='both', which='major', width=2.5, length=5)
 plt.xlim(22.9, 28)
 plt.ylim(0.3, 3.1)
 plt.legend()
-
+plt.tight_layout()
 plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag.pdf')
 plt.show()
 
