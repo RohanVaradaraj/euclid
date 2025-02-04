@@ -10,9 +10,12 @@ import os
 from pathlib import Path
 from astropy.table import Table
 import shutil
+import glob
+import numpy as np
 
 dir_to_dir = False
-cat_to_dir = True
+cat_to_dir = False
+dir_to_cat = True
 
 overwrite = True
 
@@ -79,4 +82,35 @@ if cat_to_dir:
             shutil.copy(dir_to_copy_from / file_name, dir_to_copy_to)
         else:
             print(f'File {file_name} does not exist in {dir_to_copy_from}.')
+
+
+#! Match files in a directory to a catalogue
+if dir_to_cat:
+
+    # Base SED directory
+    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+
+    # Directory to copy files from
+    dir_to_copy_from = base_dir / 'best_fits' / 'det_Y_J_z7_conservative'
+
+    # file names
+    file_names = glob.glob(str(dir_to_copy_from / '*.spec'))
+
+    # From file_names, extract the IDs
+    file_IDs = [np.int32(file_name.split('/')[-1].split('Id')[1].split('.spec')[0].lstrip('0')) for file_name in file_names]
+
+    # Catalogue to match IDs with
+    cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+    base_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+    t = Table.read(cat_dir / base_cat_name)
+    IDs = t['ID']
+
+    # Restrict the catalogue to the IDs in file_IDs
+    t = t[np.isin(IDs, file_IDs)]
+
+    print(t)
+
+    # Save the catalogue with some new desired name
+    new_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_conservative_2024_11_20.fits'
+    t.write(cat_dir / 'candidates' / new_cat_name, overwrite=True)
 

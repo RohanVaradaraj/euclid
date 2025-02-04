@@ -48,10 +48,10 @@ def stellar_type(model):
     return stellar_dict[model]
 
 #! Run type - governing the filter set used.
-run_type = 'with_euclid'
+run_type = ''
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'BD'
+run_flag = 'z7'
 
 # Only get lya if we are looking at the LBG sample
 run_lya = (run_flag == 'z7')
@@ -189,6 +189,7 @@ if run_lya:
 print(t_candidates)
 
 # Save the new catalogue
+print(f'Saving catalogue to {cat_dir / "candidates" / new_cat_name}')
 t_candidates.write(cat_dir / 'candidates' / new_cat_name, overwrite=True)
 
  

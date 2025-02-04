@@ -43,6 +43,11 @@ omegaM = 0.3
 omegaV = 0.7
 cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 
+# Load completeness
+completeness_dir = Path.cwd().parent / 'injection_recovery'
+completeness_name = 'completeness_matrix_2.npy'
+completeness_matrix = np.load(completeness_dir / completeness_name)
+
 #! SED Fitting folder
 # Name of the directory we want to use to make the catalogue
 folder = f'det_Y_J_{run_type}_z7' if run_type != '' else 'det_Y_J_z7'
@@ -57,7 +62,8 @@ IDs = [int(ID) for ID in IDs]
 
 #! Catalogue of above objects
 # Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
+cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
+#cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -170,8 +176,26 @@ plt.errorbar(dataCDFS['z'], dataCDFS['Muv'], xerr=(errorCDFS['zinf'], errorCDFS[
     color='black', marker='s', alpha=1, linestyle='none', markersize=12, elinewidth=2.5,
     label='Varadaraj+23, CDFS')
 
+# Imshow completeness as grayscale in the background
+completeness_z = np.arange(6.5, 7.5, 0.05)
+completeness_Muv = np.arange(-23, -20, 0.1)
+# plt.imshow(completeness_matrix, aspect='auto', cmap='Greys', extent=[6.5, 7.5, -23, -20], alpha=0.5, zorder=-1)
+
+# Flip matrix in Muv direction
+completeness_matrix = np.flip(completeness_matrix, axis=0)
+
+# And add contour for each redshift where the completeness crosses 0.3
+contour = plt.contour(completeness_z[1:], completeness_Muv[1:], completeness_matrix, levels=[0.3], colors='darkgray', linewidths=2.5, zorder=4, linestyles='--')
+contour = plt.contour(completeness_z[1:], completeness_Muv[1:], completeness_matrix, levels=[0.4], colors='gray', linewidths=2.5, zorder=4, linestyles='--')
+contour = plt.contour(completeness_z[1:], completeness_Muv[1:], completeness_matrix, levels=[0.5], colors='dimgray', linewidths=2.5, zorder=4, linestyles='--')
+
+plt.text(7.469, -20.4, '30%', fontsize=20, color='darkgray')
+plt.text(7.469, -20.65, '40%', fontsize=20, color='gray')
+plt.text(7.469, -20.9, '50%', fontsize=20, color='dimgray')
 
 #! UltraVISTA
+
+#t = t[t['Zphot'] > 6.5]
 
 plt.errorbar(
     t['Zphot'], t['Muv'],
@@ -193,6 +217,8 @@ plt.errorbar(
 dataBouwens = Table.read(paper1_dir.parent / 'ref_catalogues' / 'bouwens21_z7.dat', format='ascii.commented_header')
 plt.scatter(dataBouwens['col11'], dataBouwens['Muv'], label='Bouwens+21', s=40, color='gray', alpha=0.4, zorder=-1, edgecolor='none')
 
+# # Add 50% completeness limit
+# plt.plot(z_complimit, Muv_complimit, color='black', linestyle='--', lw=2.5)
 
 # Make ticks thicker
 plt.tick_params(which='major', length=10, width=3)

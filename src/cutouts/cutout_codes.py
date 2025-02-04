@@ -706,7 +706,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     plt.tight_layout()
     #plt.savefig(plot_dir / f'LAE_stamps_Euclid_CWEB_6arcsec.pdf')
-    #plt.show()
+    plt.show()
 
     if save_cutout:
         plot_title = str(plot_title)

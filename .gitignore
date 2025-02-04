@@ -40,3 +40,6 @@
 
 # Ignore bagpipes outputs
 /src/sed_fitting/pipes/*
+
+# Ignore euclid cutouts
+/src/cutouts/stamps/*

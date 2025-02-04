@@ -21,7 +21,7 @@ t = Table.read(cat_dir / cat_name)
 if 'completeness' not in t.colnames:
     t['completeness'] = np.zeros(len(t))
 
-def crossmatch_and_compute_completeness(input_cat_dir, output_cat_dir, Muv_bins, z_bins, match_radius_pix=6.67):
+def crossmatch_and_compute_completeness(input_cat_dir, output_cat_dir, Muv_bins, z_bins, match_radius_pix=2):
     """
     Computes the completeness (recovery rate) for each bin of Muv and z using RA and DEC.
     Optimized using cKDTree for faster spatial matching.
@@ -111,7 +111,7 @@ def main():
     #completeness_matrix = crossmatch_and_compute_completeness(input_cat_dir, output_cat_dir, Muv_bins, z_bins)
 
     # Read in completeness matrix
-    completeness_matrix = np.load('completeness_matrix.npy')
+    completeness_matrix = np.load('completeness_matrix_2.npy')
 
     # Flip matrix in Muv direction
     #completeness_matrix = np.flip(completeness_matrix, axis=0)
@@ -146,12 +146,12 @@ def main():
     plot_completeness(completeness_matrix, Muv_bins, z_bins)
 
     # Save the completeness matrix as npy file
-    #np.save('completeness_matrix.npy', completeness_matrix)
+    #np.save('completeness_matrix_2.npy', completeness_matrix)
 
 
 if __name__ == "__main__":
     main()
     plot_dir = Path.cwd().parents[1] / 'plots' / 'completeness'
-    plot_dir.mkdir(exist_ok=True)
-    #plt.savefig(plot_dir / 'completeness_heatmap.pdf')
+    #plot_dir.mkdir(exist_ok=True)
+    #plt.savefig(plot_dir / 'completeness_heatmap_2.pdf')
     plt.show()
