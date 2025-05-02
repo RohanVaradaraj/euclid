@@ -20,7 +20,7 @@ import matplotlib.ticker as mticker
 
 cutout_path = Path.cwd().parents[0] / 'cutouts'
 sys.path.append(str(cutout_path))
-from cutout_codes import *
+from lae_cutouts import *
 
 def stellar_type(model):
     stellar_dict = {
@@ -57,9 +57,6 @@ def stellar_type(model):
 import matplotlib as mpl
 mpl.use('Agg')
 
-cutout_path = Path.cwd().parents[0] / 'cutouts'
-sys.path.append(str(cutout_path))
-from cutout_codes import *
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
@@ -113,7 +110,8 @@ def get_survey_name(filter_name):
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-output_pdf = 'poster_det_Ye_y_LAE.pdf'
+#output_pdf = 'LAE_SED_fit.pdf'
+output_pdf = 'LAE_STAMP.pdf'
 #output_pdf = 'det_NB0921_Ye.pdf'
 
 # Set up directories
@@ -318,28 +316,31 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         fig = plt.figure(figsize=(10, 6))
         ax1 = fig.add_subplot(111)
         left, bottom, width, height = [0.70, 0.23, 0.18, 0.18]
+        left, bottom, width, height = [0.70, 0.51, 0.18, 0.18]
         ax2 = fig.add_axes([left, bottom, width, height])
 
         ############! PLOT RESULTS OF FITTING #############
         # Plot best model
-        ax1.plot(primary_wlen, primary_sed, color='blue', alpha=1.0, linewidth=3.5, zorder=4)
+        ax1.plot(primary_wlen, primary_sed, color='blue', alpha=1.0, linewidth=4, zorder=4, label= rf'$z = {zphot_1}^{{+{round(dz_sup-zphot_1, 2)}}}_{{-{round(zphot_1-dz_inf, 2)}}}$, ' + r'$\chi^{2} = $' + f'{chi2_1}')
         print(rf'$z = {zphot_1}^{{+{round(dz_sup-zphot_1, 2)}}}_{{-{round(zphot_1-dz_inf, 2)}}}$, ' + r'$\chi^{2} = $' + f'{chi2_1}')
 
         # plot secondary galaxy solution and stellar model
         if not secondary_is_stellar:
-            ax1.plot(secondary_wlen, secondary_sed, color='darkorange', linewidth=2.5, alpha=0.7, zorder=3)
-            #ax1.plot(stellar_wlen, stellar_sed, color='red', linewidth=2.5, alpha=0.6, zorder=3)
+            ax1.plot(secondary_wlen, secondary_sed, color='darkorange', linewidth=2.5, alpha=0.5, zorder=3, label=f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}')
+            ax1.plot(stellar_wlen, stellar_sed, color='red', linewidth=2.5, alpha=0.5, zorder=3,label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}')
 
-        # if secondary_is_stellar:
-        #     ax1.plot(secondary_wlen, secondary_sed, color='red', linewidth=3.5, alpha=0.6, zorder=3)
+        if secondary_is_stellar:
+            ax1.plot(secondary_wlen, secondary_sed, color='red', linewidth=2.5, alpha=0.5, zorder=3, label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}')
 
         print(r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}')
         print(f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}')
 
         ax2.plot(zpdf['z'], zpdf['P'], color='black', linewidth=2)
         ax2.set_xlim(0, 10)
-        ax2.set_xlabel(r'$z_{\mathrm{phot}}$')
-        ax2.set_ylabel(r'$P(z)$')
+        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=20)
+        ax2.set_ylabel(r'$P(z)$', fontsize=20)
+        # Make tick labels larger
+        ax2.tick_params(axis='both', which='major', labelsize=20)
 
         ###########! PLOT MODEL AND REAL PHOTOMETRY ##############
 
@@ -382,17 +383,18 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #     ax1.set_title(f'ID {ID}')
 
         ax1.set_yscale('log')
-        ax1.legend(loc='center right')
+        ax1.legend(loc='lower right', fontsize=15, ncol=2)
         ax1.set_ylim(1e-32, 1e-29)
         ax1.set_xlim(3000, 35000)
+
+        fontsize = 21
 
         # Convert the x axis into microns by dividing by 10000
         ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
         ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
 
-        ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')
-        #ax1.set_xlabel(r'$\lambda (\AA)$')
-        ax1.set_xlabel(r'$\lambda (\mu m)$')
+        ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)', fontsize=fontsize)
+        ax1.set_xlabel(r'$\lambda (\mu m)$', fontsize=fontsize)
 
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
@@ -402,17 +404,20 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
 
-        ax1.tick_params(which='major', length=5, width=3)
-        ax1.tick_params(axis='both', which='minor', length=3, width=2)
+        ax1.tick_params(which='major', length=7, width=4)
+        ax1.tick_params(axis='both', which='minor', length=4, width=3)
 
-        secax.tick_params(which='major', length=5, width=3)
-        secax.tick_params(axis='both', which='minor', length=5, width=2)
+        secax.tick_params(which='major', length=7, width=4)
+        secax.tick_params(axis='both', which='minor', length=5, width=3)
 
-        secax.set_ylabel(r'$\mathrm{m_{AB}}$')
+        secax.set_ylabel(r'$\mathrm{m_{AB}}$', fontsize=fontsize)
 
-        plt.tight_layout()
+        # Increas marker label sizes
+        ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+        secax.tick_params(axis='both', which='major', labelsize=fontsize)
 
-        pdf.savefig(fig)
+
+        #pdf.savefig(fig, bbox_inches='tight')
         plt.close(fig)
 
         ############! CUTOUT ##############
@@ -422,8 +427,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ra = obj['RA'][0]
         dec = obj['DEC'][0]
 
-        cutout_fig, cutout_axs = Cutout(ra, dec, size=10., save_cutout=False)
+        cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
 
-        pdf.savefig(cutout_fig)
+        pdf.savefig(cutout_fig, bbox_inches='tight')
         plt.close(cutout_fig)
 

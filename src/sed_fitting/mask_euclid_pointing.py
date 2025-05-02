@@ -69,7 +69,6 @@ output_file = '_'.join(filename_components) + '.fits'
 print('Output file: ', output_file)
 
 
-
 #! Set up directories
 if run_type != '':
     zphot_folder = base_det + '_' + run_type
@@ -133,7 +132,8 @@ t_filtered.write(parent_cat_dir / output_file, overwrite=True)
 
 #? We now have the objects in the Euclid mask.
 #? Now, of these, we need those that made the VISTA SED cut.
-vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
+#vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
+vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / base_det
 
 #? If masking the VISTA only, take from the initial run.
 if run_type == '':
@@ -155,7 +155,7 @@ if run_type == '':
 outside_euclid_dir = zphot_dir.parents[0] / (zphot_folder + '_outside_footprint')
 
 # Corresponding directories for the other selections, to copy into
-base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
 if run_type != '':
     folder_creator = lambda folder: base_dir / f"{base_det}_{run_type}_best_{folder}"
 else:
@@ -166,22 +166,23 @@ dusty_dir = folder_creator('dusty')
 bd_dir = folder_creator('bd')
 lya_dir = folder_creator('lya')
 
-print('Copying SEDs to: ', highz_dir)
-print('Copying SEDs to: ', dusty_dir)
-print('Copying SEDs to: ', bd_dir)
-print('Copying SEDs to: ', lya_dir)
+
+print('Moving SEDs from: ', highz_dir)
+print('Moving SEDs from: ', dusty_dir)
+print('Moving SEDs from: ', bd_dir)
+print('Moving SEDs from: ', lya_dir)
 
 # If overwrite, empty the above directories
-if overwrite:
-    for file in highz_dir.glob('*.spec'):
-        file.unlink()
-    for file in dusty_dir.glob('*.spec'):
-        file.unlink()
-    for file in bd_dir.glob('*.spec'):
-        file.unlink()
-    for file in lya_dir.glob('*.spec'):
-        file.unlink()
-    print('Deleted all previous .spec files in the best fit highz, dusty, bd and lya directories.')
+# if overwrite:
+#     for file in highz_dir.glob('*.spec'):
+#         file.unlink()
+#     for file in dusty_dir.glob('*.spec'):
+#         file.unlink()
+#     for file in bd_dir.glob('*.spec'):
+#         file.unlink()
+#     for file in lya_dir.glob('*.spec'):
+#         file.unlink()
+#     print('Deleted all previous .spec files in the best fit highz, dusty, bd and lya directories.')
 
 # Corresponding not-in-footprint directories for the above
 if run_type != '':
@@ -192,6 +193,11 @@ else:
 outside_dusty_dir = outside_folder_creator('dusty', dusty_dir)
 outside_bd_dir = outside_folder_creator('bd', bd_dir)
 outside_lya_dir = outside_folder_creator('lya', lya_dir)
+
+print('Moving SEDs to: ', outside_euclid_dir)
+print('Moving SEDs to: ', outside_dusty_dir)
+print('Moving SEDs to: ', outside_bd_dir)
+print('Moving SEDs to: ', outside_lya_dir)
 
 # If it doesn't exist, make it
 dirs_to_create = [outside_euclid_dir, outside_dusty_dir, outside_bd_dir, outside_lya_dir]
@@ -216,20 +222,24 @@ if overwrite:
 for spec_file in spec_files:
     ID = int(spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0])
 
-    # Check if the spec file is in vista_dir AND in the filtered catalogue
-    if (ID in t_filtered['ID']) and (vista_dir / spec_file.split('/')[-1]).exists():
+    # Check if the spec file is in vista_dir AND NOT in the filtered catalogue. these are outside euclid footprint, so move.
+    if (ID not in t_filtered['ID']) and (vista_dir / spec_file.split('/')[-1]).exists():
 
-        # Copy from zphot_dir to the new directory
-        shutil.copy(spec_file, highz_dir)
+        # Move from zphot_dir to the new directory
+        shutil.move(zphot_dir / spec_file.split('/')[-1], outside_euclid_dir)
+        #shutil.copy(spec_file, highz_dir)
+        
+        # Move from dusty_dir to the new directory
+        #shutil.copy(dusty_zphot_dir / spec_file.split('/')[-1], dusty_dir)
+        shutil.move(dusty_zphot_dir / spec_file.split('/')[-1], outside_dusty_dir)
 
-        # Copy from dusty_dir to the new directory
-        shutil.copy(dusty_zphot_dir / spec_file.split('/')[-1], dusty_dir)
+        # Move from bd_dir to the new directory
+        #shutil.copy(bd_zphot_dir / spec_file.split('/')[-1], bd_dir)
+        shutil.move(bd_zphot_dir / spec_file.split('/')[-1], outside_bd_dir)
 
-        # Copy from bd_dir to the new directory
-        shutil.copy(bd_zphot_dir / spec_file.split('/')[-1], bd_dir)
-
-        # Copy from lya_dir to the new directory
-        shutil.copy(lya_zphot_dir / spec_file.split('/')[-1], lya_dir)
+        # Move from lya_dir to the new directory
+        #shutil.copy(lya_zphot_dir / spec_file.split('/')[-1], lya_dir)
+        shutil.move(lya_zphot_dir / spec_file.split('/')[-1], outside_lya_dir)
 
 
 # Print number of files in each directory

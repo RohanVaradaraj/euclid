@@ -20,9 +20,15 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
 # Retrieve filters from sys.argv
+print('###')
+print(sys.argv[1])
+print('###')
 if len(sys.argv) > 1:
-    filters_json = sys.argv[1]
+    run_type = sys.argv[1]
+    #run_type = json.loads(run_type_json)
+    filters_json = sys.argv[2]
     filters = json.loads(filters_json)
+
 else:
     raise ValueError("No filters passed to selection.py")
 
@@ -109,14 +115,21 @@ def main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filte
 # Example usage
 if __name__ == "__main__":
 
+    #! COSMOS
     input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
     #input_cat_name = "COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_07_12.fits"
     #input_cat_name = 'COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_10_07.fits' # Newest with JWST
     input_cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits' # VISTA-Selected
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
     base_output_name = "COSMOS"
+
+    #! XMM
+    input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL'
+    input_cat_name = 'XMMFULL_DR3_MASKVISTADET_HSC-Z_DR3_2.0as_IRAC2.8as_2024_01_18.fits'
+    output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+    base_output_name = "XMMFULL"
     
-    input_name = generate_input_name(filters)
+    input_name = generate_input_name(filters, run_type)
     os.environ['LEPHARE_INPUT'] = input_name
 
     main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filters)

@@ -124,7 +124,7 @@ for i, spec_file in enumerate(spec_files):
     #! --------------------------------------------------------------------------
     #! Selection step: Check if the zphot_primary is larger than zphot_secondary
     #! --------------------------------------------------------------------------
-    solution_is_highz = (zphot_primary > zphot_secondary) & (zphot_primary > 6) & (zphot_secondary < 4)
+    solution_is_highz = (zphot_primary > zphot_secondary) & (zphot_primary > 6) & (zphot_secondary < 4) & 
 
     if solution_is_highz:
         number_high_z += 1

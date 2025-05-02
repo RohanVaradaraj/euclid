@@ -387,5 +387,72 @@ for i, id in enumerate(IDs):
     # Print available components of fit.posterior
     print(fit.posterior.samples.keys())
 
-    ew = fit.posterior.samples["H  1  4861.33A"]
-    print(ew)
+
+
+
+    # Print all the available fit.posterior.samples keys
+    print(fit.posterior.samples.keys())
+
+    # Print best value of each parameter
+    for key in fit.posterior.samples.keys():
+        print(key, np.percentile(fit.posterior.samples[key], (50)))
+
+        # Get 1sigma errors
+        low = np.percentile(fit.posterior.samples[key], (16))
+        high = np.percentile(fit.posterior.samples[key], (84))
+        print('1sigma errors:', low, high)
+
+
+
+    ############! Measuring Oiii + Hbeta equivalent width ##############
+    # Get the spectrum
+    spec_post = fit.posterior.samples["spectrum_full"]
+    post = np.percentile(spec_post, (16, 50, 84), axis=0).T
+    wavs = fit.posterior.model_galaxy.wavelengths*(1.+redshift)
+
+    # convert to microJy using the conversion from Adam
+    # this is just Fnu = Flamda*lambda**2/c all in units of A
+    conversion = (wavs**2)/(10**-29*2.9979*10**18)
+    spec = post[:,1]*conversion
+
+    # plot the spectrum
+    #plt.plot(wavs, spec[0])
+    #plt.yscale('log')
+#    plt.ylim(1e-32, 1e-28)
+
+    #plt.show()
+
+
+
+    cont_mask = ((wavs > 4500) & (wavs < 4700)) | ((wavs > 5100) & (wavs < 5500))
+    cont_level = np.median(spec[cont_mask])  # Use median flux as continuum level
+
+
+    # Define the observed-frame wavelength range for [OIII] + Hbeta
+    oiii_hb_mask = (wavs > 4825) & (wavs < 5030)
+
+    # Extract flux values in the line region and sum them
+    d_wav = np.mean(np.diff(wavs))  # Wavelength bin width in Å
+    Oiii_Hb_flux = np.sum((spec[oiii_hb_mask] - cont_level) * d_wav)  # Integrated flux above continuum
+
+
+    plt.plot(wavs, spec, label="Median Spectrum")
+    plt.axhline(y=cont_level, color="r", linestyle="--", label="Continuum Level")
+    plt.axvspan(4500, 4700, color="gray", alpha=0.3, label="Continuum Regions")
+    plt.axvspan(5100, 5500, color="gray", alpha=0.3)
+    plt.axvspan(4825, 5030, color="blue", alpha=0.3, label="[OIII] + Hbeta Region")
+    plt.xlim(500, 6000)
+    plt.legend()
+    plt.xlabel("Wavelength (Å)")
+    plt.ylabel("Flux")
+    plt.yscale("log")
+    plt.show()
+
+
+    # Compute equivalent width in the observed frame
+    EW_obs = Oiii_Hb_flux / cont_level  # Correct formula
+
+    # Convert to rest-frame equivalent width
+    EW_rest = EW_obs / (1 + lae_z)
+
+    print('Equivalent width of Oiii+Hbeta (rest-frame):', EW_rest)

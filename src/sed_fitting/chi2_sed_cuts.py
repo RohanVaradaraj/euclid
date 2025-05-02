@@ -101,9 +101,9 @@ if bools[1] == False:
 print('All filters:', all_filters)
 
 # If running with Euclid, want to ignore Euclid filters for this step.
-if run_type == 'with_euclid':
-    all_filters = remove_items(all_filters, ['VIS', 'Ye', 'Je', 'He'])
-    print('Removed Euclid filters')
+# if run_type == 'with_euclid':
+#     all_filters = remove_items(all_filters, ['VIS', 'Ye', 'Je', 'He'])
+#     print('Removed Euclid filters')
 
 print('All filters:', all_filters)
 
@@ -151,7 +151,7 @@ condition_3 = lbg_table[:]['col6'] + 4 < lbg_table[:]['col15'] # delta-chi2 betw
 good_lbg = lbg_table[:][condition_1 & condition_2 & condition_3]
 
 # Brown dwarfs
-good_bd = bd_table[:][bd_table['col21'] < 10]              # BD solution has chi2_star < chi2_LBG
+good_bd = bd_table[:][(bd_table['col21'] < lbg_table[:]['col2']) | (bd_table['col21'] < lbg_table[:]['col15']) & (bd_table['col21'] < 10)]  # BD solution has chi2_star < chi2_LBG
 
 # Dusty galaxies 
 condition_1 = dusty_table[:]['col2'] < 6                      # Best solution at z<6
@@ -222,8 +222,8 @@ for category, (ids, out_dir) in categories.items():
 
             # Check it exisits in the outside directory
             if not (outside_footprint_dir / file_name).exists():
-                print(f'File {file_name} does not exist in {base_dir / orig_dir[category]} OR in {outside_footprint_dir}')
-                print('This is a problem')
+                #print(f'File {file_name} does not exist in {base_dir / orig_dir[category]} OR in {outside_footprint_dir}')
+                #print('This is a problem')
                 continue
         
         # Copy through if it exists

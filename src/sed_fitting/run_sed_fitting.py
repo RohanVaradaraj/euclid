@@ -4,6 +4,8 @@
 Run the SED fitting with various configurations.
 
 Created: Friday 12th July 2024.
+
+conda activate seplus
 """
 
 from pathlib import Path
@@ -15,13 +17,13 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": '',                 #? Options: '', 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "run_type": '',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": True,
     "steps": {
-        "selection": False,         #? Initial dropout selection
+        "selection": True,         #? Initial dropout selection
         "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": True,          #? Plot the SEDs
+        "plotting": False,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs
         "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
@@ -31,14 +33,14 @@ config = {
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
 #! Whether to run the masking of the data to the euclid footprint
-mask_euclid = False
+mask_euclid = True
 
 #! Specific combinations of flags.
 flag_combinations = [
-    #(False, False, False),  #? All False = Normal SED fitting
+    (False, False, False),  #? All False = Normal SED fitting
     #(True, False, False),   #? Only run_brown_dwarfs = True
     #(False, True, False),   #? Only run_dusty = True
-    (False, False, True)    #? Only run_lya = True
+    #(False, False, True)    #? Only run_lya = True
 ]
 
 #! IF LOOPING RUN TYPES
@@ -48,23 +50,38 @@ loop_run_types = False
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'lya' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
+plot_object_type = 'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
 
 #! Base filter sets
 base_filters = {
-    '': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds'],
+    #? COSMOS
+    #'': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds'],
+    #? XMM
+    '': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'ch1servs', 'ch2servs'],
+
     'with_euclid': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds'],
+
     'just_euclid': ['VIS', 'Ye', 'Je', 'He'],
+    
     'CDS': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'VIS', 'Ye', 'Je', 'He', 'ch1cds', 'ch2cds'],
+
     'all_filters': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'f115w', 'f150w', 'f277w', 'f444w', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
 }
 
 #! Dropout se;ection filters
+#? z = 7 selection
+# filters = {
+#     'Y+J': {'type': 'stacked-detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
+#? z = 6 selection!! :D
 filters = {
-    'Y+J': {'type': 'stacked-detection', 'value': 5},
+    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
 
 def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
@@ -129,7 +146,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print("Running selection step...")
 
         selection_script = Path.cwd() / 'selection.py'
-        subprocess.run(['python3', str(selection_script), filters_json], check=True)
+        subprocess.run(['python3', str(selection_script), run_type, filters_json], check=True)
 
 
 
@@ -199,6 +216,11 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
 
             mask_script = Path.cwd() / 'mask_euclid_pointing.py'
             subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+
+            print("Running extract SEDs step...")
+
+            good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
+            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
 
         #? Otherwise, Extract the SEDs from the chi2 etc.
         else:

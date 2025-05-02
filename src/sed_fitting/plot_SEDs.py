@@ -42,6 +42,12 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
+#! If I want to plot individual things, overwrite the standard output pdf
+individual_sed = False
+indiv_ID = '661703'
+indiv_pdf_name = 'FAINT_BD_SED.pdf'
+
+
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
     filters = json.loads(filters_json)
@@ -86,6 +92,7 @@ def stellar_type(model):
         23: 'T6',
         24: 'T7',
         25: 'T8',
+        -1: 'No fit'
     }
     return stellar_dict[model]
 
@@ -108,6 +115,9 @@ label_crosstalk = True
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
+
+#! Output dir for individual SEDs
+sed_dir = Path.cwd().parents[1] / 'plots' / 'seds' / 'individual'
 
 #! Set up the output PDF name from the det and nondet filters
 # Set up the detection filter base
@@ -136,6 +146,8 @@ if run_type != '':
 
 # Construct the final output PDF name
 output_pdf = '_'.join(filename_components) + '.pdf'
+if individual_sed:
+    output_pdf = indiv_pdf_name
 
 print('Saving to: ', output_pdf)
 
@@ -193,7 +205,7 @@ if not bools[1]:
     filter_dict.pop('f444w')
     filter_dict.pop('ch1cds')
     filter_dict.pop('ch2cds')
-    print('Removed f444w, ch1cds, ch2cds')
+    #print('Removed f444w, ch1cds, ch2cds')
 
 if det_list == ['Y', 'J']:
     # filter_dict.pop('VIS')
@@ -204,12 +216,13 @@ if det_list == ['Y', 'J']:
     filter_dict.pop('f150w')
     filter_dict.pop('f277w')
     #filter_dict.pop('f444w')
-    print('f115w', 'f150w', 'f277w', 'f444w')
+    #print('f115w', 'f150w', 'f277w', 'f444w')
 
 if bools[0]:
     filter_dict.pop('HSC-G_DR3')
     filter_dict.pop('HSC-R_DR3')
-    print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
+    #filter_dict.pop('VIS')
+    #print('Removed f277w, HSC-G_DR3, HSC-R_DR3')
 
 # If running only VISTA: Remove items with keys VIS, Ye, Je, He
 if ('no_euclid' in input_name) or (run_type == ''):
@@ -233,6 +246,9 @@ if label_crosstalk:
     label_ct(str(parent_cat_dir / parent_cat_name), fieldName='COSMOS')
 
 parent_cat = Table.read(parent_cat_dir / parent_cat_name, format='fits')
+
+#! Catalogue of final sample with Muv
+sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
 
 # Collect all .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
@@ -268,6 +284,13 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # Get the ID of the object from the file name
         ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
         print(ID)
+        
+        if individual_sed:
+            if ID != indiv_ID:
+                continue
+        # testing by only plotting a couple (first is problematic, second is fine)
+        # if (ID != '954198') and (ID != '468417'):
+        #     continue
 
         # Index in input file of this ID
         if len(np.where(flux_table['ID'] == int(ID))[0]) == 0:
@@ -316,17 +339,17 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #? Secondary solution
         if np.sum(bools) == 0:
             sec_file = parse_spec_file(dusty_dir / spec_file.split('/')[-1])
-            print(dusty_dir / spec_file.split('/')[-1])
             sec_params = sec_file.get('model')
             params.rename_columns(params.colnames, names_param)
             secondary_sed = sec_file.get('sed')
-            for table in secondary_sed:
-                table.rename_columns(table.colnames, names_sed)
-            # Get each of the SEDs
-            model_wlens = [table['wlen'] for table in secondary_sed]
-            model_fluxes = [table['flux'] for table in secondary_sed]
-            secondary_sed = mag_to_flux(model_fluxes[1])
-            secondary_wlen = model_wlens[1]
+            if secondary_sed != None:
+                for table in secondary_sed:
+                    table.rename_columns(table.colnames, names_sed)
+                # Get each of the SEDs
+                model_wlens = [table['wlen'] for table in secondary_sed]
+                model_fluxes = [table['flux'] for table in secondary_sed]
+                secondary_sed = mag_to_flux(model_fluxes[1])
+                secondary_wlen = model_wlens[1]
         else:
             secondary_sed = mag_to_flux(model_fluxes[1])
             secondary_wlen = model_wlens[1]
@@ -334,8 +357,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #? Stellar solution
         if np.sum(bools) == 0:
             stellar_file = parse_spec_file(bd_dir / spec_file.split('/')[-1])
-            print(bd_dir / spec_file.split('/')[-1])
             stellar_params = stellar_file.get('model')
+            #print(stellar_params)
             params.rename_columns(params.colnames, names_param)
             stellar_sed = stellar_file.get('sed')
             for table in stellar_sed:
@@ -367,6 +390,10 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         chi2_1 = round(params['Chi2'][0], 1)
 
         print('GAL 1 SOLUTION: ', zphot_1, chi2_1)
+
+        if secondary_sed is None:
+            secondary_sed = stellar_sed
+            secondary_wlen = stellar_wlen
 
         #! Read in the secondary solutions from the lephare_out tables
         #? STAR
@@ -415,21 +442,26 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # plot secondary galaxy solution and stellar model
         if not secondary_is_stellar:
-            ax1.plot(secondary_wlen, secondary_sed, color='darkorange', label=f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}', linewidth=2, alpha=0.7)
-            ax1.plot(stellar_wlen, stellar_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7)
+            ax1.plot(secondary_wlen, secondary_sed, color='darkorange', label=f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}', linewidth=2, alpha=0.7) #dusty
+            ax1.plot(stellar_wlen, stellar_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7)            # star
 
         if secondary_is_stellar:
-            ax1.plot(secondary_wlen, secondary_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7)
+            ax1.plot(secondary_wlen, secondary_sed, color='red', label=r'$\chi^{2} = $' + f'{chi2_star}, type = {mlt_type}', linewidth=2, alpha=0.7) # only star if no dusty galaxy
 
         ax2.plot(zpdf['z'], zpdf['P'], color='black', linewidth=2)
         ax2.set_xlim(0, 10)
-        ax2.set_xlabel(r'$z_{\mathrm{phot}}$')
-        ax2.set_ylabel(r'$P(z)$')
+        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=20)
+        ax2.set_ylabel(r'$P(z)$', fontsize=20)
+        
+        # Make tick labels larger
+        ax2.tick_params(axis='both', which='major', labelsize=20)
 
         ###########! PLOT MODEL AND REAL PHOTOMETRY ##############
 
         # Model photometry
         model_photometry = mag_to_flux(phot['modelPhot'])
+        print(len(model_photometry))
+        print(len(central_wavelengths))
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Real photometry with upper limits for sigma < 2
@@ -443,6 +475,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # Get the RA and DEC of the object from the parent catalog
         obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
         obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
+
+        obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
 
         # Get the RA and DEC of all objects in the crossmatch catalog
         xmatch_ra = crossmatch['RA']
@@ -479,31 +513,36 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             redshift = round(obj['Redshift'], 2)
 
             # Update the title of the plot with the matched information. Add crosstalk if it is non-zero.
-            title_string = f'ID {ID}, z = {redshift}, {name}'
-            if ct > 0:
-                title_string += f', POSSIBLE CROSSTALK'
-            ax1.set_title(title_string)
+            #title_string = f'ID {ID}, z = {redshift}, {name}'
+            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}, ' + f'{name}'
+            # if ct > 0:
+            #     title_string += f', POSSIBLE CROSSTALK'
+            #ax1.set_title(title_string, pad=23)
+            ax1.set_title(title_string, pad=10)
         else:
             # If no match is found, just set the title with the ID
-            title_string = f'ID {ID}'
-            if ct > 0:
-                title_string += f', POSSIBLE CROSSTALK'
-            ax1.set_title(title_string)
+            #title_string = f'ID {ID}'
+            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
+            # if ct > 0:
+            #     title_string += f', POSSIBLE CROSSTALK'
+            #ax1.set_title(title_string, pad=23)
+            ax1.set_title(title_string, pad=10)
 
 
 
         ax1.set_yscale('log')
-        ax1.legend(loc='upper right')
+        ax1.legend(loc='upper right', fontsize=15)
         ax1.set_ylim(3e-32, 1e-29)
         ax1.set_xlim(3000, 40000)
+
+        fontsize = 21
 
         # Convert the x axis into microns by dividing by 10000
         ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
         ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
 
-        ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)')
-        #ax1.set_xlabel(r'$\lambda (\AA)$')
-        ax1.set_xlabel(r'$\lambda (\mu m)$')
+        ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)', fontsize=fontsize)
+        ax1.set_xlabel(r'$\lambda (\mu m)$', fontsize=fontsize)
 
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
@@ -513,35 +552,47 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
 
-        ax1.tick_params(which='major', length=5, width=3)
-        ax1.tick_params(axis='both', which='minor', length=3, width=2)
+        ax1.tick_params(which='major', length=7, width=4)
+        ax1.tick_params(axis='both', which='minor', length=4, width=3)
 
-        secax.tick_params(which='major', length=5, width=3)
-        secax.tick_params(axis='both', which='minor', length=5, width=2)
+        secax.tick_params(which='major', length=7, width=4)
+        secax.tick_params(axis='both', which='minor', length=5, width=3)
 
-        secax.set_ylabel(r'$\mathrm{m_{AB}}$')
+        secax.set_ylabel(r'$\mathrm{m_{AB}}$', fontsize=fontsize)
 
-        pdf.savefig(fig)
+        # Increas marker label sizes
+        ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+        secax.tick_params(axis='both', which='major', labelsize=fontsize)
+
+
+        pdf.savefig(fig, bbox_inches='tight')
+
+        # Also save fig as its own pdf
+        plt.savefig(str(sed_dir / f'{ID}_SED.pdf'), bbox_inches='tight')
+
         plt.close(fig)
 
         ############! CUTOUT ##############
-        # Get ra, dec of object from parent catalogue
-        obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
-        ra = obj['RA'][0]
-        dec = obj['DEC'][0]
+        if individual_sed == False:
+            # Get ra, dec of object from parent catalogue
+            obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
+            ra = obj['RA'][0]
+            dec = obj['DEC'][0]
 
-        contained_in = isCoordInSurveyFootprints(ra, dec)
+            contained_in = isCoordInSurveyFootprints(ra, dec)
+            print(contained_in)
 
-        # Use smaller cutout size for visual inspection
-        cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
+            # Use smaller cutout size for visual inspection
+            cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
 
-        # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
-        if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
-            cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
-        else:
-            cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
+            # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
+            if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
+                cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
+                #cutout_fig, cutout_axs = AllCutout(ra, dec, size=cutout_size, save_cutout=False)
+            else:
+                cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
 
-        pdf.savefig(cutout_fig)
-        plt.close(cutout_fig)
+            pdf.savefig(cutout_fig)
+            plt.close(cutout_fig)
 
 
