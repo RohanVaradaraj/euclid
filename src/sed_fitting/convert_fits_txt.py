@@ -28,6 +28,8 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    field_name_json = sys.argv[5]
+    field_name = json.loads(field_name_json)
 
 #! BOOL ARRAY
 #![RUN_BROWN_DWARFS, RUN_DUSTY, RUN_LYA]
@@ -36,12 +38,17 @@ if len(sys.argv) > 1:
 if __name__ == "__main__":
 
     # Generate catalogue name from input filters
-    cat_name = generate_selection_name('COSMOS', filters)
+    cat_name = generate_selection_name(field_name, filters, field_name)
 
 
     '''SETUP'''
     cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-    image_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
+
+    if field_name == 'COSMOS':
+        image_dir = Path.cwd().parents[3] / 'data' / field_name
+    else:
+        #? We need image_dir to get images.lis to get filter names. So just use one of the XMM/CDFS tiles.
+        image_dir = Path.cwd().parents[3] / 'data' / (field_name+'1')
 
     # Directory
     out_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
@@ -61,7 +68,10 @@ if __name__ == "__main__":
 
     # Delete reddest filters if we are NOT running dusty galaxies
     if bools[1] == False:
-        filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
+        if field_name != 'XMM':
+            filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
+        if field_name == 'XMM':
+            filters_to_remove = ['f444w', 'ch1servs', 'ch2servs']
         all_filters = remove_items(all_filters, filters_to_remove)
         print('Not running dusty galaxies: reddest filters removed in input catalogue.')
 

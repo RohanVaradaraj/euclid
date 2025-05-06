@@ -403,7 +403,7 @@ def filter_files():
 
 
 
-def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
+def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_type: str, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
     file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05]) -> None:
     """
     Generate a LePhare configuration file.
@@ -477,11 +477,18 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, r
             print('Running brown dwarfs: blue filters and long-wavelength filters removed in config file.')
 
         if run_dusty == False:
-            filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
+            if field_name != 'XMM':
+                filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
+            if field_name == 'XMM':
+                filters_to_remove = ['f444w', 'ch1servs', 'ch2servs']
             filter_names = remove_items(filter_names, filters_to_remove)
             print('Not running dusty galaxies: reddest filters removed in config file.')
 
         filter_dict = filter_files()
+        if field_name == 'XMM':
+            filter_dict['ch1servs'] = filter_dict.pop('ch1cds')
+            filter_dict['ch2servs'] = filter_dict.pop('ch2cds')
+            
 
 
         filter_list = 'FILTER_LIST '
@@ -567,7 +574,7 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, r
         print(det_string)
 
             
-        cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string 
+        cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string.replace('DR3', '')
 
         f.write(f'CAT_IN		{cat_in}		# Input Catalog (full path)\n')
         f.write('INP_TYPE     F		          # Input type      (F:Flux or M:MAG)\n')
@@ -577,7 +584,8 @@ def GenerateLePhareConfig(all_filters: list, det_filters: list, run_type: str, r
         f.write('CAT_TYPE     SHORT	          # Input Format    (LONG,SHORT-def)\n')
 
         # Use the input name to determine the .out name (replace .in with .out)
-        cat_out = det_string.replace('.in', '.out')
+        cat_out = det_string.replace('.in', '.out').replace('DR3', '')
+
 
         f.write(f'CAT_OUT	     $LEPHAREDIR/test/{cat_out}	# Output catalog (full path)\n')
         f.write('PARA_OUT     $LEPHAREDIR/config/zphot_output.para  # Ouput parameter (full path)\n')

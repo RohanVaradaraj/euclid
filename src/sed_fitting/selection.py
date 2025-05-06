@@ -20,14 +20,13 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
 # Retrieve filters from sys.argv
-print('###')
-print(sys.argv[1])
-print('###')
 if len(sys.argv) > 1:
     run_type = sys.argv[1]
     #run_type = json.loads(run_type_json)
     filters_json = sys.argv[2]
     filters = json.loads(filters_json)
+    field_name_json = sys.argv[3]
+    field_name = json.loads(field_name_json)
 
 else:
     raise ValueError("No filters passed to selection.py")
@@ -49,7 +48,7 @@ def apply_filters(table, filters):
 
     return table
 
-def generate_selection_name(base_name, filters):
+def generate_selection_name(base_name, filters, field_name):
     parts = [base_name]
     for filter_name, threshold in filters.items():
         clean_filter_name = filter_name.replace('_DR3', '')
@@ -101,7 +100,7 @@ def main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filte
     t = apply_filters(t, filters)
 
     # Generate output file name
-    output_save_name = generate_selection_name(base_output_name, filters)
+    output_save_name = generate_selection_name(base_output_name, filters, field_name)
 
     # Set output_save_name to environment variable
     os.environ['SELECTION_CATALOGUE'] = output_save_name
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL'
     input_cat_name = 'XMMFULL_DR3_MASKVISTADET_HSC-Z_DR3_2.0as_IRAC2.8as_2024_01_18.fits'
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-    base_output_name = "XMMFULL"
+    base_output_name = "XMM"
     
     input_name = generate_input_name(filters, run_type)
     os.environ['LEPHARE_INPUT'] = input_name

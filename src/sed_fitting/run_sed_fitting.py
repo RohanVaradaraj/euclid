@@ -20,8 +20,8 @@ config = {
     "run_type": '',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": True,
     "steps": {
-        "selection": True,         #? Initial dropout selection
-        "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
+        "selection": False,         #? Initial dropout selection
+        "lephare": True,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
         "plotting": False,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs
@@ -29,11 +29,15 @@ config = {
     }
 }
 
+#! Field name
+#? XMM, CDFS or COSMOS
+field_name = 'XMM'
+
 #! Different run types 
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
 #! Whether to run the masking of the data to the euclid footprint
-mask_euclid = True
+mask_euclid = False
 
 #! Specific combinations of flags.
 flag_combinations = [
@@ -77,7 +81,7 @@ base_filters = {
 #     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 # }
 
-#? z = 6 selection!! :D
+#? z = 6 selection
 filters = {
     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
@@ -124,6 +128,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     all_filters_json = json.dumps(base_filters[run_type])
     run_type_json = json.dumps(run_type)
     object_type_json = json.dumps(plot_object_type)
+    field_name_json = json.dumps(field_name)
 
     run_flag_dict = {
         (False, False, False): 'normal SED fitting',
@@ -146,7 +151,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print("Running selection step...")
 
         selection_script = Path.cwd() / 'selection.py'
-        subprocess.run(['python3', str(selection_script), run_type, filters_json], check=True)
+        subprocess.run(['python3', str(selection_script), run_type, filters_json, field_name_json], check=True)
 
 
 
@@ -159,7 +164,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
 
         #? Convert catalogue to lephare format
         convert_script = Path.cwd() / 'convert_fits_txt.py'
-        subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+        subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
 
         #? Set up the output file names and folders
         #* 1) Get the detection and non-detection filters
@@ -185,13 +190,16 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         det_folder = 'det_' + '_'.join(filter(None, tags))
 
         #? Generate LePhare parameter file
-        GenerateLePhareConfig(base_filters[run_type], det_filters, run_type=run_type, run_brown_dwarfs=run_brown_dwarfs, run_dusty=run_dusty, run_lya=run_lya)
+        GenerateLePhareConfig(field_name, base_filters[run_type], det_filters, run_type=run_type, run_brown_dwarfs=run_brown_dwarfs, run_dusty=run_dusty, run_lya=run_lya)
 
         #? Build LePhare libraries
         buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
         
         #? Run the photometric redshifts
-        zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / det_folder
+        zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / det_folder
+
+        #? Make the zphot dir if it doesn't already exist
+        Path(zphot_dir).mkdir(parents=True, exist_ok=True)
 
         # With an overwrite step
         if config['overwrite']:
