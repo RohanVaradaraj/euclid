@@ -35,18 +35,28 @@ def MUV_to_mAB(MUV, z=z, DL=DL):
     """Convert absolute magnitude to apparent magnitude."""
     return MUV + 5 * np.log10(DL / 10) - 2.5 * np.log10(1 + z)
 
-def FWHM_arcsec_to_Re_kpc(fwhm, z):
+def FWHM_arcsec_to_Re_kpc(fwhm, z, psf_unbroadening=True):
     """Convert FWHM in arcseconds to effective radius (Re) in kpc."""
     as_per_kpc = cosmo.arcsec_per_kpc_proper(z).value
-    return fwhm / (2 * np.sqrt(2 * np.log(2))) / as_per_kpc
+    if psf_unbroadening:
+        fwhm = np.sqrt(fwhm**2 - 0.51**2)
+    r_e = fwhm / (2 * np.sqrt(2 * np.log(2))) / as_per_kpc
+    return r_e
+
 
 def Re_kpc_to_FWHM_arcsec(r_e, z, psf_broadening=True):
     """Convert effective radius (Re) in kpc to FWHM in arcseconds."""
     as_per_kpc = cosmo.arcsec_per_kpc_proper(z).value
-    fwhm = r_e * (4 * np.sqrt(2 * np.log(2))) / 1.678 * as_per_kpc
+    
+    #fwhm = r_e * (2 * np.sqrt(2 * np.log(2))) / 1.678 * as_per_kpc
+    fwhm = r_e * 1.27 * as_per_kpc
+
     if psf_broadening:
         fwhm = np.sqrt(fwhm**2 + 0.51**2)  # Include PSF broadening
     return fwhm
+
+# print(FWHM_arcsec_to_Re_kpc(1.6, 7))
+# exit()
 
 def calc_stats(fwhms, mags, mag_limit=28):
     """Calculate mean and standard deviation for FWHM and magnitude below a limit."""
@@ -116,24 +126,25 @@ plt.axhline(0.51, color='black', linestyle='dotted', linewidth=3, alpha=0.3, zor
 
 
 # --- Plot FWHM vs J-Magnitude for Euclid ---
-plot_fwhm_vs_mag(euclid_lbg_mag, euclid_lbg_fwhms, 'blue', 'o', 80, 0.65, 3)
-plot_fwhm_vs_mag(euclid_bd_mag, euclid_bd_fwhms, 'red', '*', 230, 0.9, 5)
+plot_fwhm_vs_mag(euclid_lbg_mag, euclid_lbg_fwhms, 'blue', 'o', 100, 0.65, 3)
+plot_fwhm_vs_mag(euclid_bd_mag, euclid_bd_fwhms, 'red', '*', 270, 0.9, 5)
 
 # --- Size-Luminosity Relations ---
 mAB = MUV_to_mAB(M, z, DL)
 
 relations = {
     "Roper+2022": size_luminosity_relation(1.126, -21, M, 0.29),
-    "Kawamata+2018": size_luminosity_relation(0.94, -21, M, 0.46),
+    #"Kawamata+2018": size_luminosity_relation(0.94, -21, M, 0.46),
     "Shibuya+2015": size_luminosity_relation(0.75, -21, M, 0.27),
     "Yang+2022": size_luminosity_relation(10**(-0.09), -21, M, 0.50),
     "Sun+2022": size_luminosity_relation(0.85, -21, M, 0.28),
+    "Bowler+2017": size_luminosity_relation(1.1, -21, M, 0.5),
 }
 
-linestyles = ['-', '--', '-.', (0, (1, 1)), (0, (3, 1, 1, 1, 1, 1))]
-colours = ['black', 'mediumorchid', 'seagreen', 'orange']
-colours = ['orange', 'green', 'purple', 'black', 'turquoise']
-alpha=[0.95, 0.95, 0.95, 0.95]
+linestyles = ['-', '-.', (0, (1, 1)), '--', '-']
+#colours = ['brown', 'mediumorchid', 'seagreen', 'orange', 'black']
+colours = ['orange', 'purple', 'green', 'turquoise', 'black']
+alpha=[0.95, 0.95, 0.95, 0.95, 0.95]
 
 # Convert sizes to FWHM in arcseconds
 for key in relations:
@@ -145,17 +156,27 @@ for i, (label, values) in enumerate(relations.items()):
 
 # Labels and legends
 ax2 = plt.gca().secondary_xaxis('top', functions=(mAB_to_MUV, MUV_to_mAB))
-ax2.set_xlabel(r'$M_{\rm{UV}}$')
+ax2.set_xlabel(r'$M_{\rm{UV}}$', fontsize=20)
 
-plt.xlabel(r'$J_{E}$ (mag)')
-plt.ylabel('FWHM (arcsec)')
+plt.xlabel(r'$J_{E}$ (mag)', fontsize=20)
+plt.ylabel('FWHM (arcsec)', fontsize=20)
 
 plt.tick_params(axis='both', which='major', width=2.5, length=5)
 ax2.tick_params(axis='both', which='major', width=2.5, length=5)
 
-plt.xlim(22.9, 28)
-plt.ylim(0.3, 3.1)
-plt.legend()
+# Increase marker label sizes
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+ax2.tick_params(axis='x', labelsize=20)
+
+# plt.xlim(22.9, 28)
+# plt.ylim(0.3, 3.1)
+
+# Zoom in based on Rebecca's comments
+plt.xlim(22.9, 27.5)
+plt.ylim(0.35, 2.1)
+
+plt.legend(ncols=2, frameon=False, loc='upper right', alignment='left')
 plt.tight_layout()
 plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag.pdf')
 plt.show()

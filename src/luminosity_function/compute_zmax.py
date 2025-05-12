@@ -30,6 +30,8 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
 
+
+#! ################# RUN TYPE ##################
 run_type = ''
 
 def mag_to_flux(m):
@@ -64,7 +66,12 @@ IDs = [int(ID) for ID in IDs]
 # Parent catalogue from which to get fluxes
 #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_28_with_euclid.fits'
 #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
+# cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
+
+if run_type == '':
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+if run_type == 'with_euclid':
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -122,11 +129,15 @@ zmin = 6.50
 zmax = 7.50
 
 #! Vmax parameters
-cosmos_area = 1.7214634933517867 # UVISTA 
-#cosmos_area = 0.6536 # Euclid
-covering_fraction = 0.8 # UVISTA
+if run_type == '':
+    cosmos_area = 1.7214634933517867 # UVISTA 
+if run_type == 'with_euclid':
+    cosmos_area = 0.6536 # Euclid
+
+#covering_fraction = 0.8 # UVISTA
 #covering_fraction = 0.84 # Euclid 
-#covering_fraction = 1.0 # =1 since accounted for in injection recovery
+covering_fraction = 1.0 # =1 since accounted for in injection recovery
+
 cosmos_area *= covering_fraction
 
 ratios = []

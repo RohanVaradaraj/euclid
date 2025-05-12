@@ -21,9 +21,9 @@ config = {
     "overwrite": True,
     "steps": {
         "selection": False,         #? Initial dropout selection
-        "lephare": True,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
+        "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": False,          #? Plot the SEDs
+        "plotting": True,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs
         "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
@@ -43,7 +43,7 @@ mask_euclid = False
 flag_combinations = [
     (False, False, False),  #? All False = Normal SED fitting
     #(True, False, False),   #? Only run_brown_dwarfs = True
-    #(False, True, False),   #? Only run_dusty = True
+    #False, True, False),   #? Only run_dusty = True
     #(False, False, True)    #? Only run_lya = True
 ]
 
@@ -54,7 +54,7 @@ loop_run_types = False
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
+plot_object_type = 'best_highz' #'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
 
 #! Base filter sets
 base_filters = {
@@ -236,7 +236,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
             print("Running extract SEDs step...")
 
             good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
 
 
 
@@ -248,7 +248,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print("Running plotting step...")
 
         plot_script = Path.cwd() / 'plot_SEDs.py'
-        subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json, run_type_json, object_type_json], check=True)
+        subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json, run_type_json, object_type_json, field_name_json], check=True)
 
 
 

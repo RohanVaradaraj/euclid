@@ -29,6 +29,7 @@ sys.path.append(str(cutout_path))
 from cutout_codes import *
 from vista_cutouts import *
 from all_cutouts import AllCutout
+from xmm_cutouts import XMMCutout
 
 crosstalk_path = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
 sys.path.append(str(crosstalk_path))
@@ -47,6 +48,9 @@ individual_sed = False
 indiv_ID = '661703'
 indiv_pdf_name = 'FAINT_BD_SED.pdf'
 
+#! TEST by plotting first N objects
+test = False
+N = 10
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -59,6 +63,8 @@ if len(sys.argv) > 1:
     run_type = json.loads(run_type_json)
     object_type_json = sys.argv[5]
     object_type = json.loads(object_type_json)
+    field_name_json = sys.argv[6]
+    field_name = json.loads(field_name_json)
 
 if run_type == '':
     euclid_blind = True
@@ -111,7 +117,7 @@ def flux_to_mag(flux):
     return mag
 
 #! Label crosstalk?
-label_crosstalk = True
+label_crosstalk = False
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
@@ -134,7 +140,7 @@ else:
 base_nondet = 'nonDet_' + '_'.join([f for f, t in filters.items() if t['type'] == 'non-detection'])
 
 # Collect the components for the filename
-filename_components = [base_det, base_nondet]
+filename_components = [field_name, base_det, base_nondet]
 
 # Add object type if available
 if object_type:
@@ -155,15 +161,15 @@ print('Saving to: ', output_pdf)
 # zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / base_det
 zphot_folder = base_det + '_' + run_type + f'_{object_type}' if run_type != '' else base_det + f'_{object_type}'
 
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits' / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
 
 # Set up the dusty and brown dwarf dir to get the same correspoinding SEDs
 dusty_folder = base_det + '_' + run_type + '_dusty' if run_type != '' else base_det + '_dusty'
-dusty_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / dusty_folder
+dusty_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / dusty_folder
 
 bd_folder = base_det + '_' + run_type + '_bd' if run_type != '' else base_det + '_bd'
-bd_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / bd_folder
+bd_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / bd_folder
 
 # Crossmatched catalogue name to get existing sources
 crossmatch_name = 'all_COSMOS_highz.fits'
@@ -176,13 +182,13 @@ crossmatch['Redshift'] = crossmatch['Redshift'].astype(float)
 # Read in the input .in file
 input_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'lephare' / 'inputs' / 'euclid'
 if not bools[0]:    
-    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '.in'
+    input_name = base_det.replace('_DR3', '') + (f"_{run_type}" if run_type != '' else '') + '.in'
 if bools[0]:
-    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_bd' + '.in'
+    input_name = base_det.replace('_DR3', '') + (f"_{run_type}" if run_type != '' else '') + '_bd' + '.in'
 if bools[1]:
-    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_dusty' + '.in'
+    input_name = base_det.replace('_DR3', '') + (f"_{run_type}" if run_type != '' else '') + '_dusty' + '.in'
 if bools[2]:
-    input_name = base_det + (f"_{run_type}" if run_type != '' else '') + '_lya' + '.in'
+    input_name = base_det.replace('_DR3', '') + (f"_{run_type}" if run_type != '' else '') + '_lya' + '.in'
 
 print('Reading in: ', input_name)
 
@@ -207,7 +213,7 @@ if not bools[1]:
     filter_dict.pop('ch2cds')
     #print('Removed f444w, ch1cds, ch2cds')
 
-if det_list == ['Y', 'J']:
+if det_list == ['Y', 'J'] or det_list == ['HSC-Z_DR3']:
     # filter_dict.pop('VIS')
     # filter_dict.pop('Ye')
     # filter_dict.pop('Je')
@@ -239,11 +245,11 @@ print('Filters: ', filter_dict.keys())
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
 parent_cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-parent_cat_name = generate_selection_name('COSMOS', filters)
+parent_cat_name = generate_selection_name(field_name, filters)
 
 # Label crosstalk
 if label_crosstalk:
-    label_ct(str(parent_cat_dir / parent_cat_name), fieldName='COSMOS')
+    label_ct(str(parent_cat_dir / parent_cat_name), fieldName=field_name)
 
 parent_cat = Table.read(parent_cat_dir / parent_cat_name, format='fits')
 
@@ -255,6 +261,10 @@ spec_files = glob.glob(str(zphot_dir / '*.spec'))
 
 # Sort the files in increasing numerical order
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
+
+# If testing, limit to first N files
+if test:
+    spec_files = spec_files[0:N]
 
 with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
@@ -401,7 +411,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             #* get from secondary solution
             chi2_star = round(stellar_params['Chi2'][-1], 1)
         else:
-            bd_out_name = base_det + '_bd.out'
+            bd_out_name = base_det.replace('_DR3', '') + '_bd.out'
             bd_out = ascii.read(lephare_out_dir / bd_out_name, format='no_header')
             chi2_star = round(bd_out[bd_out['col1'] == int(ID)]['col21'][0], 1)
 
@@ -411,7 +421,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             chi2_2 = round(sec_params['Chi2'][1], 1)
             zphot_2 = round(sec_params['Zphot'][1], 2)
         else:
-            dusty_out_name = base_det + '_dusty.out'
+            dusty_out_name = base_det.replace('_DR3', '') + '_dusty.out'
             dusty_out = ascii.read(lephare_out_dir / dusty_out_name, format='no_header')
             chi2_2 = round(dusty_out[dusty_out['col1'] == int(ID)]['col15'][0], 1)
             zphot_2 = round(params['Zphot'][1], 2)
@@ -476,7 +486,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
         obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
 
-        obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
+        #obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
 
         # Get the RA and DEC of all objects in the crossmatch catalog
         xmatch_ra = crossmatch['RA']
@@ -514,15 +524,15 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
             # Update the title of the plot with the matched information. Add crosstalk if it is non-zero.
             #title_string = f'ID {ID}, z = {redshift}, {name}'
-            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}, ' + f'{name}'
+            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}, ' + f'{name}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)
             ax1.set_title(title_string, pad=10)
         else:
             # If no match is found, just set the title with the ID
-            #title_string = f'ID {ID}'
-            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
+            title_string = f'ID {ID}'
+            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)
@@ -580,7 +590,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             dec = obj['DEC'][0]
 
             contained_in = isCoordInSurveyFootprints(ra, dec)
-            print(contained_in)
+            if field_name == 'COSMOS':
+                print(contained_in)
 
             # Use smaller cutout size for visual inspection
             cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
@@ -589,6 +600,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
                 cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
                 #cutout_fig, cutout_axs = AllCutout(ra, dec, size=cutout_size, save_cutout=False)
+            if field_name == 'XMM':
+                cutout_fig, cutout_axs = XMMCutout(ra, dec, size=cutout_size, save_cutout=False)
             else:
                 cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
 

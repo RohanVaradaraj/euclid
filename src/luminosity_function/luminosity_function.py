@@ -9,12 +9,19 @@ from astropy.table import Table, vstack, Column
 import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.optimize import curve_fit
-
+import emcee
+import corner
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
 
+plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
+
+#! Switches
+#run_type = ''
+run_type = 'with_euclid'   
+fit = True
 
 #! ############### FUNCTIONS ####################
 def dpl(phiStar, alpha, beta, M, Mstar):
@@ -52,9 +59,18 @@ def schechter(phiStar, alpha, M, Mstar):
 
 
 
-def dpl_fit(M, phiStar, alpha, beta, Mstar):
+def dpl_fit(M, phiStar, Mstar, alpha, beta):
     """ For fitting the LFs"""
     return np.log(10) * phiStar / (2.5 * (10 ** (0.4 * (alpha + 1) * (M - Mstar)) + 10 ** (0.4 * (beta + 1) * (M - Mstar))))
+
+def schechter_fit(M, phiStar, Mstar, alpha):
+    """ For fitting the LFs"""
+    coeff = np.log(10) / 2.5
+    faint = (10 ** (0.4 * (Mstar - M))) ** (alpha+1)
+    bright_exponent = -10 ** (0.4 * (Mstar - M))
+    bright = np.exp(bright_exponent)
+    phi = coeff * phiStar * faint * bright
+    return phi
 
 
 
@@ -108,19 +124,88 @@ def adaptive_muv_binning(muv_values, min_bin_size=10):
     return bin_centers, bin_widths, bin_edges
 
 
+# Log-likelihood function
+def log_likelihood(theta, M, phi, phi_err):
+    #!DPL
+    # M_star, phi_star, alpha, beta = theta
+    # model = dpl_fit(M, phi_star, M_star, alpha, beta)
+    # return -0.5 * np.sum(((phi - model) / phi_err) ** 2)
+    #!Schechter
+    M_star, phi_star, alpha = theta
+    model = schechter_fit(M, phi_star, M_star, alpha)
+    return -0.5 * np.sum(((phi - model) / phi_err) ** 2)
+
+#* Flat priors
+def log_prior(theta):
+    M_star, phi_star, alpha, beta = theta
+    if -22.5 < M_star < -19 and 1e-5 < phi_star < 9e-4 and -3 < alpha < -1 and -6 < beta < -3:
+        return 0.0
+    return -np.inf
+
+#* Gaussiean priors on alpha, beta
+# def log_prior(theta):
+#     M_star, phi_star, alpha, beta = theta
+
+#     # Flat priors for M_star and phi_star (keep reasonable limits)
+#     if not (-22.5 < M_star < -19. and 1e-6 < phi_star < 1e-3):
+#         return -np.inf  # Return -inf if out of bounds
+
+#     # Gaussian priors for alpha and beta
+#     logp_alpha = -0.5 * ((alpha + 2.) / 0.5) ** 2  # Mean = -2.0, Sigma = 0.5
+#     logp_beta = -0.5 * ((beta + 4.5) / 0.7) ** 2    # Mean = -4.5, Sigma = 0.7
+
+#     return logp_alpha + logp_beta  # Sum of log priors (log-likelihood adds them)
+
+
+#* Gaussian priors on all params?
+def log_prior(theta):
+    #!DPL
+    #M_star, phi_star, alpha, beta = theta
+    # Gaussian priors (mean, sigma)
+    # logp_M_star  = -0.5 * ((M_star  + 21) / 1.0) ** 2   # Mean = -20.5, Sigma = 1.0
+    # logp_phi_star = -0.5 * ((phi_star - 4e-4) / 1e-3) ** 2  # Mean = 4e-4, Sigma = 1e-3
+    # logp_alpha   = -0.5 * ((alpha + 2.0) / 0.5) ** 2   # Mean = -2.0, Sigma = 0.5
+    # logp_beta    = -0.5 * ((beta + 5.0) / 0.5) ** 2   # Mean = -4.0, Sigma = 0.5
+    #return logp_phi_star + logp_M_star + logp_alpha + logp_beta
+
+    #! DPL
+    M_star, phi_star, alpha = theta
+    # Gaussian priors (mean, sigma)
+    logp_M_star  = -0.5 * ((M_star  + 21.15) / 1.0) ** 2   # Mean = -20.5, Sigma = 1.0
+    logp_phi_star = -0.5 * ((phi_star - 0.19e-3) / 1e-3) ** 2  # Mean = 4e-4, Sigma = 1e-3
+    logp_alpha   = -0.5 * ((alpha + 2.06) / 0.5) ** 2   # Mean = -2.0, Sigma = 0.5
+
+    return logp_phi_star + logp_M_star + logp_alpha
+
+
+# Full probability function
+def log_probability(theta, M, phi, phi_err):
+    lp = log_prior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood(theta, M, phi, phi_err)
 
 #!################## READ IN DATA ####################
 
 #? Read catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
+#cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
 #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits' # inclusive
-t = Table.read(cat_dir / cat_name)
 
+if run_type == '':
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+if run_type == 'with_euclid':
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+
+t = Table.read(cat_dir / cat_name)
 
 # Remove the Lya emitters which have z>7.5 with no emission line.
 t = t[t['Vmax'] > 0]
 t = t[t['Muv'] < 0]
+
+# print('Min/max Muv:')
+# print(np.min(t['Muv']), np.max(t['Muv']))
+# exit()
 
 # Remove object with ID 1109577
 # t = t[t['ID'] != 1109577]
@@ -131,7 +216,7 @@ t = t[t['Muv'] < 0]
 
 # Restrict to Muv < -20.5
 print('Number of galaxies before Muv cut: ', len(t))
-t = t[t['Muv'] < -20.95]
+#t = t[t['Muv'] < -20.95]
 print('Number of galaxies after Muv cut: ', len(t))
 
 # Read in completeness matrix
@@ -147,44 +232,22 @@ Muv_completeness_bins = np.arange(-23, -20., 0.1)
 z_completeness_bins = np.arange(6.5, 7.5, 0.05)
 
 #! ################## Muv BINNING ####################
-# Find the minimum and maximum Muv of the sample
-Muv_min = np.min(t['Muv'])
-Muv_max = np.max(t['Muv'])
-print(f'Sample Minimum Muv: {Muv_min}, Maximum Muv: {Muv_max}')
 
-#? Original binning
-bin_width = 0.4
-Muv_bins = np.arange(Muv_min-0.25, Muv_max, bin_width)
-#print(Muv_bins)
+#* VISTA
+if run_type == '':
+    Muv_bins = [-22.8, -22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
+    bin_widths = np.abs(np.diff(Muv_bins))
+    bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
 
-# bin_edges = np.array([-22.5, -22.1, -21.7, -21.3, -20.9, -20.8, -20.7, -20.6, -20.5])
-# Muv_bins = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-# bin_widths = np.abs(np.diff(bin_edges))
+#* VISTA + Euclid
+if run_type == 'with_euclid':
+    Muv_bins = [-22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
+    bin_widths = np.abs(np.diff(Muv_bins))
+    bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
 
-#? Experimenting with different binning schemes
-#Muv_bins = np.array([-20.8, -21.2, -21.6, -22.0, -22.4, -22.8])[::-1]
-# Muv_bins = np.array([-22.55, -22.15, -21.75, -21.35, -20.95])
-
-#? Final binning scheme for UltraVISTA
-#Muv_bins = np.array([-22.6, -22.2, -21.8, -21.4, -20.8]) # This one seems to do well
-
-bin_widths = np.abs(np.diff(Muv_bins))
-bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
-
-# Muv_bins = np.arange(Muv_min-0.1, Muv_max, 0.5)
-# bin_widths = np.abs(np.diff(Muv_bins))
-# bin_centres = 0.5 * (Muv_bins[:-1] + Muv_bins[1:])
-
-# bin_edges = [-22.65, -22.25, -21.85, -21.45, -21.25, -21.00]
-# bin_widths = [0.4, 0.4, 0.4, 0.4, 0.2, 0.25]
-# bin_centres = 0.5 * (np.array(bin_edges[:-1]) + np.array(bin_edges[1:]))
-# Muv_bins = bin_edges
-
-#Muv_bins, bin_widths, bin_edges = adaptive_muv_binning(t['Muv'], min_bin_size=30)
 print(f'Muv bins: {np.round(Muv_bins, 2)}')
 print(f'Bin widths: {np.round(bin_widths, 2)}')
 print(f'Bin centres: {np.round(bin_centres, 2)}')
-#exit()
 
 # plt.hist(t['Muv'], bins=np.arange(Muv_min, Muv_max, 0.01), alpha=0.5)
 # for Muv in Muv_bins:
@@ -192,7 +255,6 @@ print(f'Bin centres: {np.round(bin_centres, 2)}')
 
 # plt.show()
 # exit()
-
 
 # Split the table into these bins
 binned_tables = []
@@ -212,17 +274,9 @@ for i, sub_table in enumerate(binned_tables):
     
     # Print number of galaxies in each bin
     print(f'Bin {i} has {len(sub_table)} galaxies')
-    # plt.hist(sub_table['Muv'], bins=np.arange(Muv_min, Muv_max, 0.1), alpha=0.5)
-    # plt.axvline(Muv_bins[i], color='black', linestyle='--')
-    # plt.axvline(Muv_bins[i+1], color='black', linestyle='--')
-    # plt.show()
 
     Muv_range_here = [Muv_bins[i], Muv_bins[i+1]]
-    completeness_here = completeness_matrix[:, np.digitize([Muv_range_here], Muv_completeness_bins)[0] - 1]
-    print(completeness_here.shape)
-
-    # Get mean, median completeness
-    print(f'Mean completeness: {np.mean(completeness_here):.4f}, Median completeness: {np.median(completeness_here):.4f}')
+    print(f'Muv range: {Muv_range_here}')
 
     #! Go through all the objects in the sub-table
     for j, obj in enumerate(sub_table):
@@ -239,8 +293,7 @@ for i, sub_table in enumerate(binned_tables):
         # Ensure indices stay within bounds
         z_bin = max(0, min(z_bin, completeness_matrix.shape[1] - 1))
         Muv_bin = max(0, min(Muv_bin, completeness_matrix.shape[0] - 1))
-        
-        #print(f'Object {ID} in Muv bin {i+1} at z={z:.4f}, Muv={Muv:.4f} with Vmax {Vmax:.4f} has completeness {completeness_matrix[Muv_bin, z_bin]:.4f}')
+    
 
         completeness = completeness_matrix[Muv_bin, z_bin]
 
@@ -252,43 +305,29 @@ for i, sub_table in enumerate(binned_tables):
         err_summand = 1 / Vmax ** 2
         delta_phi[i] += err_summand
 
-# Histogram of Muv split by bins
-#plt.show()
 
-print('LF values:', phi)
 
 ##############################! ERROR, INCLUDING COSMIC VARIANCE ##############################
 for i, lf in enumerate(phi):
 
-    # Account for bin width
-	lf = lf / bin_widths[i]
-	delta_phi[i] =  np.sqrt(delta_phi[i]) / bin_widths[i]
+    phi[i] /= bin_widths[i]  
+    delta_phi[i] = np.sqrt(delta_phi[i]) / bin_widths[i]
 
 
-"""
- ------------------------------------------------- 
-| Total fractional error on number counts = 0.168 | 
- ------------------------------------------------- 
- 
-Error Budget: 
-Poisson uncertainty (relative): 0.141 
-Cosmic variance (relative): 0.091 
-
-Observed counts: 50 +/- 9 
-"""
-
-# For each bin at its median completeness
-cv_per_bin = np.array([0.118, 0.110, 0.104, 0.096])
-
-# Add fractional cosmic variance error in quadrature
-#cosmic_variance_frac_err = 0.091
+#? cosmic variance from https://www.ph.unimelb.edu.au/~mtrenti/cvc/CosmicVariance.html
+if run_type == '':
+    cv_per_bin = [0.118, 0.110, 0.108, 0.110, 0.102, 0.097, 0.095, 0.097, 0.096, 0.103, 0.123]
+if run_type == 'with_euclid':
+    cv_per_bin = [0.175, 0.171, 0.164, 0.157, 0.148, 0.144, 0.142, 0.144, 0.149, 0.171]
 
 # Add this much percentage error to the LF in quadrature
 delta_phi = np.sqrt(delta_phi**2 + (cv_per_bin * phi)**2)
 
+print('LF values:', phi)
 print('LF errors:', delta_phi)
 
-
+# for i, LF in enumerate(phi):
+#     print(LF, delta_phi[i])
 #! ############################## Existing data points ##############################
 
 # Bouwens+21 LF points
@@ -325,6 +364,7 @@ v23y = np.array([2.70e-6, 2.81e-7, 2.37e-8])#, np.nan])
 v23dy = np.array([0.66e-6, 1.54e-7, 2.50e-8])#, np.nan])  
 v23x, v23y, v23dy = np.array(v23x), np.array(v23y), np.array(v23dy)
 
+
 # Harikane+24 points
 h24x = [-23.2, -22.7]
 h24y = [1.6e-7, 4.8e-7]
@@ -347,9 +387,19 @@ b17x, b17y, b17dy = np.array(b17x), np.array(b17y), np.array(b17dy)
 
 #? Combine my points with other points:
 
+if run_type == '':
+    # Leave out last four bins
+    bin_centres_to_fit = bin_centres[:-3]
+    phi_to_fit = phi[:-3]
+    delta_phi_to_fit = delta_phi[:-3]
+if run_type == 'with_euclid':
+    # Leave out last three bins
+    bin_centres_to_fit = bin_centres[:-3]
+    phi_to_fit = phi[:-3]
+    delta_phi_to_fit = delta_phi[:-3]
+
 Muv_combined, LF_combined, delta_phi_combined = concatenate_arrays(
-    (bin_centres, phi, delta_phi), # My new UltraVISTA points
-    #(Muv_bins[:-2], phi[:-1], delta_phi[:-1]), # My new UltraVISTA points, minus last bin affected by BD cut removing galaxies
+    (bin_centres_to_fit, phi_to_fit, delta_phi_to_fit), # My new UltraVISTA points
     (v23x[:-1], v23y[:-1], v23dy[:-1]), # Varadaraj+23, minus CDFS BD
     #(v23x, v23y, v23dy), # Varadaraj+23
     (f15x, f15y, f15y_up), # Finkelstein+15
@@ -357,26 +407,140 @@ Muv_combined, LF_combined, delta_phi_combined = concatenate_arrays(
     #(b17x, b17y, b17dy), # Bowler+17
 )
 
-#? Curve fitting
+#?####################### SCIPY Curve fitting #################################
 # Initial parameter guess (phi*, alpha, beta, M*)
-p0 = [3.6e-4, -2.1, -4.8, -20.3]
+# p0 = [3.6e-4, -2.1, -4.8, -20.3]
 
-# Fit the function
-popt, pcov = curve_fit(dpl_fit, Muv_combined, LF_combined, sigma=delta_phi_combined, p0=p0, maxfev=10000)
+# # Fit the function
+# popt, pcov = curve_fit(dpl_fit, Muv_combined, LF_combined, sigma=delta_phi_combined, p0=p0, maxfev=10000)
 
-# Extract best-fit parameters
-phiStar_fit, alpha_fit, beta_fit, Mstar_fit = popt
+# # Extract best-fit parameters
+# phi_star_best, alpha_best, beta_best, M_star_best = popt
 
-print(f"Best-fit parameters:\nphi*: {phiStar_fit:.3e}, Alpha: {alpha_fit:.2f}, Beta: {beta_fit:.2f}, M*: {Mstar_fit:.2f}")
+# # print(f"Best-fit parameters:\nphi*: {phiStar_fit:.3e}, Alpha: {alpha_fit:.2f}, Beta: {beta_fit:.2f}, M*: {Mstar_fit:.2f}")
 
-# Get errors on the parameters
-perr = np.sqrt(np.diag(pcov))
-print(f"Errors on parameters:\nphi*: {perr[0]:.3e}, Alpha: {perr[1]:.2f}, Beta: {perr[2]:.2f}, M*: {perr[3]:.2f}")
-err_phiStar_fit, err_alpha_fit, err_beta_fit, err_Mstar_fit = perr
+# # Get errors on the parameters
+# perr = np.sqrt(np.diag(pcov))
+# print(f"Errors on parameters:\nphi*: {perr[0]:.3e}, Alpha: {perr[1]:.2f}, Beta: {perr[2]:.2f}, M*: {perr[3]:.2f}")
+# err_phiStar_fit, err_alpha_fit, err_beta_fit, err_Mstar_fit = perr
+
+#? ####################### EMCEE ############################
+if fit:
+    ##!! DPL
+    # # Initial parameter guesses
+    # initial = [-21.2, 2.5e-4, -2.0, -4.5]
+    # ndim, nwalkers = len(initial), 50
+
+    # #pos = initial + 1e-3 * np.random.randn(nwalkers, ndim)
+    # pos = np.array([
+    #     np.random.uniform(-22, -19, nwalkers),  # M_star
+    #     np.random.uniform(1e-4, 1e-3, nwalkers),  # phi_star
+    #     np.random.uniform(-2.5, -1.5, nwalkers),  # alpha
+    #     np.random.uniform(-5, -3.5, nwalkers)  # beta
+    # ]).T
+
+    # # Run MCMC
+    # sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Muv_combined, LF_combined, delta_phi_combined))
+    # sampler.run_mcmc(pos, 50000, progress=True)
+
+    # # Extract best-fit parameters
+    # samples = sampler.get_chain(discard=1000, thin=15, flat=True)
+    # M_star_best, phi_star_best, alpha_best, beta_best = np.median(samples, axis=0)
+    # print(f"Best-fit parameters:\nM*: {M_star_best:.4f}, phi*: {phi_star_best:.4e}, Alpha: {alpha_best:.4f}, Beta: {beta_best:.4f}")
+
+    # # Corner plot of fitting
+    # labels = [r"$M^*$", r"$\phi^*$", r"$\alpha$", r"$\beta$"]
+    # fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84], show_titles=True)
+
+    # # Convert phi* label values to scientific notation
+    # for ax in fig.get_axes():
+    #     if ax.get_xlabel() == r"$\phi^*$":
+    #         ax.get_xaxis().get_offset_text().set_visible(False)
+
+    # plt.savefig(plot_dir / 'corner_plot.pdf')
+    # plt.close()
+
+    # tau = sampler.get_autocorr_time()
+    # #print("Autocorrelation Time Estimate:", np.mean(tau))
+
+    # # Get 1sigma upper and lower errors
+    # M_star_best_err_up, phi_star_best_err_up, alpha_best_err_up, beta_best_err_up = np.percentile(samples, 84, axis=0) - [M_star_best, phi_star_best, alpha_best, beta_best]
+    # M_star_best_err_lo, phi_star_best_err_lo, alpha_best_err_lo, beta_best_err_lo = [M_star_best, phi_star_best, alpha_best, beta_best] - np.percentile(samples, 16, axis=0)
+    # print('Upper errors on best-fit parameters:', M_star_best_err_up, phi_star_best_err_up, alpha_best_err_up, beta_best_err_up)
+    # print('Lower errors on best-fit parameters:', M_star_best_err_lo, phi_star_best_err_lo, alpha_best_err_lo, beta_best_err_lo)    
+
+    ##!! SCHECHTER
+    # # Initial parameter guesses
+    # initial = [-21.15, 0.19e-3, -2.06]
+    # ndim, nwalkers = len(initial), 50
+    # #pos = initial + 1e-3 * np.random.randn(nwalkers, ndim)
+    # pos = np.array([
+    #     np.random.uniform(-22, -19, nwalkers),  # M_star
+    #     np.random.uniform(1e-4, 1e-3, nwalkers),  # phi_star
+    #     np.random.uniform(-2.5, -1.5, nwalkers),  # alpha
+    # ]).T
+
+    # # Run MCMC
+    # sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(Muv_combined, LF_combined, delta_phi_combined))
+    # sampler.run_mcmc(pos, 50000, progress=True)
+
+    # # Extract best-fit parameters
+    # samples = sampler.get_chain(discard=1000, thin=15, flat=True)
+    # M_star_best_sch, phi_star_best_sch, alpha_best_sch = np.median(samples, axis=0)
+    # print(f"Best-fit parameters:\nM*: {M_star_best_sch:.4f}, phi*: {phi_star_best_sch:.4e}, Alpha: {alpha_best_sch:.4f}")
+
+    # # Corner plot of fitting
+    # labels = [r"$M^*$", r"$\phi^*$", r"$\alpha$", r"$\beta$"]
+    # fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84], show_titles=True)
+
+    # # Convert phi* label values to scientific notation
+    # for ax in fig.get_axes():
+    #     if ax.get_xlabel() == r"$\phi^*$":
+    #         ax.get_xaxis().get_offset_text().set_visible(False)
+
+    # plt.savefig(plot_dir / 'corner_plot_sch.pdf')
+    # plt.close()
+
+    # tau = sampler.get_autocorr_time()
+    # #print("Autocorrelation Time Estimate:", np.mean(tau))
+
+    # # Get 1sigma upper and lower errors
+    # M_star_best_err_up, phi_star_best_err_up, alpha_best_err_up = np.percentile(samples, 84, axis=0) - [M_star_best_sch, phi_star_best_sch, alpha_best_sch]
+    # M_star_best_err_lo, phi_star_best_err_lo, alpha_best_err_lo  = [M_star_best_sch, phi_star_best_sch, alpha_best_sch] - np.percentile(samples, 16, axis=0)
+    # print('Upper errors on best-fit parameters:', M_star_best_err_up, phi_star_best_err_up, alpha_best_err_up)
+    # print('Lower errors on best-fit parameters:', M_star_best_err_lo, phi_star_best_err_lo, alpha_best_err_lo)    
 
 
+    if run_type == 'with_euclid':
+        # Best-fit parameters from emcee]
+        # M*: -21.1304, phi*: 9.1146e-05, Alpha: -2.1085, Beta: -4.5987
+        # Upper errors on best-fit parameters: 0.27047277962511274 6.654507642353416e-05 0.21369413904090906 0.32097933349011587
+        # Lower errors on best-fit parameters: 0.24948880288177477 3.8252481522955595e-05 0.17156830499011377 0.3703468864815038
+        M_star_best = -21.1304
+        phi_star_best = 9.1146e-05
+        alpha_best = -2.1085
+        beta_best = -4.5987
+
+        # Schechter
+        # M*: -20.9796, phi*: 1.6091e-04, Alpha: -1.9935
+        # Upper errors on best-fit parameters: 0.1891394070272625 7.51883613921671e-05 0.16454132162330004
+        # Lower errors on best-fit parameters: 0.20335279382762295 5.686421729145396e-05 0.15175426010573934
+        M_star_best_sch = -20.9796
+        phi_star_best_sch = 1.6091e-04
+        alpha_best_sch = -1.9935
+
+    if run_type == '':
+        # M*: -20.8885, phi*: 1.3985e-04, Alpha: -2.0130, Beta: -4.2563
+        # Upper errors on best-fit parameters: 0.27409088522794534 9.835983881875717e-05 0.25148557544353145 0.24448325643043045
+        # Lower errors on best-fit parameters: 0.2850048058690291 6.376084300199492e-05 0.21107831155776502 0.2876519425081936
+        M_star_best = -20.8885
+        phi_star_best = 1.3985e-04
+        alpha_best = -2.0130
+        beta_best = -4.2563
+
+#############################! Plotting ##########################§
 # mag range to plot over
-M = np.arange(-25, -19, 0.1)
+M = np.arange(-26, -18, 0.1)
 
 # Bowler+17
 z7_gal = dpl(2.3*10**(-4.), -2.19, -4.60, M, -20.60)
@@ -387,6 +551,8 @@ z7_harikane = dpl(10**(-3.74), -2.08, -4.81, M, -21.01)
 # Harikane GOLDRUSH
 DPLy_h22 = dpl(10**(-3.05), -1.89, -3.81, M, -20.12) + dpl(10**(-8.49), -1.23, -2.73, M, -24.9)
 
+# Bouwens+21
+b21_schechter = schechter(0.19e-3, -2.06, M, -21.15)
 
 # Print ratio between my LF points and the Harikane+24 LF function at that magnitude
 ratios = []
@@ -394,69 +560,150 @@ for i, M_ in enumerate(Muv_bins[:-1]):
 
     ratio = phi[i] / dpl(10**(-3.74), -2.08, -4.81, M_, -21.01)
     ratios.append(round(ratio, 2))
-print('###### Ratios #######')
+
+#print('###### Ratios #######')
 #print(ratios)
 
 #! Plot!
-plt.figure(figsize=(10, 10))
-plt.plot(M, z7_gal, color='green', linewidth=3, label='Bowler+17', alpha=0.7, linestyle='--')
-plt.plot(M, z7_harikane, color='blue', linewidth=3, label='Harikane+24', alpha=0.7, linestyle=':')
-# plt.plot(M, DPLy_h22, color='gray', linewidth=3, label='Harikane+22', alpha=0.5)
+if fit == True:
+    plt.figure(figsize=(10, 10))
+if fit == False:
+    plt.figure(figsize=(10, 6))
+#plt.plot(M, z7_gal, color='green', linewidth=3, label='Bowler+17', alpha=0.6, linestyle=':')
+#plt.plot(M, z7_harikane, color='blue', linewidth=3, label='Harikane+25', alpha=0.9, linestyle='-.')
+plt.plot(M, DPLy_h22, color='gray', linewidth=3, label='Harikane+22', alpha=0.8, linestyle=':')
+plt.plot(M, b21_schechter, color='orange', linewidth=3, label='Bouwens+21', alpha=0.9, linestyle='--')
 
 #! My best fit DPL function
-M_fit = np.linspace(-25, -18, 100)
-LF_fit = dpl_fit(M_fit, *popt)
-plt.plot(M_fit, LF_fit, color='red', linewidth=5, label="Best-fit DPL", alpha=0.8)
+if fit:
+    M_fit = np.linspace(-25, -18, 100)
+    # LF_fit = dpl_fit(M_fit, *popt)
+    # plt.plot(M_fit, LF_fit, color='red', linewidth=5, label="Best-fit DPL", alpha=0.8)
+
+    # Plot the best-fit DPL function from emcee
+    LF_fit_sch = schechter_fit(M_fit, phi_star_best_sch, M_star_best_sch, alpha_best_sch)
+    plt.plot(M_fit, LF_fit_sch, color='red', linewidth=5, label="Best-fit Schechter", alpha=0.9, linestyle='--')
+
+    LF_fit = dpl_fit(M_fit, phi_star_best, M_star_best, alpha_best, beta_best)
+    plt.plot(M_fit, LF_fit, color='red', linewidth=7, label="Best-fit DPL", alpha=0.9)
+
+
+
 
 
 
 # McLure+13
-plt.errorbar(m13x, m13y, yerr=m13dy, color='magenta', label='McLure+13', marker='D', markersize=10, alpha=0.8, linestyle='none', markerfacecolor='none')
+#plt.errorbar(m13x, m13y, yerr=m13dy, color='magenta', label='McLure+13', marker='D', markersize=10, alpha=0.8, linestyle='none', markerfacecolor='none')
 
 # Bowuens et al. 2021
 plt.errorbar(b21x, b21y, color='orange', yerr=b21dy, label='Bouwens+21', marker='o', markerfacecolor='none', markersize=10, alpha=0.8, linestyle='none')
 
 # Bowler+17
-plt.errorbar(b17x-0.05, b17y, color='green', yerr=b17dy, label='Bowler+17', marker='s', markersize=10, alpha=0.8, linestyle='none', zorder=3)
+#plt.errorbar(b17x-0.05, b17y, color='green', yerr=b17dy, label='Bowler+17', marker='s', markersize=10, alpha=0.8, linestyle='none', zorder=3)
 
 # Varadaraj+23
-plt.errorbar(v23x-0.05, v23y, yerr=v23dy, fmt='o', color='black', 
-             ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=10, markeredgecolor='black', zorder=2)
+if fit == False:
+    plt.errorbar(v23x+0.05, v23y, yerr=v23dy, fmt='o', color='black', 
+                ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=10, markeredgecolor='black', zorder=4)
+if fit == True:
+    plt.errorbar(v23x+0.05, v23y, yerr=v23dy, fmt='o', color='black', 
+                ecolor='black', elinewidth=2, label='Varadaraj+23', markersize=15, markeredgecolor='black', zorder=4)    
+# plt.errorbar(v23x+0.05, v23y, yerr=v23dy, fmt='s', color='black', 
+#              ecolor='red', elinewidth=4, label='Varadaraj+23', markersize=13, markeredgecolor='black', zorder=4)
 
 # Harikane+24 LF points
-plt.errorbar(h24x, h24y, yerr=[h24dy_lo, h24dy_up], fmt='D', color='blue', alpha=0.8, label='Harikane+24', markersize=10, zorder=2)
+#plt.errorbar(h24x, h24y, yerr=[h24dy_lo, h24dy_up], fmt='D', color='blue', alpha=0.8, label='Harikane+25', markersize=10, zorder=2)
 
 # Plot Finkelstein+15
-plt.errorbar(f15x, f15y, yerr=[f15y_lo, f15y_up], fmt='p', color='purple', alpha=0.8, label='Finkelstein+15', markersize=12, zorder=4)
+plt.errorbar(f15x-0.05, f15y, yerr=[f15y_lo, f15y_up], fmt='p', color='purple', alpha=0.8, label='Finkelstein+15', markersize=12, zorder=4)
 
 # Harikane+22 LF points
 plt.errorbar(yh22x-0.05, yh22y, yerr=[yh22dyL, yh22dyU], fmt='s', color='gray', alpha=0.8, label='Harikane+22', markersize=10, zorder=2, markerfacecolor='none')
 
 # Plot the LF new points
-plt.errorbar(bin_centres, phi, yerr=delta_phi, fmt='o', color='red', xerr=bin_widths/2,
-             ecolor='red', elinewidth=4, label='This work', markersize=13, markeredgecolor='black', zorder=5)
+if run_type == 'with_euclid':
+    if fit == False:
+        #We are leaving out the last three points in the fitting, so make them faint
+        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
+                    ecolor='red', elinewidth=4, label='This work', markersize=15, markeredgecolor='black', zorder=5)
+        # plt.errorbar(bin_centres[-3:], phi[-3:], yerr=delta_phi[-3:], fmt='o', color='red', xerr=bin_widths[-3:]/2,
+        #             ecolor='red', elinewidth=3, markersize=8, markeredgecolor='red', markeredgewidth=1, markerfacecolor='white', zorder=5, alpha=1,
+        #             label='Not used in fitting')
+    if fit == True:
+        #We are leaving out the last three points in the fitting, so make them faint
+        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
+                    ecolor='red', elinewidth=4, label='This work', markersize=20, markeredgecolor='black', zorder=5)
+if run_type == '':
+    # We are leaving out the last four points in the fitting, so make them faint
+    plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
+                ecolor='red', elinewidth=4, label='This work', markersize=15, markeredgecolor='black', zorder=5)
+    
+    # plt.errorbar(bin_centres[-4:], phi[-4:], yerr=delta_phi[-4:], fmt='o', color='red', xerr=bin_widths[-4:]/2,
+    #             ecolor='red', elinewidth=3, markersize=8, markeredgecolor='red', markeredgewidth=1, markerfacecolor='white', zorder=5, alpha=1)
 
+# Plotting all points without making incomplete ones fainter
+# plt.errorbar(bin_centres, phi, yerr=delta_phi, fmt='o', color='red', xerr=bin_widths/2,
+#             ecolor='red', elinewidth=4, label='This work', markersize=15, markeredgecolor='black', zorder=5)
 
-# Plot the UVISTA DR6 LF points
-# plt.errorbar(muv[:-1], phi, yerr=phi_err, fmt='o', color='red', 
-#              ecolor='red', elinewidth=4, label='UltraVISTA DR6', markersize=17, markeredgecolor='black')
+#Draw an up arrow at the value of M*
+plt.annotate('', xy=(M_star_best, 2e-5), xytext=(M_star_best, 4e-7),
+                arrowprops=dict(facecolor='black',  lw=1), fontsize=40)
+plt.text(M_star_best-1, 2e-7, r'$M^*=-21.13^{+0.27}_{-0.25}$', fontsize=20)
+
 
 plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)
 
-plt.xlabel(r'$M_{\mathrm{UV}}$', fontsize=20)
-plt.ylabel(r'$\mathrm{Number \ of \ objects \  / \ mag \ / \ Mpc^{3}}$', fontsize=20)
+plt.xlabel(r'$M_{\mathrm{UV}}$', fontsize=25)
+plt.ylabel(r'$\mathrm{Number \ of \ objects \  / \ mag \ / \ Mpc^{3}}$', fontsize=21.5)
 
-plt.xlim(-25, -19)
-plt.ylim(1e-10, 1e-2)
+# Increase size of tick labels
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
 
-plt.ylim([10**(-10), 0.03])
-plt.legend(loc='upper left', fontsize=15)
-plt.tight_layout()
+#plt.xlim(-25, -19)
+# plt.ylim(1e-10, 1e-2)
+
+if fit == True:
+    if run_type == '':
+        plt.text(-21, 1.5e-10, 'UltraVISTA only', size=25)
+    if run_type == 'with_euclid':
+        plt.text(-21.93, 1.3e-9, r'UltraVISTA + $Euclid$', size=30)
+    plt.text(-19.9, 2e-3,  r'$z=7$', size=30)
+if fit == False:
+    if run_type == '':
+        plt.text(-21.6, 2.4e-7, 'UltraVISTA only', size=25)
+    if run_type == 'with_euclid':
+        plt.text(-21.85, 2.4e-7, r'UltraVISTA + $Euclid$', size=25)
+    plt.text(-21.03, 1.5e-4,  r'$z=7$', size=25)
+
+if fit == True:
+    plt.ylim([1e-9, 5e-3])
+    plt.xlim(-24.5, -19)
+if fit == False:
+    plt.ylim([2e-7, 3e-4])
+    plt.xlim([-23.2, -20.7])
+
+if fit == True:
+    plt.legend(loc='upper left', fontsize=17)
+if fit == False:
+    plt.legend(loc='upper left', fontsize=14, ncol=2)
+    #plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
+
+plt.tight_layout()  # Leaves extra space at the bottom
 plt.yscale('log')
-plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 #plt.savefig(plot_dir / 'LF_UVISTA.pdf')
-plt.savefig(plot_dir / 'LF_UVISTA_complete.pdf')
-plt.show()
+#plt.savefig(plot_dir / 'LF_UVISTA_complete_emcee_finer_bins.pdf')
+if run_type == '':
+    plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_points.pdf', bbox_inches='tight')
+    #plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_fit.pdf')
+if run_type == 'with_euclid':
+    if fit == False:
+        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_points.pdf', bbox_inches='tight')
+    #plt.savefig(plot_dir / 'LF_UVISTA_bologna_interview.pdf')
+    if fit == True:
+        #plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_fit.pdf', bbox_inches='tight')
+        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_UMASS_interview.pdf', bbox_inches='tight')
+#plt.show()
 
 

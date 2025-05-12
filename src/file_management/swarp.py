@@ -12,10 +12,14 @@ import os
 from astropy.io import fits
 import glob
 from pathlib import Path
+import pickle
+import numpy as np
 
-euclid_dir = Path.home() / 'euclid'
 field_name = 'COSMOS'
-filter_names = ['J', 'H', 'VIS']
+filter_names = ['Y', 'J', 'H', 'VIS']
+euclid_dir = Path.home() / 'euclid'
+
+
 
 # Define the sorting function
 def sort_by_number(filename):
@@ -28,7 +32,7 @@ for filter_name in filter_names:
     # Get all the fits files for the filter.
     fits_files = glob.glob(str(euclid_dir / filter_name / field_name / '*BGSUB*.fits'))
     rms_files = glob.glob(str(euclid_dir / filter_name / field_name / '*MAP_WEIGHT*.fits'))
-
+    
     # Sort fits_files and rms_files based on the numeric part of the filenames
     fits_files = sorted(fits_files, key=sort_by_number)
     rms_files = sorted(rms_files, key=sort_by_number)

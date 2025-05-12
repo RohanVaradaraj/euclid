@@ -71,6 +71,10 @@ if run_flag == 'z7':
 else:
     new_cat_name = f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_{run_flag}_INTERLOPERS_{today_date}_{run_type}.fits' if run_type != '' else f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_{run_flag}_INTERLOPERS_{today_date}.fits'
 
+print('Creating catalogue with name:')
+print(new_cat_name)
+
+
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 t = Table.read(cat_dir / cat_name)

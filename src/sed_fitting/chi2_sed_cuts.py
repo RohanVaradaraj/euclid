@@ -21,6 +21,21 @@ import sys
 import json
 from sed_fitting_codes import remove_items
 
+# Configure the chi2 cuts. redshift cuts, etc
+selection_config = {
+    "z_threshold": 5.5,
+    "chi2_threshold_factor": 2,  # for 2-sigma
+    "delta_chi2_lbg_lowz": 4,
+    "bd_chi2_max": 10,
+    "chi2_column_indices": {
+        "z_best": "col2",
+        "chi2_best": "col6",
+        "chi2_lowz": "col15",
+        "chi2_bd": "col21"
+    }
+}
+
+
 overwrite = True
 
 if len(sys.argv) > 1:
@@ -32,6 +47,8 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    field_name_json = sys.argv[5]
+    field_name = json.loads(field_name_json)
 
 run_type_str = '_' + run_type if run_type != '' else ''
 
@@ -44,7 +61,7 @@ if len(detection_filters) == 0:
     detection_filters = stack_filters[0].split('+')
 
 # Base directory for SED outputs
-base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name
 
 # Determine the base folder name
 lbg_dir = 'det_' + '_'.join(detection_filters)
@@ -61,7 +78,7 @@ else:
     outside_footprint_dir = base_dir / (lbg_dir + '_outside_footprint')
 
 # Set up the output directories where good SEDs will be stored
-output_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+output_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 
 lbg_out_dir = lbg_dir + run_type_str + '_best_highz' # Has chi2 < 2sigma threshold
 bd_out_dir = lbg_dir + run_type_str + '_best_bd' # Has chi2 < 10
@@ -91,11 +108,17 @@ if overwrite:
 
 # But first, we need to know if filters are removed for brown dwarfs/non-dusty things
 if bools[0] == True:
-    filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
+    filters_to_remove = (
+        ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds'] if field_name == 'XMM'
+        else ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
+    )
     all_filters = remove_items(all_filters, filters_to_remove)
 
 if bools[1] == False:
-    filters_to_remove = ['f444w', 'ch1cds', 'ch2cds']
+    filters_to_remove = (
+        ['f444w', 'ch1servs', 'ch2servs'] if field_name == 'XMM'
+        else ['f444w', 'ch1cds', 'ch2cds']
+    )
     all_filters = remove_items(all_filters, filters_to_remove)
 
 print('All filters:', all_filters)
@@ -124,10 +147,10 @@ cat_dir = Path.home() / 'lephare' / 'lephare_dev' / 'test'
 # Generate the output catalogue names
 
 out_names = {
-    'lbg': 'det_' + '_'.join(detection_filters) + run_type_str + '.out',
-    'bd': 'det_' + '_'.join(detection_filters) + run_type_str + '_bd.out',
-    'dusty': 'det_' + '_'.join(detection_filters) + run_type_str + '_dusty.out',
-    'lya': 'det_' + '_'.join(detection_filters) + run_type_str + '_lya.out'
+    'lbg': 'det_' + '_'.join(detection_filters).replace('_DR3', '') + run_type_str + '.out',
+    'bd': 'det_' + '_'.join(detection_filters).replace('_DR3', '') + run_type_str + '_bd.out',
+    'dusty': 'det_' + '_'.join(detection_filters).replace('_DR3', '') + run_type_str + '_dusty.out',
+    # 'lya': 'det_' + '_'.join(detection_filters).replace('_DR3', '') + run_type_str + '_lya.out'
 }
 
 # Read the tables
@@ -140,12 +163,12 @@ for key, out_name in out_names.items():
 lbg_table = tables['lbg']
 bd_table = tables['bd']
 dusty_table = tables['dusty']
-lya_table = tables['lya']
+#lya_table = tables['lya']
 
 #! Apply the chi2 cuts
 
 # LBGs
-condition_1 = lbg_table[:]['col2'] > 6                       # LBG solution at z>6
+condition_1 = lbg_table[:]['col2'] > selection_config['z_threshold']                       # LBG solution at z>6
 condition_2 = lbg_table[:]['col6'] < two_sigma_thresh        # High-z solution has chi2 < 2sigma threshold
 condition_3 = lbg_table[:]['col6'] + 4 < lbg_table[:]['col15'] # delta-chi2 between high-z and low-z is more than 4
 good_lbg = lbg_table[:][condition_1 & condition_2 & condition_3]
@@ -154,27 +177,27 @@ good_lbg = lbg_table[:][condition_1 & condition_2 & condition_3]
 good_bd = bd_table[:][(bd_table['col21'] < lbg_table[:]['col2']) | (bd_table['col21'] < lbg_table[:]['col15']) & (bd_table['col21'] < 10)]  # BD solution has chi2_star < chi2_LBG
 
 # Dusty galaxies 
-condition_1 = dusty_table[:]['col2'] < 6                      # Best solution at z<6
+condition_1 = dusty_table[:]['col2'] < selection_config['z_threshold']                 # Best solution at z<6
 condition_2 = dusty_table[:]['col6'] + 4 < dusty_table[:]['col15']   # Dusty solution has significantly lower chi2 than LBG solution
 condition_3 = dusty_table[:]['col6'] < two_sigma_thresh       # High-z solution has chi2 < 2sigma threshold
 
 good_dusty = dusty_table[:][condition_1 & condition_2 & condition_3]
 
 # Lya emitters
-condition_1 = lya_table[:]['col6'] + 4 < lbg_table[:]['col6']     # Lya solution has significantly lower chi2 than LBG solution
-condition_2 = lya_table['col2'] > 6                           # Lya solution at z>6
-condition_3 = lya_table['col6'] < two_sigma_thresh             # High-z solution has chi2 < 2sigma threshold
+# condition_1 = lya_table[:]['col6'] + 4 < lbg_table[:]['col6']     # Lya solution has significantly lower chi2 than LBG solution
+# condition_2 = lya_table['col2'] > 6                           # Lya solution at z>6
+# condition_3 = lya_table['col6'] < two_sigma_thresh             # High-z solution has chi2 < 2sigma threshold
 
-good_lya = lya_table[:][condition_1 & condition_2 & condition_3]
+# good_lya = lya_table[:][condition_1 & condition_2 & condition_3]
 
 # Pristine
-condition_1 = lbg_table[:]['col2'] > 6                        # LBG solution at z>6
-condition_2 = lbg_table[:]['col6'] < two_sigma_thresh         # High-z solution has chi2 < 2sigma threshold
-condition_3 = bd_table[:]['col21'] < 10                       # BD solution has chi2 < 10
-condition_4 = dusty_table[:]['col2'] > 6                      # Dusty solution at z>6
-condition_5 = dusty_table[:]['col6'] + 4 < dusty_table[:]['col15'] # Dusty solution has chi2_highz + 4 < chi2_highz
+# condition_1 = lbg_table[:]['col2'] > 6                        # LBG solution at z>6
+# condition_2 = lbg_table[:]['col6'] < two_sigma_thresh         # High-z solution has chi2 < 2sigma threshold
+# condition_3 = bd_table[:]['col21'] < 10                       # BD solution has chi2 < 10
+# condition_4 = dusty_table[:]['col2'] > 6                      # Dusty solution at z>6
+# condition_5 = dusty_table[:]['col6'] + 4 < dusty_table[:]['col15'] # Dusty solution has chi2_highz + 4 < chi2_highz
 
-pristine = lbg_table[:][condition_1 & condition_2 & condition_3 & condition_4 & condition_5]
+# pristine = lbg_table[:][condition_1 & condition_2 & condition_3 & condition_4 & condition_5]
 
 #! Copy the best fits to the output directories
 
@@ -182,16 +205,16 @@ pristine = lbg_table[:][condition_1 & condition_2 & condition_3 & condition_4 & 
 lbg_ids = good_lbg['col1']
 bd_ids = good_bd['col1']
 dusty_ids = good_dusty['col1']
-lya_ids = good_lya['col1']
-pristine_ids = pristine['col1']
+# lya_ids = good_lya['col1']
+# pristine_ids = pristine['col1']
 
 # Dictionary to map categories to their ID lists and output directories
 categories = {
     'LBGs': (lbg_ids, lbg_out_dir),
     'BDs': (bd_ids, bd_out_dir),
     'Dusty galaxies': (dusty_ids, dusty_out_dir),
-    'Lya emitters': (lya_ids, lya_out_dir),
-    'Pristine objects': (pristine_ids, pristine_out_dir)
+    #'Lya emitters': (lya_ids, lya_out_dir),
+    #'Pristine objects': (pristine_ids, pristine_out_dir)
 }
 
 print(len(lbg_ids), 'LBGs')
@@ -200,8 +223,8 @@ orig_dir = {
     'LBGs': lbg_dir,
     'BDs': bd_dir,
     'Dusty galaxies': dusty_dir,
-    'Lya emitters': lya_dir,
-    'Pristine objects': lbg_dir
+    #'Lya emitters': lya_dir,
+    #'Pristine objects': lbg_dir
 }
 
 # Print the out_dirs of the categories

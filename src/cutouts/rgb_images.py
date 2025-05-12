@@ -21,8 +21,11 @@ import astropy.units as u
 #from astropy.visualization import make_lupton_rgb, LogStretch, MinMaxInterval, ManualInterval# make_rgb
 from astropy.stats import sigma_clip
 import matplotlib.gridspec as gridspec
+from astropy.visualization.wcsaxes import WCSAxes
 
-
+plt.rcParams['axes.linewidth'] = 2.5
+plt.rcParams.update({'font.size': 15})
+plt.rcParams['figure.dpi'] = 100
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -258,10 +261,12 @@ def isCoordInCWEB(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 
-def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
-           save_cutout: bool = True, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
+def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0,
+           save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
            plot_title: Optional[str] = None,
-           add_centre_lines: Optional[bool] = False) -> None:
+           add_centre_lines: Optional[bool] = False,
+           save_cutout=False,
+           ID=None) -> None:
 
     """
     Create cutouts from Euclid, ground-based and JWST imaging.
@@ -370,7 +375,28 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
         cutout_gr = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
 
-    cutouts = [cutout_euVIS.data, cutout_euY.data, cutout_euJ.data, cutout_euH.data, cutout_gr.data]
+    cutouts = [cutout_euVIS, cutout_euY, cutout_euJ, cutout_euH, cutout_gr]
+
+    # Save the cutouts as fits file
+    cutout_dir = Path.cwd().parents[1] / 'data' / 'stamps'
+    if save_cutout:
+
+        IDs_to_ignore = [] # [11029, 26088, 30883, 210827, 216577, 563004, 603546, 765174, 984767]
+        if cutouts != None and ID not in IDs_to_ignore:
+
+            # Check if any cutout has nonzero pixels
+            if any(np.sum(cutout.data) > 0.01 for cutout in cutouts[:-1]):
+
+                hdu_Y = fits.PrimaryHDU(cutout_euY.data, header=cutout_euY.wcs.to_header())
+                hdu_Y.writeto(cutout_dir / f'Y_{ID}.fits', overwrite=True)    
+
+                hdu_J = fits.PrimaryHDU(cutout_euJ.data, header=cutout_euJ.wcs.to_header())
+                hdu_J.writeto(cutout_dir / f'J_{ID}.fits', overwrite=True)
+
+                hdu_H = fits.PrimaryHDU(cutout_euH.data, header=cutout_euH.wcs.to_header())
+                hdu_H.writeto(cutout_dir / f'H_{ID}.fits', overwrite=True)
+
+
 
     return cutouts
 
@@ -411,14 +437,14 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 if __name__ == '__main__':
     
     #! PRIMER STARS
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits')
+    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits')
 
     t_xmatch = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31_XMATCH_WITH_LITERATURE.fits')
     # print(t_xmatch.colnames)
     # exit()
     t.sort('Muv')
-    #t = t[t['ID'] == 272094]
-    # t = t[181:]
+    #t = t[t['ID'] == 910976]
+    #t = t[50:60]
 
     ra = t['RA']
     dec = t['DEC']
@@ -433,25 +459,30 @@ if __name__ == '__main__':
     zs = []
     Muvs = []
 
-    IDs_to_ignore = [11029, 26088, 30883, 210827, 216577, 563004, 603546, 765174, 984767]
+    IDs_to_ignore = [] #[11029, 26088, 30883, 210827, 216577, 563004, 603546, 765174, 984767]
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
 
         print(f'Object number {i+1} of {len(ra)}')
 
-        cutouts = Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
+        cutouts = Cutout(ra[i], dec[i], size=6., plot_title=ID[i], save_cutout=True, ID=ID[i])
 
         if cutouts != None and ID[i] not in IDs_to_ignore:
 
             # Check if any cutout has nonzero pixels
-            if any(np.sum(cutout) > 0.01 for cutout in cutouts[:-1]):
+            if any(np.sum(cutout.data) > 0.01 for cutout in cutouts[:-1]):
                 all_cutouts.append(cutouts)
                 IDs.append(ID[i])  # Keep track of valid IDs
                 zs.append(zphot[i])
                 Muvs.append(Muv[i])
             else:
                 print(f"Skipping object {ID[i]} (empty cutout)")
+
+    ############! PLOT CUTOUTS #############
+
+    # Cutout titles
+    titles = [r'$I_E$', r'$Y_E$', r'$J_E$', r'$H_E$', r'$YJHK$']
 
     # Save each object (with 5 cutouts) as a single image
     for i, cutouts in enumerate(all_cutouts):
@@ -460,24 +491,33 @@ if __name__ == '__main__':
 
         # Loop through each cutout and plot it
         for j, cutout in enumerate(cutouts):
-            vmin, vmax = findPlotLimits(cutout)
-            axs[j].imshow(cutout, cmap='gist_yarg', origin='lower', vmin=vmin, vmax=vmax)
-            axs[j].axis('off')  # Remove axis for a cleaner look
+            vmin, vmax = findPlotLimits(cutout.data)
+            axs[j].imshow(cutout.data, cmap='gist_yarg', origin='lower', vmin=vmin, vmax=vmax)
+            #axs[j].coords.grid(color='white', ls='dotted')  # Add grid to check alignment
+            #axs[j].axis('off')  # Remove axis for a cleaner look
+
+            # Remove axis tick marks and labels
+            axs[j].get_xaxis().set_ticks([])
+            axs[j].get_yaxis().set_ticks([])
+
+            axs[j].set_title(titles[j], fontsize=25)
 
             # See if this object is in the xmatch cat
-            if ID[i] in t_xmatch['ID']:
-                xmatch_id = t_xmatch[t_xmatch['ID'] == ID[i]]['Object Name'][0]
-                if j == 2:
-                    axs[j].set_title(f'ID {IDs[i]}, ' + r'$z=$'+f'{zs[i]:.2f}, ' + r'$M_{\rm{UV}}=$'+f'{Muvs[i]:.2f}, ' + f'{xmatch_id}', fontsize=40)
-            # Add title only to the first subplot (j == 0) for each object
-            else:
-                if j == 2:
-                    axs[j].set_title(f'ID {IDs[i]}, ' + r'$z=$'+f'{zs[i]:.2f}, ' + r'$M_{\rm{UV}}=$'+f'{Muvs[i]:.2f}', fontsize=40)
+            # if IDs[i] in t_xmatch['ID']:
+            #     xmatch_id = t_xmatch[t_xmatch['ID'] == IDs[i]]['Object Name'][0]
+            #     # if len(xmatch_id) > 0:
+            #     #     xmatch_id = xmatch_id[0]
+            #     if j == 2:
+            #         axs[j].set_title(f'ID {IDs[i]}, ' + r'$z=$'+f'{zs[i]:.2f}, ' + r'$M_{\rm{UV}}=$'+f'{Muvs[i]:.2f}, ' + f'{xmatch_id}', fontsize=30)
+            # # Add title only to the first subplot (j == 0) for each object
+            # else:
+            #     if j == 2:
+            #         axs[j].set_title(f'ID {IDs[i]}, ' + r'$z=$'+f'{zs[i]:.2f}, ' + r'$M_{\rm{UV}}=$'+f'{Muvs[i]:.2f}', fontsize=30)
 
         # Save the entire figure (with 5 cutouts) as a single image
         cutout_filename = f"stamps/{i}_ID_{IDs[i]}.pdf"
         plt.tight_layout()
-        plt.savefig(cutout_filename, bbox_inches='tight', dpi=100)
+        plt.savefig(cutout_filename, bbox_inches='tight')
         plt.close(fig)  # Close the figure to free up memory
 
         print(f"Saved {cutout_filename}")

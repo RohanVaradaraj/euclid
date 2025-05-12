@@ -127,19 +127,20 @@ for i in range(2):
 
 
 
-    ax[i].set_xlabel(r'$z$')
+    ax[i].set_xlabel(r'$z$', fontsize=25)
 
     if redshift == '8':
-        ax[i].set_ylabel(['$Y_{E} - J_{E}$', '$J_{\mathrm{VISTA}} - J_{E}$'][i])
+        ax[i].set_ylabel(['$Y_{E} - J_{E}$', '$J_{\mathrm{VISTA}} - J_{E}$'][i], fontsize=25)
     if redshift == '7':
-        ax[i].set_ylabel(['$y_{\mathrm{HSC}} - Y_{E}$', '$Y_{\mathrm{VISTA}} - Y_{E}$'][i])
+        ax[i].set_ylabel([r'$\mathrm{HSC} \ y - Y_{E}$', 
+                        r'$\mathrm{VISTA} \ Y - Y_{E}$'][i], fontsize=20)   
     if redshift == '6':
-        ax[i].set_ylabel(['$i_{\mathrm{HSC}} - VIS$', '$VIS - z_{\mathrm{HSC}}$'][i])
+        ax[i].set_ylabel(['$i_{\mathrm{HSC}} - VIS$', '$VIS - z_{\mathrm{HSC}}$'][i], fontsize=25)
 
   
-ax[0].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$')
-ax[0].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission')
-ax[0].legend(loc='upper left')
+ax[1].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$', linewidth=10)
+ax[1].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission', linewidth=10)
+ax[1].legend(loc='lower left', fontsize=20, frameon=False)
 plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
 #plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}.pdf')
 
@@ -194,6 +195,16 @@ y_minus_Ye_err = np.sqrt(y_mag_err**2 + Ye_mag_err**2)
 ax[0].errorbar(lae_z, y_minus_Ye, yerr=y_minus_Ye_err, xerr=[[dz_inf], [dz_sup]], fmt='o', color='red', markersize=12, markeredgecolor='black', elinewidth=4)
 ax[1].errorbar(lae_z, Y_minus_Ye, yerr=Y_minus_Ye_err, xerr=[[dz_inf], [dz_sup]], fmt='o', color='red', markersize=12, markeredgecolor='black', elinewidth=4)
 
-plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}_WITH_LAE.pdf')
+# Increase axes tick label size
+for i in range(2):
+    ax[i].tick_params(axis='both', which='major', labelsize=20)
+    ax[i].tick_params(axis='both', which='minor', labelsize=20)
 
-plt.show()
+# Increase tick size
+for i in range(2):
+    ax[i].tick_params(axis='both', which='major', length=5, width=3)
+    #ax[i].tick_params(axis='both', which='minor', length=5)
+
+plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}_WITH_LAE.pdf', bbox_inches='tight')
+
+#plt.show()

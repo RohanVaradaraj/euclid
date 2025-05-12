@@ -48,7 +48,7 @@ def apply_filters(table, filters):
 
     return table
 
-def generate_selection_name(base_name, filters, field_name):
+def generate_selection_name(base_name, filters):
     parts = [base_name]
     for filter_name, threshold in filters.items():
         clean_filter_name = filter_name.replace('_DR3', '')

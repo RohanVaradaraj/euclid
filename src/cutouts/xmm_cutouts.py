@@ -1,9 +1,10 @@
 """
 cutout_codes.py
 
-Functions and classes used to make cutouts
+Functions and classes used to make cutouts, for the XMM field
 
 Created: Thursday 21st March 2024.
+Adapted from vista_cutouts.py: Wednesday 7th May 2025.
 """
 
 from shapely.geometry import Point, Polygon
@@ -21,7 +22,6 @@ from scipy.ndimage import rotate
 from astropy.table import Table
 import astropy.units as u
 from scipy import ndimage
-from astropy.nddata.utils import NoOverlapError
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -32,30 +32,30 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 # plt.rcParams['figure.dpi'] = 100
 
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
-euclid_dir = Path.home() / 'euclid'
-cweb_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
-primer_dir = Path.home() / 'JWST'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
 refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
+video_dir = Path.home().parents[1] / 'hoy' / 'VIDEO_FINAL'
 
 
-def readAllCOSMOSGalaxies() -> Table:
+def find_VIDEO_tile(ra, dec):
+    """Given an RA, Dec, find the VIDEO tile the object lies in."""
+    point = Point(ra, dec)
 
-    """
-    Read in all crossmatched objects found from NED from the text file to an astropy table.
-    """
+    tiles = {
+        'XMM1': ground_dir / 'XMM1' / 'HSC-G_DR3.fits',
+        'XMM2': ground_dir / 'XMM2' / 'HSC-G_DR3.fits',
+        'XMM3': ground_dir / 'XMM3' / 'HSC-G_DR3.fits',
+    }
 
-    # Read in the file
-    cosmos_file = refcat_dir / 'all_COSMOS_highz.txt'
-    cosmos = np.loadtxt(cosmos_file, dtype=str, delimiter='|', skiprows=21)
+    for name, path in tiles.items():
+        with fits.open(path) as hdu:
+            wcs = WCS(hdu[0].header)
+            footprint = wcs.calc_footprint()
+            polygon = Polygon(footprint)
+            if polygon.contains(point):
+                return name  # Found the matching tile
 
-    # Convert to astropy table
-    cosmos_colnames = cosmos[0]
-    cosmos_data = cosmos[1:]
-    cosmos_table = Table(cosmos_data, names=cosmos_colnames)
-
-    cosmos_table.write(refcat_dir / 'all_COSMOS_highz.fits', format='fits', overwrite=True)
-
+    return None  # No match found
 
 
 
@@ -77,7 +77,8 @@ def findPlotLimits(data: np.ndarray) -> tuple:
     return lower, upper
 
 
-def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
+
+def XMMCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
            save_cutout: bool = True, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
            plot_title: Optional[str] = None,
            add_centre_lines: Optional[bool] = False) -> None:
@@ -116,9 +117,11 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
     # Convert RA, DEC to skycoords.
     c = SkyCoord(ra, dec, unit='deg')
 
+    # Find the VIDEO tile
+    tile_name = find_VIDEO_tile(ra, dec)
+
     #! First get the ground-based cutouts
-    vista_dir = ground_dir / 'COSMOS'
-    euclid_dir = ground_dir / 'euclid' / 'images'
+    vista_dir = ground_dir / tile_name
 
     ### G ####
     with fits.open(vista_dir / 'HSC-G_DR3.fits') as hdu_G:
@@ -193,8 +196,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         cutout_gry = Cutout2D(data_y, c, size=size/pix_scale, wcs=wcs_y)  
 
     #### Y ####
-    with fits.open(vista_dir / 'UVISTA_Y_DR6.fits') as hdu_Y:
-    #with fits.open(vista_dir / 'UVISTA_Y_dr5_rc1.fits') as hdu_Y:
+    with fits.open(video_dir / f'{tile_name.lower()}_Y.fits') as hdu_Y:
 
         data_Y = hdu_Y[0].data
         hdr_Y = hdu_Y[0].header
@@ -204,7 +206,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         cutout_grY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
 
     #### J ####
-    with fits.open(vista_dir / 'UVISTA_J_DR6.fits') as hdu_J:
+    with fits.open(video_dir / f'{tile_name.lower()}_J.fits') as hdu_J:
     #with fits.open(vista_dir / 'UVISTA_J_dr5_rc1.fits') as hdu_J:
 
         data_J = hdu_J[0].data
@@ -215,7 +217,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         cutout_grJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
 
     #### H ####
-    with fits.open(vista_dir / 'UVISTA_H_DR6.fits') as hdu_H:
+    with fits.open(video_dir / f'{tile_name.lower()}_H.fits') as hdu_H:
     #with fits.open(vista_dir / 'UVISTA_H_dr5_rc1.fits') as hdu_H:
             
         data_H = hdu_H[0].data
@@ -226,7 +228,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         cutout_grH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
 
     #### Ks ####
-    with fits.open(vista_dir / 'UVISTA_K_DR6.fits') as hdu_K:
+    with fits.open(video_dir / f'{tile_name.lower()}_Ks.fits') as hdu_K:
             
         data_K = hdu_K[0].data
         hdr_K = hdu_K[0].header
@@ -235,78 +237,8 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
 
         cutout_grK = Cutout2D(data_K, c, size=size/pix_scale, wcs=wcs_K)
 
-    ### VIS ###
-    with fits.open(euclid_dir / 'COSMOS_VIS_MOSAIC.fits') as hdu_VIS:
-                
-        data_VIS = hdu_VIS[0].data
-        hdr_VIS = hdu_VIS[0].header
-        pix_scale = np.abs(hdr_VIS['CD1_1']) * 3600
-        wcs_VIS = WCS(hdr_VIS)
-
-        # Get cutout, but catch no overlap errors
-        try:
-            cutout_VIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
-
-        except NoOverlapError:
-            print('No overlap with VIS data')
-            # Create empty data array as placeholder for when there is no overlap with euclid image.
-            empty_data = np.zeros((int(size/pix_scale), int(size/pix_scale)))
-            cutout_VIS = Cutout2D(empty_data, (empty_data.shape[0]//2, empty_data.shape[1]//2), 
-                                size=size/pix_scale, wcs=None) 
-    
-    ### Ye ###
-    with fits.open(euclid_dir / 'COSMOS_Y_MOSAIC.fits') as hdu_Ye:
-
-        data_Ye = hdu_Ye[0].data
-        hdr_Ye = hdu_Ye[0].header
-        pix_scale = np.abs(hdr_Ye['CD1_1']) * 3600
-        wcs_Ye = WCS(hdr_Ye)
-
-        try:
-            cutout_Ye = Cutout2D(data_Ye, c, size=size/pix_scale, wcs=wcs_Ye)
-        except NoOverlapError:
-            # Create empty data array as placeholder for when there is no overlap with euclid image.
-            empty_data = np.zeros((int(size/pix_scale), int(size/pix_scale)))
-            cutout_Ye = Cutout2D(empty_data, (empty_data.shape[0]//2, empty_data.shape[1]//2), 
-                                size=size/pix_scale, wcs=None) 
-    
-
-
-    ### Je ###
-    with fits.open(euclid_dir / 'COSMOS_J_MOSAIC.fits') as hdu_Je:
-
-        data_Je = hdu_Je[0].data
-        hdr_Je = hdu_Je[0].header
-        pix_scale = np.abs(hdr_Je['CD1_1']) * 3600
-        wcs_Je = WCS(hdr_Je)
-
-        try:
-            cutout_Je = Cutout2D(data_Je, c, size=size/pix_scale, wcs=wcs_Je)
-        except NoOverlapError:
-            # Create empty data array as placeholder for when there is no overlap with euclid image.
-            empty_data = np.zeros((int(size/pix_scale), int(size/pix_scale)))
-            cutout_Je = Cutout2D(empty_data, (empty_data.shape[0]//2, empty_data.shape[1]//2), 
-                                size=size/pix_scale, wcs=None)
-
-
-    ### He ###
-    with fits.open(euclid_dir / 'COSMOS_H_MOSAIC.fits') as hdu_He:
-
-        data_He = hdu_He[0].data
-        hdr_He = hdu_He[0].header
-        pix_scale = np.abs(hdr_He['CD1_1']) * 3600
-        wcs_He = WCS(hdr_He)
-
-        try:
-            cutout_He = Cutout2D(data_He, c, size=size/pix_scale, wcs=wcs_He)
-        except NoOverlapError:
-            # Create empty data array as placeholder for when there is no overlap with euclid image.
-            empty_data = np.zeros((int(size/pix_scale), int(size/pix_scale)))
-            cutout_He = Cutout2D(empty_data, (empty_data.shape[0]//2, empty_data.shape[1]//2), 
-                                size=size/pix_scale, wcs=None)
-
     #### IRAC ch1 ####
-    with fits.open(vista_dir / 'COSMOS_ch1_COMPLETE_microJy.fits') as hdu_ch1:
+    with fits.open(vista_dir / f'{tile_name.lower()}_SERVS_ch1.fits') as hdu_ch1:
             
         data_ch1 = hdu_ch1[0].data
         hdr_ch1 = hdu_ch1[0].header
@@ -316,7 +248,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
         cutout_ch1 = Cutout2D(data_ch1, c, size=size/pix_scale, wcs=wcs_ch1)
 
     #### IRAC ch2 ####
-    with fits.open(vista_dir / 'COSMOS_ch2_COMPLETE_microJy.fits') as hdu_ch2:
+    with fits.open(vista_dir / f'{tile_name.lower()}_SERVS_ch2.fits') as hdu_ch2:
 
         data_ch2 = hdu_ch2[0].data
         hdr_ch2 = hdu_ch2[0].header
@@ -325,16 +257,16 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
 
         cutout_ch2 = Cutout2D(data_ch2, c, size=size/pix_scale, wcs=wcs_ch2)
 
-    # Make a GRI stack
-    optical_stack = np.sum([cutout_grG.data, cutout_grR.data, cutout_grI.data], axis=0) / 3.
+    # Make a GR stack
+    optical_stack = np.sum([cutout_grG.data, cutout_grR.data], axis=0) / 2.
     optical_stack = Cutout2D(optical_stack, c, size=size/pix_scale, wcs=cutout_grG.wcs)
 
     # Smooth the stack
     smooth_optical_stack = ndimage.gaussian_filter(optical_stack.data, sigma=2)
     smooth_optical_stack = Cutout2D(smooth_optical_stack, c, size=size/pix_scale, wcs=cutout_grG.wcs)
 
-    # Make a YJHK stack
-    NIR_stack = np.sum([cutout_grY.data, cutout_grJ.data, cutout_grH.data, cutout_grK.data], axis=0) / 4.
+    # Make a yYJHK stack
+    NIR_stack = np.sum([cutout_gry.data, cutout_grY.data, cutout_grJ.data, cutout_grH.data, cutout_grK.data], axis=0) / 4.
     NIR_stack = Cutout2D(NIR_stack, c, size=size/pix_scale, wcs=cutout_grY.wcs)
 
     # Make a spitzer stack
@@ -342,54 +274,34 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
     spitzer_stack = Cutout2D(spitzer_stack, c, size=size/pix_scale, wcs=cutout_ch1.wcs)
 
     #! Plot
-    cutout_titles = [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$', 'ch1', 'ch2', 'NB0816', 'NB0921', 'HSC-GRI', 'Y', 'J', 'H', 'K', r'GRI$_{\sigma}$', 'HSC-Z', 'HSC-Y']
-    cutouts = [cutout_VIS, cutout_Ye, cutout_Je, cutout_He, cutout_ch1, cutout_ch2, cutout_grNB0816, cutout_grNB0921, optical_stack, cutout_grY, cutout_grJ, cutout_grH, cutout_grK, smooth_optical_stack, cutout_grZ, cutout_gry]
+    cutouts = [optical_stack, smooth_optical_stack, cutout_grI, cutout_grNB0816, cutout_grZ, cutout_grNB0921, NIR_stack, spitzer_stack, cutout_gry, cutout_grY, cutout_grJ, cutout_grH, cutout_grK, cutout_ch1, cutout_ch2]
+    cutout_titles = ['GR', r'$GR_{\sigma}$', 'HSC-I', 'NB0816', 'HSC-Z', 'NB0921', 'yYJHK', 'ch1+ch2', 'HSC-Y', 'Y', 'J', 'H', 'K', 'ch1', 'ch2']
 
-    #! saving fits files for John
-    # cutouts = [cutout_VIS, cutout_Ye, cutout_Je, cutout_He]
-    # cutout_name_appends = ['VIS', 'Y', 'J', 'H']
-    # cutout_dir = Path.cwd().parents[1] / 'data' / 'cutouts' / 'bowler_sample'
-    # for i, cutout in enumerate(cutouts):
-
-    #     # Save the cutout
-    #     hdu_cutout = fits.PrimaryHDU(data=cutout.data)
-    #     hdu_cutout.header.update(cutout.wcs.to_header())
-    #     hdu_cutout.writeto(cutout_dir / f'{plot_title}_{cutout_name_appends[i]}.fits', overwrite=True)
-
-
-    #! PLOTTING: UNCOMMENT
     fig, ax = plt.subplots(2, 8, figsize=(20, 12))
 
     # Maximise the size of the subplots
-    plt.subplots_adjust(wspace=0.01, hspace=0.01)
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
 
     for i, cutout in enumerate(cutouts):
             
         vmin, vmax = findPlotLimits(cutout.data)
         ax[i//8, i%8].imshow(cutout.data, origin='lower', cmap='gist_yarg', vmin=vmin, vmax=vmax)
-        #ax[i//8, i%8].set_title(cutout.wcs.wcs.ctype[0])
+        ax[i//8, i%8].set_title(cutout.wcs.wcs.ctype[0])
         ax[i//8, i%8].set_xticks([])
         ax[i//8, i%8].set_yticks([])
         ax[i//8, i%8].set_title(cutout_titles[i])
-
-        # If the title has 'ch', draw a red circle of diameter 2.8 arcsec at the centre
-        # if 'ch' in cutout_titles[i]:
-        #     circle = plt.Circle((cutout.data.shape[0]//2, cutout.data.shape[1]//2), 1.4/pix_scale, color='red', fill=False, lw=2)
-        #     ax[i//8, i%8].add_artist(circle)
 
         # Remove axis labels
         ax[i//8, i%8].set_xticks([])
         ax[i//8, i%8].set_yticks([])
 
-    plt.tight_layout()
-    plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
-    #plt.savefig(plot_dir / f'LAE_stamps_10arcsec.pdf')
-    #plt.show()
+    # Remove unused subplot (16th subplot)
+    fig.delaxes(ax[1, 7])
 
     return fig, ax
-    # plt.show()
-    # plt.close()
-    # return None
+    #plt.show()
+    #plt.close()
+    #return None
 
 
 
@@ -577,37 +489,28 @@ if __name__ == '__main__':
     # ID = [178396]
 
     #! Stars
-    # t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
+    t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
 
-    # # Sort by class_star
-    # t.sort('CLASS_STAR', reverse=True)
-    # print(len(t))
+    # Sort by class_star
+    t.sort('CLASS_STAR', reverse=True)
+    print(len(t))
 
-    # t = t[t['CLASS_STAR'] < 0.99]
+    t = t[t['CLASS_STAR'] < 0.99]
 
-    # STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
-    # t = t[STARS]
+    STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
+    t = t[STARS]
 
-    # print(len(t))
+    print(len(t))
 
-    # #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
-
-    # ra = t['RA']
-    # dec = t['DEC']
-    # class_star = t['CLASS_STAR']
-    # flag = t['FLAGS']
-    # elong = t['ELONGATION']
-    # fwhm = t['FWHM_IMAGE']
-
-    #! Rebecca's sample
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'UVISTA_REBELS_sizes.fits')
-
-    IDs = t['ID_prev']
-    IDs = [ID.replace(' ', '_') for ID in IDs]
-    print(IDs)
+    #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
 
     ra = t['RA']
     dec = t['DEC']
+    class_star = t['CLASS_STAR']
+    flag = t['FLAGS']
+    elong = t['ELONGATION']
+    fwhm = t['FWHM_IMAGE']
+
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
@@ -626,10 +529,10 @@ if __name__ == '__main__':
         #print(muv[i])
 
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
-        #print(class_star[i], flag[i], elong[i], fwhm[i])
-        #Cutout(ra[i], dec[i], size=6., save_cutout=False)
+        print(class_star[i], flag[i], elong[i], fwhm[i])
+        Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        AllCutout(ra[i], dec[i], size=10., plot_title=IDs[i])
+        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

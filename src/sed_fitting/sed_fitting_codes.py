@@ -574,7 +574,7 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         print(det_string)
 
             
-        cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string.replace('DR3', '')
+        cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string.replace('_DR3', '')
 
         f.write(f'CAT_IN		{cat_in}		# Input Catalog (full path)\n')
         f.write('INP_TYPE     F		          # Input type      (F:Flux or M:MAG)\n')
@@ -584,7 +584,7 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         f.write('CAT_TYPE     SHORT	          # Input Format    (LONG,SHORT-def)\n')
 
         # Use the input name to determine the .out name (replace .in with .out)
-        cat_out = det_string.replace('.in', '.out').replace('DR3', '')
+        cat_out = det_string.replace('.in', '.out').replace('_DR3', '')
 
 
         f.write(f'CAT_OUT	     $LEPHAREDIR/test/{cat_out}	# Output catalog (full path)\n')
