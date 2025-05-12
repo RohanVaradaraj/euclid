@@ -43,3 +43,6 @@
 
 # Ignore euclid cutouts
 /src/cutouts/stamps/*
+
+# Ignore intermediate files from swarp
+/src/file_management/*.fits
