@@ -4,6 +4,7 @@
 # Ignore images outputted during regridding
 /src/regridding/*.fits
 /src/regridding/*.xml
+/src/regridding/*.tmp
 
 # Ignore temporary .sh files 
 /src/*/tmp_*
