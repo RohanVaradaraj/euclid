@@ -30,8 +30,17 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
 
+#! Field name
+field_name = 'XMM'
 
-#! ################# RUN TYPE ##################
+#! Det/non-det filters
+filters = {
+    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+}
+
+#! Run type
 run_type = ''
 
 def mag_to_flux(m):
@@ -51,11 +60,16 @@ omegaV = 0.7
 cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 
 #! SED Fitting folder
-# Name of the directory we want to use to make the catalogue
-folder = f'det_Y_J_{run_type}_z7' if run_type != '' else 'det_Y_J_z7'
+# Generate name of the directory we want to use to make the catalogue
+det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
+det_filter_str = '_'.join(det_filters)
+if run_type != '':
+    folder = f'det_{det_filter_str}_{run_type}_z7'
+else:
+    folder = f'det_{det_filter_str}_z7'
 
 # Get the list of objects that made it through the SED fitting
-obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 
 # Get the IDs
@@ -68,10 +82,14 @@ IDs = [int(ID) for ID in IDs]
 #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
 # cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
 
-if run_type == '':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
-if run_type == 'with_euclid':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+if field_name == 'COSMOS':
+    if run_type == '':
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+    if run_type == 'with_euclid':
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+
+if field_name == 'XMM':
+     cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
