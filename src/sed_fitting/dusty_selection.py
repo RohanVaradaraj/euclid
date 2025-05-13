@@ -31,6 +31,8 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    field_name_json = sys.argv[5]
+    field_name = json.loads(field_name_json)
 
 #! Output PDF name setup from detection filters
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
@@ -49,7 +51,7 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 
 # Directory setup
 zphot_folder = base_det + '_visualSelection'
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits' / zphot_folder
 
 # Make the base visual selection directory
 if not zphot_dir.exists():
@@ -124,7 +126,7 @@ for i, spec_file in enumerate(spec_files):
     #! --------------------------------------------------------------------------
     #! Selection step: Check if the zphot_primary is larger than zphot_secondary
     #! --------------------------------------------------------------------------
-    solution_is_highz = (zphot_primary > zphot_secondary) & (zphot_primary > 6) & (zphot_secondary < 4) & 
+    solution_is_highz = (zphot_primary > zphot_secondary) & (zphot_primary > 5) & (zphot_secondary < 5) & (chi2_secondary - chi2_primary > 4)
 
     if solution_is_highz:
         number_high_z += 1

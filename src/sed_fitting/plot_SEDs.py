@@ -50,7 +50,7 @@ indiv_pdf_name = 'FAINT_BD_SED.pdf'
 
 #! TEST by plotting first N objects
 test = False
-N = 10
+N = 2
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -211,6 +211,8 @@ if not bools[1]:
     filter_dict.pop('f444w')
     filter_dict.pop('ch1cds')
     filter_dict.pop('ch2cds')
+    # filter_dict.pop('ch1servs')
+    # filter_dict.pop('ch2servs')
     #print('Removed f444w, ch1cds, ch2cds')
 
 if det_list == ['Y', 'J'] or det_list == ['HSC-Z_DR3']:
@@ -293,7 +295,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Get the ID of the object from the file name
         ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
-        print(ID)
+        #print(ID)
         
         if individual_sed:
             if ID != indiv_ID:
@@ -470,8 +472,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Model photometry
         model_photometry = mag_to_flux(phot['modelPhot'])
-        print(len(model_photometry))
-        print(len(central_wavelengths))
+        # print(len(model_photometry))
+        # print(len(central_wavelengths))
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Real photometry with upper limits for sigma < 2
@@ -544,6 +546,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.legend(loc='upper right', fontsize=15)
         ax1.set_ylim(3e-32, 1e-29)
         ax1.set_xlim(3000, 40000)
+        if field_name == 'XMM' or field_name == 'CDFS':
+            ax1.set_ylim(5e-32, 2e-29)
+            ax1.set_xlim(3000, 20000)
 
         fontsize = 21
 

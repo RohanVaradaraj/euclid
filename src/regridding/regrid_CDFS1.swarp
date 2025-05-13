@@ -30,10 +30,10 @@ PROJECTION_TYPE        TAN             # Any WCS projection code or NONE
 PROJECTION_ERR         0.001           # Maximum projection error (in output
                                        # pixels), or 0 for no approximation
 CENTER_TYPE            MANUAL             # MANUAL, ALL or MOST
-CENTER                 150.04063992321755,2.2125128356576957 # Coordinates of the image center
+CENTER                 52.532968662461855,-27.574972222218697 # Coordinates of the image center
 PIXELSCALE_TYPE        MANUAL          # MANUAL,FIT,MIN,MAX or MEDIAN
-PIXEL_SCALE            0.1500000048             # Pixel scale
-IMAGE_SIZE             36261,29936               # Image size (0 = AUTOMATIC)
+PIXEL_SCALE            0.200000000000016            # Pixel scale
+IMAGE_SIZE             28000,23000               # Image size (0 = AUTOMATIC)
  
 #-------------------------------- Resampling ----------------------------------
  
@@ -73,8 +73,8 @@ BACK_FILTERSIZE        3               # Background map filter range (meshes)
 #------------------------------ Memory management -----------------------------
  
 VMEM_DIR               .               # Directory path for swap files
-VMEM_MAX               10000            # Maximum amount of virtual memory (MB)
-MEM_MAX                10000 #256             # Maximum amount of usable RAM (MB)
+VMEM_MAX               100000            # Maximum amount of virtual memory (MB)
+MEM_MAX                100000 #256             # Maximum amount of usable RAM (MB)
 COMBINE_BUFSIZE        512 #256             # RAM dedicated to co-addition(MB)
  
 #------------------------------ Miscellaneous ---------------------------------

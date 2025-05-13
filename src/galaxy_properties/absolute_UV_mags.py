@@ -27,11 +27,22 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
-run_type = 'with_euclid'
-#run_type = ''
+#! Field name
+field_name = 'XMM'
+
+#! Det/non-det filters
+filters = {
+    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+}
+
+#! Run type
+#run_type = 'with_euclid'
+run_type = ''
 
 # Switch to stop computing Muv if we've already done it.
-compute_Muv = False
+compute_Muv = True
 
 def mag_to_flux(m):
     '''Convert mags to flux count'''
@@ -54,26 +65,39 @@ completeness_name = 'completeness_matrix_2.npy'
 completeness_matrix = np.load(completeness_dir / completeness_name)
 
 #! SED Fitting folder
-# Name of the directory we want to use to make the catalogue
-folder = f'det_Y_J_{run_type}_z7' if run_type != '' else 'det_Y_J_z7'
+# Generate name of the directory we want to use to make the catalogue
+det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
+det_filter_str = '_'.join(det_filters)
+if run_type != '':
+    folder = f'det_{det_filter_str}_{run_type}_z7'
+else:
+    folder = f'det_{det_filter_str}_z7'
+
+print(f'Folder name: {folder}')
 
 # Get the list of objects that made it through the SED fitting
-obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 
 # Get the IDs
 IDs = [spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0] for spec_file in obj_list]
 IDs = [int(ID) for ID in IDs]
 
-#! Catalogue of above objects
-# Parent catalogue from which to get fluxes
-#cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31.fits'
-#cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
-if run_type == 'with_euclid':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
-    ref_cat = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits'
-if run_type == '':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+#! Catalogue of above candidate objects
+
+#? COSMOS
+if field_name == 'COSMOS':
+    if run_type == 'with_euclid':
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+        ref_cat = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits'
+    if run_type == '':
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+
+#? XMM
+if field_name == 'XMM':
+    cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits' # Initial 5sigma selection, following bowler+15, 838 galaxies!
+
+
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -177,19 +201,37 @@ z_Muv_ = np.load('z_Muv_sample_.npy')
 z_Muv_with_euclid = np.load('z_Muv_sample_with_euclid.npy')
 
 # Split table into where EW is non-zero
-t_lya = t[t['Lyman_alpha_EW'] > 0]
-print(len(t_lya))
+# t_lya = t[t['Lyman_alpha_EW'] > 0]
+# print(len(t_lya))
 #print(t['Muv'])
 
-#plt.figure(figsize=(12, 8))
+# Plot Muv vs redshift
+plt.figure(figsize=(12, 8))
+
+zlo = t['Zphot'] - t['Zinf']
+zhi = t['Zsup'] - t['Zphot']
+zerr = np.array([zlo, zhi])
+
+plt.scatter(t['Zphot'], t['Muv'], s=100, color='dodgerblue', alpha=0.9, edgecolor='none', label='XMM')
+plt.errorbar(t['Zphot'], t['Muv'], yerr=[t['dMuv_inf'], t['dMuv_sup']], xerr=zerr, fmt='o', color='dodgerblue', markersize=16,)
+
+# Reverse y axis
+plt.gca().invert_yaxis()
+
+plt.xlabel(r'$z_{\rm phot}$')
+plt.ylabel(r'$M_{\rm UV}$')
+
+plt.show()
+
+
 
 #! paper 1 galaxies
-paper1_dir = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
-dataCDFS = Table.read(paper1_dir / 'vmax_CDFS_comp.txt', format='ascii.commented_header')
-dataXMM = Table.read(paper1_dir / 'vmax_XMM_comp.txt', format='ascii.commented_header')
+# paper1_dir = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
+# dataCDFS = Table.read(paper1_dir / 'vmax_CDFS_comp.txt', format='ascii.commented_header')
+# dataXMM = Table.read(paper1_dir / 'vmax_XMM_comp.txt', format='ascii.commented_header')
 
-errorXMM = Table.read(paper1_dir / 'errorsMin_primary_XMM.txt', format='ascii.commented_header')
-errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.commented_header')
+# errorXMM = Table.read(paper1_dir / 'errorsMin_primary_XMM.txt', format='ascii.commented_header')
+# errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.commented_header')
 
 
 # plt.errorbar(dataXMM['z'], dataXMM['Muv'], xerr=(errorXMM['zinf'], errorXMM['zsup']), yerr=(np.abs(errorXMM['Muv_inf']), errorXMM['Muv_sup']), 
@@ -301,7 +343,7 @@ errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.
 #     plt.text(6.01, -19.9, 'UltraVISTA only', size=25)
 #     plt.savefig(plot_dir / 'z_Muv_sample.pdf')
 # #plt.show()
-
+exit()
 ##############! ##############! ##############! ##############! ##############! ##############! ##############! ##############! 
 
 # Define figure with GridSpec layout

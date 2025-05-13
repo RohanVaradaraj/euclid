@@ -16,7 +16,7 @@ import pickle
 import numpy as np
 
 field_name = 'CDFS'
-filter_names = ['Y'] #, 'J', 'H', 'VIS']
+filter_names = ['Y', 'J', 'H', 'VIS']
 
 video_tiles = ['CDFS1', 'CDFS2', 'CDFS3']
 
@@ -83,5 +83,5 @@ for video_tile in video_tiles:
                 + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
         
         swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} -IMAGEOUT_NAME {outrms_file} {keywords}'
-        #print(swarp_command_rms)
-        #os.system(swarp_command_rms)
+        print(swarp_command_rms)
+        os.system(swarp_command_rms)

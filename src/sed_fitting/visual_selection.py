@@ -24,6 +24,8 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    field_name_json = sys.argv[5]
+    field_name = json.loads(field_name_json)
 
 #! Output PDF name setup from detection filters
 det_list = [f for f, t in filters.items() if t['type'] == 'detection']
@@ -41,7 +43,7 @@ if run_type != '':
 
 # Directory setup
 zphot_folder = base_det + f'_best_{object_type}'
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / zphot_folder
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits' / zphot_folder
 print(f'Checking files in {zphot_dir}')
 
 # Output directories

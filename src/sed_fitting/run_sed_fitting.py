@@ -39,6 +39,9 @@ run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 #! Whether to run the masking of the data to the euclid footprint
 mask_euclid = False
 
+#! Whether to run Lyman-alpha selection in the final part (e.g. not needed at z=6)
+run_lya = False
+
 #! Specific combinations of flags.
 flag_combinations = [
     (False, False, False),  #? All False = Normal SED fitting
@@ -54,7 +57,7 @@ loop_run_types = False
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'best_highz' #'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
+plot_object_type = 'z7' #'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
 
 #! Base filter sets
 base_filters = {
@@ -260,7 +263,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print("Running visual selection step...")
 
         visual_script = Path.cwd() / 'visual_selection.py'
-        subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+        subprocess.run(['python3', str(visual_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
 
 
 
@@ -272,14 +275,20 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
 
         dusty_script = Path.cwd() / 'dusty_selection.py'
         bd_script = Path.cwd() / 'brown_dwarf_selection.py'
-        lya_script = Path.cwd() / 'lya_and_redshift_selection.py'
+        if run_lya == True:
+            lya_script = Path.cwd() / 'lya_and_redshift_selection.py'
+        else:
+            lya_script = Path.cwd() / 'redshift_selection.py'
 
         print('Running dusty selection...')
-        subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+        #subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
         print('Running brown dwarf selection...')
-        subprocess.run(['python3', str(bd_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
-        print('Running Lya and z>6.5 selection...')
-        subprocess.run(['python3', str(lya_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+        #subprocess.run(['python3', str(bd_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
+        if run_lya:
+            print('Running Lya and z>6.5 selection...')
+        else:
+            print('Running z>5.5 selection...')
+        subprocess.run(['python3', str(lya_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
 
     return None
 

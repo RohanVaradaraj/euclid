@@ -47,6 +47,22 @@ def stellar_type(model):
     }
     return stellar_dict[model]
 
+def clean_filter_name(filt, DR3=False):
+    string = filt.replace('-', '_').replace('+', '_')
+    if DR3:
+        string = string.replace('_DR3', '')
+    return string
+
+#! Det/non-det filters
+filters = {
+    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+}
+
+#! Field name
+field_name = 'XMM'
+
 #! Run type - governing the filter set used.
 run_type = ''
 
@@ -54,33 +70,61 @@ run_type = ''
 run_flag = 'z7'
 
 # Only get lya if we are looking at the LBG sample
-run_lya = (run_flag == 'z7')
+#run_lya = (run_flag == 'z7')
+run_lya = False # Not running for z=6
 
-# Name of the directory we want to use to make the catalogue
-folder = f'det_Y_J_{run_type}_{run_flag}' if run_type != '' else f'det_Y_J_{run_flag}'
-lya_folder = f'det_Y_J_{run_type}_lya' if run_type != '' else 'det_Y_J_lya'
+# Generate name of the directory we want to use to make the catalogue
+det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
+det_filter_str = '_'.join(det_filters)
+if run_type != '':
+    folder = f'det_{det_filter_str}_{run_type}_{run_flag}'
+    lya_folder = f'det_{det_filter_str}_{run_type}_lya'
+else:
+    folder = f'det_{det_filter_str}_{run_flag}'
+    lya_folder = f'det_{det_filter_str}_lya'
 
-# Parent catalogue from which to get fluxes
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+print(f'Folder name: {folder}')
+
+#! Generate parent catalogue name
+cat_name_parts = [field_name]
+
+# det filters
+for f, t in filters.items():
+    if t['type'] in ['detection', 'stacked-detection']:
+        sigma = int(t['value'])
+        label = f'{sigma}sig_{f.replace("+", "_").replace("-", "_")}'
+        cat_name_parts.append(label)
+
+# non-det
+for f, t in filters.items():
+    if t['type'] == 'non-detection':
+        label = f'nonDet_{f.replace("+", "_").replace("-", "_")}'
+        cat_name_parts.append(label)
+cat_name = '_'.join(cat_name_parts) + '.fits'
+
+cat_name = cat_name.replace('_DR3', '')
+
+
+print(f'Parent catalogue name:')
+print(cat_name)
 
 today_date = datetime.datetime.now().strftime('%Y_%m_%d')
 
 # Name of the new catalogue
 if run_flag == 'z7':
-    new_cat_name = f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_{today_date}_{run_type}.fits' if run_type != '' else f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_{today_date}.fits'
+    new_cat_name = cat_name.split('.fits')[0] + '_candidates_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_candidates_' + today_date + '.fits'
 else:
-    new_cat_name = f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_{run_flag}_INTERLOPERS_{today_date}_{run_type}.fits' if run_type != '' else f'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_{run_flag}_INTERLOPERS_{today_date}.fits'
+    new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
 
 print('Creating catalogue with name:')
 print(new_cat_name)
-
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 t = Table.read(cat_dir / cat_name)
 
 # Get the list of objects that made it through the SED fitting
-obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits'
+obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 
 print(obj_dir / folder)
