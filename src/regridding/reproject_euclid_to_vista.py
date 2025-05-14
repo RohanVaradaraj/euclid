@@ -16,7 +16,7 @@ import numpy as np
 
 fields = ['CDFS1']
 
-filter_names = ['Y', 'J', 'H'] # Euclid
+filter_names = ['Y'] #, 'J', 'H'] # Euclid
 #filter_names = ['YJH'] # Euclid stack
 
 data_dir = Path.cwd().parents[3] / 'data'

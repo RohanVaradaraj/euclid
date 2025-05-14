@@ -31,7 +31,7 @@ plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
 
 #! Field name
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Det/non-det filters
 filters = {
@@ -317,7 +317,7 @@ for i, ID in enumerate(IDs):
     print('Vmax =', Vmax)
 
 # Write the table
-t.write(cat_dir / cat_name, overwrite=True)
+#t.write(cat_dir / cat_name, overwrite=True)
 
 plt.hist(ratios, bins=np.arange(0, 2, 0.05))
 plt.show()

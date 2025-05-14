@@ -50,7 +50,10 @@ indiv_pdf_name = 'FAINT_BD_SED.pdf'
 
 #! TEST by plotting first N objects
 test = False
-N = 2
+N = 20
+
+#! Plot final samples sorted by Muv
+sort_by_Muv = True
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -255,18 +258,31 @@ if label_crosstalk:
 
 parent_cat = Table.read(parent_cat_dir / parent_cat_name, format='fits')
 
-#! Catalogue of final sample with Muv
-sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
 
-# Collect all .spec files
+#! Get list of .spec files
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 
-# Sort the files in increasing numerical order
-spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
+#! Catalogue of final sample with Muv
+#sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
+sample_cat = Table.read(parent_cat_dir / 'candidates' / 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits', format='fits')
 
-# If testing, limit to first N files
+if sort_by_Muv:
+    sample_cat.sort('Muv')
+    sorted_ids = list(sample_cat['ID'])
+
+    # Build a dictionary from ID -> filepath (extracting ID from filename)
+    spec_dict = {}
+    for f in spec_files:
+        fname = Path(f).name 
+        id_str = fname.replace('Id', '').replace('.spec', '')  
+        id_int = int(id_str.lstrip('0'))  
+        spec_dict[id_int] = f
+
+        spec_files = [spec_dict[ID] for ID in sorted_ids if ID in spec_dict]
+
 if test:
-    spec_files = spec_files[0:N]
+    # Limit the number of files to process
+    spec_files = spec_files[:N]
 
 with PdfPages(str(output_dir/output_pdf)) as pdf:
     #! Loop through files
@@ -488,7 +504,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
         obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
 
-        #obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
+        obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
+        print(obj_Muv)
 
         # Get the RA and DEC of all objects in the crossmatch catalog
         xmatch_ra = crossmatch['RA']
@@ -533,8 +550,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             ax1.set_title(title_string, pad=10)
         else:
             # If no match is found, just set the title with the ID
-            title_string = f'ID {ID}'
-            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
+            #title_string = f'ID {ID}'
+            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)

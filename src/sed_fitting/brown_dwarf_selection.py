@@ -169,9 +169,9 @@ for i, spec_file in enumerate(spec_files):
     #! Check if the solution is a Brown Dwarf (BD) or not
     if run_type == '':
         #? For VISTA samples, use the chi2=10 cut from Bowler+15
-        solution_is_BD = chi2_star < 10
+        #solution_is_BD = chi2_star < 10
         #? Or apply same cut as euclid for a fair comparison
-        #solution_is_BD = chi2_highz > chi2_star
+        solution_is_BD = chi2_highz > chi2_star
     else:
         #? For other run types, compare chi2_highz and chi2_star
         solution_is_BD = chi2_highz > chi2_star

@@ -283,7 +283,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print('Running dusty selection...')
         #subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
         print('Running brown dwarf selection...')
-        #subprocess.run(['python3', str(bd_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
+        subprocess.run(['python3', str(bd_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
         if run_lya:
             print('Running Lya and z>6.5 selection...')
         else:

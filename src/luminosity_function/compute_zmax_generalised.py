@@ -101,8 +101,9 @@ if field_name == 'COSMOS':
     if run_type == 'with_euclid':
         cat_name = 'COSMOS_5sig_det_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
 
-if field_name == 'XMM':
-     cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
+if field_name == 'XMM': 
+    #cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
+    cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
 
 #! Read in catalogue of candidates
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -327,14 +328,17 @@ for i, ID in enumerate(IDs):
     #! Compute Vmax
 
     # Convert field area into steradians
-    field_area = field_area * (np.pi / 180)**2
+    field_area_ster = field_area * (np.pi / 180)**2
 
     # Compute the volume
-    V = field_area/3 * (cosmo.comoving_distance(z)**3 - cosmo.comoving_distance(zmin)**3)
-    maximum_V = field_area/3 * (cosmo.comoving_distance(zmax)**3 - cosmo.comoving_distance(zmin)**3)
+    V = field_area_ster/3 * (cosmo.comoving_distance(z)**3 - cosmo.comoving_distance(zmin)**3)
+    maximum_V = field_area_ster/3 * (cosmo.comoving_distance(zmax)**3 - cosmo.comoving_distance(zmin)**3)
 
     Vmax = min(V, maximum_V)
     t['Vmax'][row_index] = Vmax
     print('Vmax =', Vmax)
+    print('Maximum Vmax =', maximum_V)
 
 print(t)
+t.write(cat_dir / cat_name, overwrite=True)
+print(f'Saved catalogue to {cat_dir / cat_name}')

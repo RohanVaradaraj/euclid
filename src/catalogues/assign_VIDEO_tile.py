@@ -23,7 +23,8 @@ video_tiles = [field_name+x for x in ['1', '2', '3']]
 
 #! Read in catalogue to label
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' /'candidates'
-cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
+#cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
+cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
 t = Table.read(cat_dir / cat_name)
 
 #! Directory containing VIDEO-matched images

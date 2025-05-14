@@ -95,8 +95,8 @@ if field_name == 'COSMOS':
 
 #? XMM
 if field_name == 'XMM':
-    cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits' # Initial 5sigma selection, following bowler+15, 838 galaxies!
-
+    #cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits' # Initial 5sigma selection, following bowler+15, 838 galaxies!
+    cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits' # chi2_star < chi2_gal to remove BDs, instead of chi2_star < 10
 
 
 # Read in the parent catalogue
