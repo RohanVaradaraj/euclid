@@ -17,6 +17,27 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file, LymanAlphaModel
 
+#! Det/non-det filters
+filters = {
+    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+}
+
+#! Field name
+field_name = 'COSMOS' #'XMM'
+
+#! Run type - governing the filter set used.
+run_type = 'all_filters' #''
+
+#! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
+run_flag = 'best_highz'
+
+# Only get lya if we are looking at the LBG sample
+#run_lya = (run_flag == 'z7')
+run_lya = False # Not running for z=6
+
+
 def stellar_type(model):
     stellar_dict = {
         1: 'M4',
@@ -44,6 +65,7 @@ def stellar_type(model):
         23: 'T6',
         24: 'T7',
         25: 'T8',
+        -1: 'NA',
     }
     return stellar_dict[model]
 
@@ -52,26 +74,6 @@ def clean_filter_name(filt, DR3=False):
     if DR3:
         string = string.replace('_DR3', '')
     return string
-
-#! Det/non-det filters
-filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
-    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-}
-
-#! Field name
-field_name = 'XMM'
-
-#! Run type - governing the filter set used.
-run_type = ''
-
-#! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'z7'
-
-# Only get lya if we are looking at the LBG sample
-#run_lya = (run_flag == 'z7')
-run_lya = False # Not running for z=6
 
 # Generate name of the directory we want to use to make the catalogue
 det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
@@ -239,5 +241,4 @@ print(t_candidates)
 # Save the new catalogue
 print(f'Saving catalogue to {cat_dir / "candidates" / new_cat_name}')
 t_candidates.write(cat_dir / 'candidates' / new_cat_name, overwrite=True)
-
  

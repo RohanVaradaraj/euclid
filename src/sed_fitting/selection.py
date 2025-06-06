@@ -100,7 +100,7 @@ def main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filte
     t = apply_filters(t, filters)
 
     # Generate output file name
-    output_save_name = generate_selection_name(base_output_name, filters, field_name)
+    output_save_name = generate_selection_name(base_output_name, filters)
 
     # Set output_save_name to environment variable
     os.environ['SELECTION_CATALOGUE'] = output_save_name
@@ -118,15 +118,16 @@ if __name__ == "__main__":
     input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
     #input_cat_name = "COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_07_12.fits"
     #input_cat_name = 'COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_10_07.fits' # Newest with JWST
-    input_cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits' # VISTA-Selected
+    #input_cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits' # VISTA-Selected
+    input_cat_name = 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits' #! HSC-Z selected
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
     base_output_name = "COSMOS"
 
     #! XMM
-    input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL'
-    input_cat_name = 'XMMFULL_DR3_MASKVISTADET_HSC-Z_DR3_2.0as_IRAC2.8as_2024_01_18.fits'
-    output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-    base_output_name = "XMM"
+    # input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL'
+    # input_cat_name = 'XMMFULL_DR3_MASKVISTADET_HSC-Z_DR3_2.0as_IRAC2.8as_2024_01_18.fits'
+    # output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+    # base_output_name = "XMM"
     
     input_name = generate_input_name(filters, run_type)
     os.environ['LEPHARE_INPUT'] = input_name

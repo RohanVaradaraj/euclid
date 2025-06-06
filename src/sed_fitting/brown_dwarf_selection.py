@@ -48,6 +48,7 @@ def stellar_type(model):
         23: 'T6',
         24: 'T7',
         25: 'T8',
+        -1: 'NA',
     }
     return stellar_dict[model]
 

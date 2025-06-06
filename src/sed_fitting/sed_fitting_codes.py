@@ -113,6 +113,10 @@ def split_sed_section(sed_lines):
 
 
 
+
+
+
+
 def parse_spec_file(filename):
     """Parses the SPEC file into multiple sections, handling headers appropriately."""
     
@@ -372,10 +376,10 @@ def filter_files():
     Returns the location of filter transmission curve files for input into the lephare config file.
     """
     filt_files = {
-        'CFHT-u':'cfht/megacam/up.pb',
-        'CFHT-g':'cfht/megacam/gp.pb',
-        'CFHT-r':'cfht/megacam/rp.pb',
-        'CFHT-z':'cfht/megacam/zp.pb',
+        # 'CFHT-u':'cfht/megacam/up.pb',
+        # 'CFHT-g':'cfht/megacam/gp.pb',
+        # 'CFHT-r':'cfht/megacam/rp.pb',
+        # 'CFHT-z':'cfht/megacam/zp.pb',
         'HSC-G_DR3':'myfilters/HSC/g_HSC.txt',
         'HSC-R_DR3':'myfilters/HSC/r_HSC.txt',
         'HSC-I_DR3':'myfilters/HSC/i_HSC.txt',
@@ -391,7 +395,7 @@ def filter_files():
         'f150w':'myfilters/JWST/f150w_angstroms.txt',
         'f277w':'myfilters/JWST/f277w_angstroms.txt',
         'f444w':'myfilters/JWST/f444w_angstroms.txt',
-        'VIS':'myfilters/Euclid/Euclid_VIS.txt',
+        'VIS':'myfilters/Euclid/Euclid_VIS.txt',  
         'Ye':'myfilters/Euclid/Euclid_Y.txt',
         'Je':'myfilters/Euclid/Euclid_J.txt',
         'He':'myfilters/Euclid/Euclid_H.txt',
@@ -471,8 +475,8 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
 
         filter_names = all_filters
 
-        if run_brown_dwarfs:
-            filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
+        if run_brown_dwarfs == True:
+            filters_to_remove = ['HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
             filter_names = remove_items(filter_names, filters_to_remove)
             print('Running brown dwarfs: blue filters and long-wavelength filters removed in config file.')
 
@@ -489,8 +493,6 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
             filter_dict['ch1servs'] = filter_dict.pop('ch1cds')
             filter_dict['ch2servs'] = filter_dict.pop('ch2cds')
             
-
-
         filter_list = 'FILTER_LIST '
         for filter_name in filter_names:
             filter_list += f'{filter_dict[filter_name]},'

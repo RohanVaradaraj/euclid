@@ -18,20 +18,20 @@ import json
 #! Configuration flags. Best to run steps one at a time.
 config = {
     "run_type": '',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
-    "overwrite": True,
+    "overwrite": False,
     "steps": {
-        "selection": False,         #? Initial dropout selection
+        "selection": False,         #? Initial dropout selection. NOTE: MODIFY THE SOURCE CATALOGUE IN SELECTION.PY.
         "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
-        "plotting": True,          #? Plot the SEDs
-        "visual_selection": False,  #? Visual selection of SEDs
-        "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
+        "plotting": False,          #? Plot the SEDs
+        "visual_selection": False,  #? Visual selection of SEDs. NOTE: IF YOU SKIP THIS, YOU NEED TO MAKE THE det_{detFilt}_{run_type}_best_highz_good,bad,maybe MANUALLY. Then copy from best_highz into _good.
+        "final_selection": True   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
     }
 }
 
 #! Field name
 #? XMM, CDFS or COSMOS
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Different run types 
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
@@ -42,11 +42,11 @@ mask_euclid = False
 #! Whether to run Lyman-alpha selection in the final part (e.g. not needed at z=6)
 run_lya = False
 
-#! Specific combinations of flags.
+#! Specific combinations of flags for running A) normal SED fitting, B) brown dwarf selection, C) low-redshift dusty galaxy selection, D) Lyman-alpha emitter selection.
 flag_combinations = [
     (False, False, False),  #? All False = Normal SED fitting
     #(True, False, False),   #? Only run_brown_dwarfs = True
-    #False, True, False),   #? Only run_dusty = True
+    #(False, True, False),   #? Only run_dusty = True
     #(False, False, True)    #? Only run_lya = True
 ]
 
@@ -59,12 +59,15 @@ loop_run_types = False
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
 plot_object_type = 'z7' #'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
 
-#! Base filter sets
+#! Base filter sets for different run_types, to use in the SED fitting.
+#? Filters will be removed as required based on flag_combinations, e.g. removal of G and R for fitting brown dwarfs.
 base_filters = {
-    #? COSMOS
-    #'': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds'],
-    #? XMM
-    '': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'ch1servs', 'ch2servs'],
+    '': (
+        ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3',
+         'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3',
+         'Y', 'J', 'H', 'Ks'] +
+        (['ch1cds', 'ch2cds'] if field_name == 'COSMOS' else ['ch1servs', 'ch2servs'])
+    ),
 
     'with_euclid': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds'],
 
@@ -73,9 +76,9 @@ base_filters = {
     'CDS': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-Z_DR3', 'VIS', 'Ye', 'Je', 'He', 'ch1cds', 'ch2cds'],
 
     'all_filters': ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'VIS', 'Ye', 'Je', 'He', 'f115w', 'f150w', 'f277w', 'f444w', 'Y', 'J', 'H', 'Ks', 'ch1cds', 'ch2cds']
-}
+    }
 
-#! Dropout se;ection filters
+#! Dropout selection filters
 #? z = 7 selection
 # filters = {
 #     'Y+J': {'type': 'stacked-detection', 'value': 5},
@@ -197,7 +200,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
 
         #? Build LePhare libraries
         buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
-        
+
         #? Run the photometric redshifts
         zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / det_folder
 
@@ -281,7 +284,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
             lya_script = Path.cwd() / 'redshift_selection.py'
 
         print('Running dusty selection...')
-        #subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
+        subprocess.run(['python3', str(dusty_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
         print('Running brown dwarf selection...')
         subprocess.run(['python3', str(bd_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
         if run_lya:

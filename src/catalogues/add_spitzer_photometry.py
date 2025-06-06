@@ -82,13 +82,14 @@ def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False)
 
 # Read in the VISTA/Euclid-selected catalogue, the one we need to add the IRAC photometry to!
 vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
-vista_file = 'COSMOSFULL_DR3_UNMASKED_Ks_2024_11_06_2.0as_IRAC_2.8as_ALL.fits'
+#vista_file = 'COSMOSFULL_DR3_UNMASKED_Ks_2024_11_06_2.0as_IRAC_2.8as_ALL.fits'
+vista_file = 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits' # HSC-Z selected
 vista_cat = Table.read(vista_dir / vista_file)
 
 #! LAE
-vista_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-vista_file = 'LAE.fits'
-vista_cat = Table.read(vista_dir / vista_file)
+# vista_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
+# vista_file = 'LAE.fits'
+# vista_cat = Table.read(vista_dir / vista_file)
 
 print(len(vista_cat))
 print(vista_cat.colnames)

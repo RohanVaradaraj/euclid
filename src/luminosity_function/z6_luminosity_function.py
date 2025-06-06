@@ -97,6 +97,8 @@ cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
 
 
 t = Table.read(cat_dir / cat_name)
+print(len(t))
+exit()
 
 # Remove the Lya emitters which have z>7.5 with no emission line.
 t = t[t['Vmax'] > 0]

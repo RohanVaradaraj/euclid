@@ -43,6 +43,9 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
+#! field name
+field_name = 'XMM'
+
 #! If I want to plot individual things, overwrite the standard output pdf
 individual_sed = False
 indiv_ID = '661703'
@@ -50,10 +53,10 @@ indiv_pdf_name = 'FAINT_BD_SED.pdf'
 
 #! TEST by plotting first N objects
 test = False
-N = 20
+N = 10
 
 #! Plot final samples sorted by Muv
-sort_by_Muv = True
+sort_by_Muv = False
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -223,11 +226,11 @@ if det_list == ['Y', 'J'] or det_list == ['HSC-Z_DR3']:
     # filter_dict.pop('Ye')
     # filter_dict.pop('Je')
     # filter_dict.pop('He')
-    filter_dict.pop('f115w')
-    filter_dict.pop('f150w')
-    filter_dict.pop('f277w')
-    #filter_dict.pop('f444w')
-    #print('f115w', 'f150w', 'f277w', 'f444w')
+    # filter_dict.pop('f115w')
+    # filter_dict.pop('f150w')
+    # filter_dict.pop('f277w')
+    # filter_dict.pop('f444w')'
+    print('f115w', 'f150w', 'f277w', 'f444w')
 
 if bools[0]:
     filter_dict.pop('HSC-G_DR3')
@@ -242,10 +245,15 @@ if ('no_euclid' in input_name) or (run_type == ''):
     filter_dict.pop('Je')
     filter_dict.pop('He')
 
+if field_name == 'XMM':
+    # Rename ch1cds and ch2cds to ch1servs and ch2servs
+    filter_dict['ch1servs'] = filter_dict.pop('ch1cds')
+    filter_dict['ch2servs'] = filter_dict.pop('ch2cds')
+
 # Get n_in from the length of filter_dict
 n_in = len(filter_dict) * 2
 
-print('Filters: ', filter_dict.keys())
+#print('Filters: ', filter_dict)
 
 # Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -488,8 +496,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Model photometry
         model_photometry = mag_to_flux(phot['modelPhot'])
-        # print(len(model_photometry))
-        # print(len(central_wavelengths))
+        print(len(model_photometry))
+        print(len(central_wavelengths))
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Real photometry with upper limits for sigma < 2
@@ -504,8 +512,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
         obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
 
-        obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
-        print(obj_Muv)
+        #obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
+        #print(obj_Muv)
 
         # Get the RA and DEC of all objects in the crossmatch catalog
         xmatch_ra = crossmatch['RA']
@@ -550,8 +558,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             ax1.set_title(title_string, pad=10)
         else:
             # If no match is found, just set the title with the ID
-            #title_string = f'ID {ID}'
-            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
+            title_string = f'ID {ID}'
+            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)
@@ -625,7 +633,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             if field_name == 'XMM':
                 cutout_fig, cutout_axs = XMMCutout(ra, dec, size=cutout_size, save_cutout=False)
             else:
+                print('Doing all cutouts')
                 cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
+                #cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
 
             pdf.savefig(cutout_fig)
             plt.close(cutout_fig)

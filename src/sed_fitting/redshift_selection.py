@@ -127,5 +127,5 @@ for i, spec_file in enumerate(spec_files):
         number_not_z7 += 1
         shutil.copy2(original_sed_file, not_z7_dir)
 
-print(f'Number of z=7 galaxies: {number_z7}')
-print(f'Number of not z=7 galaxies: {number_not_z7}')
+print(f'Number of z=6 galaxies: {number_z7}')
+print(f'Number of not z=6 galaxies: {number_not_z7}')

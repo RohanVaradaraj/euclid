@@ -142,7 +142,8 @@ for i, spec_file in enumerate(spec_files):
     # First check if the original SED has z>6.5
     zphot_primary = original_params['Zphot'][0]
     chi2_primary = original_params['Chi2'][0]
-    is_z7 = (zphot_primary > 6.5) & (zphot_primary < 7.5)
+    #is_z7 = (zphot_primary > 6.5) & (zphot_primary < 7.5)
+    is_z7 = (zphot_primary > 5.5) & (zphot_primary < 6.5)
 
     # If at z=7, copy over to z7_dir, else copy to not_z7_dir
     if is_z7:
@@ -154,20 +155,21 @@ for i, spec_file in enumerate(spec_files):
 
     # Now, if it is at z<6.5, check if the Lya solution boosts it to z>6.5
     if not is_z7:
+        if lya:
 
-        if verbose:
-            print('Checking Lya solution...')
+            if verbose:
+                print('Checking Lya solution...')
 
-        zphot_lya = params['Zphot'][0]
-        chi2_lya = params['Chi2'][0]
-        is_lya = (zphot_lya > 6.5) & (chi2_lya < chi2_primary)
+            zphot_lya = params['Zphot'][0]
+            chi2_lya = params['Chi2'][0]
+            is_lya = (zphot_lya > 6.5) & (chi2_lya < chi2_primary)
 
-        if is_lya:
-            number_lya += 1
-            shutil.copy2(spec_file, lya_dir)
-        else:
-            number_not_lya += 1
-            shutil.copy2(spec_file, not_lya_dir)
+            if is_lya:
+                number_lya += 1
+                shutil.copy2(spec_file, lya_dir)
+            else:
+                number_not_lya += 1
+                shutil.copy2(spec_file, not_lya_dir)
     else:
         continue
 

@@ -361,54 +361,64 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     #! Next get the Euclid cutouts
     euclid_tile = contained_in[0][0]
 
-    #### VIS ####
-    tile_VIS = glob.glob(str(euclid_dir / 'VIS' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
-    with fits.open(tile_VIS) as hdu_VIS:
+    if euclid_tile != '0':
 
-        data_VIS = hdu_VIS[0].data
-        hdr_VIS = hdu_VIS[0].header
-        pix_scale = np.abs(hdr_VIS['CD1_1']) * 3600
-        wcs_VIS = WCS(hdr_VIS)
+        #### VIS ####
+        tile_VIS = glob.glob(str(euclid_dir / 'VIS' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        with fits.open(tile_VIS) as hdu_VIS:
 
-        cutout_euVIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
+            data_VIS = hdu_VIS[0].data
+            hdr_VIS = hdu_VIS[0].header
+            pix_scale = np.abs(hdr_VIS['CD1_1']) * 3600
+            wcs_VIS = WCS(hdr_VIS)
 
-    #### Y ####
-    tile_Y = glob.glob(str(euclid_dir / 'Y' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
-    with fits.open(tile_Y) as hdu_Y:
+            cutout_euVIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
 
-        data_Y = hdu_Y[0].data
-        hdr_Y = hdu_Y[0].header
-        pix_scale = np.abs(hdr_Y['CD1_1']) * 3600
-        wcs_Y = WCS(hdr_Y)
+        #### Y ####
+        tile_Y = glob.glob(str(euclid_dir / 'Y' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        with fits.open(tile_Y) as hdu_Y:
 
-        cutout_euY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
+            data_Y = hdu_Y[0].data
+            hdr_Y = hdu_Y[0].header
+            pix_scale = np.abs(hdr_Y['CD1_1']) * 3600
+            wcs_Y = WCS(hdr_Y)
 
-    #### J ####
-    tile_J = glob.glob(str(euclid_dir / 'J' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
-    with fits.open(tile_J) as hdu_J:
+            cutout_euY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
 
-        data_J = hdu_J[0].data
-        hdr_J = hdu_J[0].header
-        pix_scale = np.abs(hdr_J['CD1_1']) * 3600
-        wcs_J = WCS(hdr_J)
+        #### J ####
+        tile_J = glob.glob(str(euclid_dir / 'J' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        with fits.open(tile_J) as hdu_J:
 
-        cutout_euJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
+            data_J = hdu_J[0].data
+            hdr_J = hdu_J[0].header
+            pix_scale = np.abs(hdr_J['CD1_1']) * 3600
+            wcs_J = WCS(hdr_J)
 
-    #### H ####
-    tile_H = glob.glob(str(euclid_dir / 'H' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
-    with fits.open(tile_H) as hdu_H:
+            cutout_euJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
 
-        data_H = hdu_H[0].data
-        hdr_H = hdu_H[0].header
-        pix_scale = np.abs(hdr_H['CD1_1']) * 3600
-        wcs_H = WCS(hdr_H)
+        #### H ####
+        tile_H = glob.glob(str(euclid_dir / 'H' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        with fits.open(tile_H) as hdu_H:
 
-        cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+            data_H = hdu_H[0].data
+            hdr_H = hdu_H[0].header
+            pix_scale = np.abs(hdr_H['CD1_1']) * 3600
+            wcs_H = WCS(hdr_H)
 
-    # If all of the Euclid cutouts are zero, then the cutout is empty so return none
-    # if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
-    #     print("Euclid cutouts are empty")
-    #     return None#
+            cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+
+        # If all of the Euclid cutouts are zero, then the cutout is empty so return none
+        # if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
+        #     print("Euclid cutouts are empty")
+        #     return None#
+
+    # If all the Euclid cutouts are zero, return an empty cutout
+    if euclid_tile == '0':
+
+        cutout_euVIS = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
+        cutout_euY = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
+        cutout_euJ = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
+        cutout_euH = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
 
 
     #! Next check for and get the Hubble cutouts
@@ -706,7 +716,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     plt.tight_layout()
     #plt.savefig(plot_dir / f'LAE_stamps_Euclid_CWEB_6arcsec.pdf')
-    plt.show()
+    #plt.show()
 
     if save_cutout:
         plot_title = str(plot_title)

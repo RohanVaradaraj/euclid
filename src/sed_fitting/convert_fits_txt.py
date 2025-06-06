@@ -38,7 +38,7 @@ if len(sys.argv) > 1:
 if __name__ == "__main__":
 
     # Generate catalogue name from input filters
-    cat_name = generate_selection_name(field_name, filters, field_name)
+    cat_name = generate_selection_name(field_name, filters)
 
 
     '''SETUP'''
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     # Delete blue filters if we are running fitting for brown dwarfs
     if bools[0] == True:
-        filters_to_remove = ['CFHT-u', 'CFHT-g', 'CFHT-r', 'HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
+        filters_to_remove = ['HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
         all_filters = remove_items(all_filters, filters_to_remove)
         print('Running brown dwarfs: blue filters and long-wavelength filters removed in input catalogue.')
 
