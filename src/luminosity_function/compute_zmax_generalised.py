@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 An improved version of compute_zmax.py, which was adapted from my first paper code specifically for COSMOS Euclid.
 
@@ -52,7 +54,7 @@ omegaV = 0.7
 cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 
 #! Field name
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Det/non-det filters
 filters = {
@@ -70,7 +72,10 @@ zmin = 5.5
 zmax = 6.5
 
 #! Vmax parameters
-field_area = 4.335562874179884 # XMM
+if field_name == 'COSMOS':
+    field_area = 1.7201431257141546 # COSMOS
+if field_name == 'XMM':
+    field_area = 4.335562874179884 # XMM
 covering_fraction = 0.8
 field_area *= covering_fraction
 
@@ -98,6 +103,7 @@ IDs = [int(ID) for ID in IDs]
 if field_name == 'COSMOS':
     if run_type == '':
         cat_name = 'COSMOS_5sig_det_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+        cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6
     if run_type == 'with_euclid':
         cat_name = 'COSMOS_5sig_det_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
 
@@ -139,14 +145,14 @@ if field_name == 'XMM' or field_name == 'CDFS':
     depth_files.append(tile3_depth)
 
 if field_name == 'COSMOS':
-    tile1_depth = Table.read(depth_dir / f'{det_filter}_{aperture_size}as_gridDepths_300_200.fits')
+    tile1_depth = Table.read(depth_dir / field_name / 'phot' / f'{det_filter}_{aperture_size}as_gridDepths_300_200.fits')
     depth_files.append(tile1_depth)
 
 #! Get the VIDEO WCS, if necessary
 data_dir = Path.cwd().parents[3] / 'data'
-if field_name != 'COSMOS':
 
-    wcs_tiles = []
+wcs_tiles = []
+if field_name != 'COSMOS':
 
     # Generate tile names 
     tile_names = [field_name+x for x in ['1', '2', '3']]
@@ -182,6 +188,17 @@ if field_name == 'XMM':
     filt_files.pop('CFHT-g')
     filt_files.pop('CFHT-r')
     filt_files.pop('CFHT-z')
+    filt_files.pop('f115w')
+    filt_files.pop('f150w')
+    filt_files.pop('f277w')
+    filt_files.pop('f444w')
+    filt_files.pop('VIS')
+    filt_files.pop('Ye')
+    filt_files.pop('Je')
+    filt_files.pop('He')
+    filt_files.pop('ch1cds')
+    filt_files.pop('ch2cds')
+if run_type == '':
     filt_files.pop('f115w')
     filt_files.pop('f150w')
     filt_files.pop('f277w')

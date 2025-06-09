@@ -85,6 +85,7 @@ IDs = [int(ID) for ID in IDs]
 if field_name == 'COSMOS':
     if run_type == '':
         cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+        cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6 sample
     if run_type == 'with_euclid':
         cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
 
@@ -317,7 +318,7 @@ for i, ID in enumerate(IDs):
     print('Vmax =', Vmax)
 
 # Write the table
-#t.write(cat_dir / cat_name, overwrite=True)
+t.write(cat_dir / cat_name, overwrite=True)
 
 plt.hist(ratios, bins=np.arange(0, 2, 0.05))
 plt.show()
