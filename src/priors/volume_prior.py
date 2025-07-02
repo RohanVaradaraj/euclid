@@ -26,17 +26,18 @@ plt.rcParams['figure.dpi'] = 100
 
 #! SWITCH TO PLOT P(z) FOR ALL OBJECTS, TO TAKE A LOOK
 plot_all_pdfs = False
+plot = False
 
 #! INTERESTING IDs
-IDs = [376795, 905849, 1053436]
-IDs = [460143]
+# IDs = [376795, 905849, 1053436]
+# IDs = [460143]
 
 #! Experimenting on an individual ID
-ID = IDs[0]
-#ID = 788054 # Good high-z
-ID = 376795 # Secondary low-z
+# ID = IDs[0]
+# #ID = 788054 # Good high-z
+# ID = 376795 # Secondary low-z
 
-ID = 688921
+# ID = 688921
 
 sed_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'XMM' / 'best_fits' / 'det_HSC-Z_DR3_z7'
 spec_files = glob.glob(str(sed_dir / '*.spec'))
@@ -100,11 +101,15 @@ parent_cat = Table.read(cat_dir / parent_cat_name)
 
 parent_cat.sort('Muv', reverse=False)
 
-for ID in parent_cat['ID']:
+# Array to store IDs which have low redshift when the prior is applied
+low_z_ids = []
+
+for i, ID in enumerate(parent_cat['ID']):
+    print(f'Processing ID {i+1}/{len(parent_cat)}: {ID}')
 
     # Get Muv of this ID
-    if ID != 688921:
-        continue
+    # if ID != 688921:
+    #     continue
     ID_row = parent_cat['ID'] == ID
     Muv = parent_cat['Muv'][ID_row][0]
     m_Z = -2.5*np.log10(parent_cat['flux_HSC-Z_DR3'][ID_row][0])-48.6
@@ -143,12 +148,6 @@ for ID in parent_cat['ID']:
     #! Normalise so that the integral is 1
     prior_vals /= np.trapz(prior_vals, zpdf['z'])
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(zpdf['z'], zpdf['P(z)'], color='black', linewidth=2, label='Flat prior', ls='--', alpha=1, zorder=2)
-
-    #! Plot the prior
-    plt.plot(zpdf['z'], prior_vals, color='gray', linewidth=3, label=r'$P(z | m_{\mathrm{AB}})$', alpha=0.7, zorder=0)
-
     #! Compute the comoving volume at each redshift in z_grid increment
     comoving_volume = cosmo.comoving_volume(zpdf['z']).value
 
@@ -168,6 +167,9 @@ for ID in parent_cat['ID']:
     peak_index = np.argmax(pdf_with_prior)
     peak_z = zpdf['z'][peak_index]
     print('Peak z:', zpdf['z'][peak_index])
+
+    if peak_z < 3:
+        low_z_ids.append(ID)
 
     # Find the 68th percentile of the data left and right of the peak
     left_mask = zpdf['z'] < peak_z
@@ -195,22 +197,34 @@ for ID in parent_cat['ID']:
     # plt.axvline(x=right_68_z, color='green', linestyle='--', alpha=0.7, zorder=3)
 
     # Draw a vertical line here
-    plt.axvline(x=peak_z, color='red', linestyle='--', label=r'$z_{\mathrm{vol}}=$' + f'{peak_z:.2f}', alpha=0.7, zorder=3)
+
 
     # Find peak of PDF without prior
     peak_index_no_prior = np.argmax(zpdf['P(z)'])
     peak_z_no_prior = zpdf['z'][peak_index_no_prior]
 
-    # Draw a vertical line for the peak of PDF without prior
-    plt.axvline(x=peak_z_no_prior, color='black', linestyle='--', label=r'$z_{\mathrm{flat}}=$' + f'{peak_z_no_prior:.2f}', alpha=0.7, zorder=3)
 
+    #! Plot the prior
+    if plot:
+        plt.figure(figsize=(10, 6))
+        plt.plot(zpdf['z'], zpdf['P(z)'], color='black', linewidth=2, label='Flat prior', ls='--', alpha=1, zorder=2)
+        plt.plot(zpdf['z'], prior_vals, color='gray', linewidth=3, label=r'$P(z | m_{\mathrm{AB}})$', alpha=0.7, zorder=0)
+        plt.axvline(x=peak_z, color='red', linestyle='--', label=r'$z_{\mathrm{vol}}=$' + f'{peak_z:.2f}', alpha=0.7, zorder=3)
+        plt.axvline(x=peak_z_no_prior, color='black', linestyle='--', label=r'$z_{\mathrm{flat}}=$' + f'{peak_z_no_prior:.2f}', alpha=0.7, zorder=3)
+        plt.plot(zpdf['z'], pdf_with_prior, color='red', linewidth=3, label='Volume prior', alpha=1, zorder=1)
+        plt.xlabel('z')
+        plt.ylabel(r'$P(z | F) \propto e^{-\chi^2(z)} P(z | m_{\mathrm{AB}})$')
+        plt.title(f'ID: {ID}, ' + r'$M_{\mathrm{UV}} = $' +f'{Muv:.2f}, ' + r'$m_{\mathrm{AB}} = $' + f'{m_Z:.2f}', pad=5)
+        plt.legend()
+        plt.savefig(f'ID_{ID}_prior.pdf', bbox_inches='tight')
+        plt.show()
 
-    # Plot the PDF with prior
-    plt.plot(zpdf['z'], pdf_with_prior, color='red', linewidth=3, label='Volume prior', alpha=1, zorder=1)
-    plt.xlabel('z')
-    plt.ylabel(r'$P(z | F) \propto e^{-\chi^2(z)} P(z | m_{\mathrm{AB}})$')
-    plt.title(f'ID: {ID}, ' + r'$M_{\mathrm{UV}} = $' +f'{Muv:.2f}, ' + r'$m_{\mathrm{AB}} = $' + f'{m_Z:.2f}', pad=5)
-    plt.legend()
-    plt.savefig(f'ID_{ID}_prior.pdf', bbox_inches='tight')
-    plt.show()
+# Save low-z IDs to a file
+output_file = Path.cwd() / f'low_z_with_prior_IDs.txt'
+with open(output_file, 'w') as f:
+    for id_val in low_z_ids:
+        f.write(f'{id_val}\n')
+
+print(f"Saved {len(low_z_ids)} IDs with peak_z < 3 to {output_file}")
+
 
