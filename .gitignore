@@ -38,6 +38,7 @@
 /src/injection_recovery/catalogues
 /src/injection_recovery/shell_scripts
 /src/injection_recovery/*.fits
+/src/injection_recovert/*.bin
 
 # Ignore bagpipes outputs
 /src/sed_fitting/pipes/*
@@ -51,3 +52,6 @@
 
 # Ignore tables in priors folder
 /src/priors/*.fits
+
+# Ignore catalogues
+/src/catalogues/*.fits
