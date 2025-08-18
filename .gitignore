@@ -47,6 +47,7 @@
 
 # Ignore intermediate files from swarp
 /src/file_management/*.fits
+/src/file_management/*.tmp
 
 # Ignore tables in priors folder
 /src/priors/*.fits
