@@ -436,7 +436,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
 if __name__ == '__main__':
     
-    #! PRIMER STARS
+    #! U+E CANDIDATES
     t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits')
 
     t_xmatch = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31_XMATCH_WITH_LITERATURE.fits')
@@ -445,12 +445,20 @@ if __name__ == '__main__':
     t.sort('Muv')
     #t = t[t['ID'] == 910976]
     #t = t[50:60]
+    t = t[0:30]
+
+    #! BROWN DWARFS
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits')
+
+    # IDs_wanted = [887134, 329431]
+    # t = t[np.isin(t['ID'], IDs_wanted)]
+    # print(t)
 
     ra = t['RA']
     dec = t['DEC']
     ID = t['ID']
-    zphot = t['Zphot']
-    Muv = t['Muv']
+    #zphot = t['Zphot']
+   # Muv = t['Muv']
 
 
     # Empty arrays for collecting figures
@@ -474,15 +482,15 @@ if __name__ == '__main__':
             if any(np.sum(cutout.data) > 0.01 for cutout in cutouts[:-1]):
                 all_cutouts.append(cutouts)
                 IDs.append(ID[i])  # Keep track of valid IDs
-                zs.append(zphot[i])
-                Muvs.append(Muv[i])
+                #zs.append(zphot[i])
+                #Muvs.append(Muv[i])
             else:
                 print(f"Skipping object {ID[i]} (empty cutout)")
 
     ############! PLOT CUTOUTS #############
 
     # Cutout titles
-    titles = [r'$I_E$', r'$Y_E$', r'$J_E$', r'$H_E$', r'$YJHK$']
+    titles = [r'$I_{\rm{E}}$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$YJHK$']
 
     # Save each object (with 5 cutouts) as a single image
     for i, cutouts in enumerate(all_cutouts):
@@ -500,7 +508,7 @@ if __name__ == '__main__':
             axs[j].get_xaxis().set_ticks([])
             axs[j].get_yaxis().set_ticks([])
 
-            axs[j].set_title(titles[j], fontsize=25)
+            axs[j].set_title(titles[j], fontsize=35)
 
             # See if this object is in the xmatch cat
             # if IDs[i] in t_xmatch['ID']:
@@ -515,9 +523,11 @@ if __name__ == '__main__':
             #         axs[j].set_title(f'ID {IDs[i]}, ' + r'$z=$'+f'{zs[i]:.2f}, ' + r'$M_{\rm{UV}}=$'+f'{Muvs[i]:.2f}', fontsize=30)
 
         # Save the entire figure (with 5 cutouts) as a single image
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
         cutout_filename = f"stamps/{i}_ID_{IDs[i]}.pdf"
-        plt.tight_layout()
-        plt.savefig(cutout_filename, bbox_inches='tight')
+        #plt.tight_layout()
+        plt.savefig(plot_dir / 'bright_candidates' / cutout_filename, bbox_inches='tight')
+        #plt.savefig(plot_dir / 'UCDs' / cutout_filename, bbox_inches='tight')
         plt.close(fig)  # Close the figure to free up memory
 
         print(f"Saved {cutout_filename}")

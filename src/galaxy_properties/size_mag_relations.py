@@ -11,6 +11,21 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 20})
 plt.rcParams['figure.dpi'] = 100
 
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    # 'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 17, 'ytick.major.size': 17,
+    'xtick.major.width': 5, 'ytick.major.width': 5,
+
+    # Minor tick size and width
+    'xtick.minor.size': 5, 'ytick.minor.size': 5,
+    'xtick.minor.width': 2, 'ytick.minor.width': 2,
+})
+
 # Cosmology constants
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
@@ -49,11 +64,18 @@ def Re_kpc_to_FWHM_arcsec(r_e, z, psf_broadening=True):
     as_per_kpc = cosmo.arcsec_per_kpc_proper(z).value
     
     #fwhm = r_e * (2 * np.sqrt(2 * np.log(2))) / 1.678 * as_per_kpc
-    fwhm = r_e * 1.27 * as_per_kpc
+    fwhm = r_e * 1.29 * as_per_kpc
 
     if psf_broadening:
         fwhm = np.sqrt(fwhm**2 + 0.51**2)  # Include PSF broadening
     return fwhm
+
+print(Re_kpc_to_FWHM_arcsec(2.2, 7))
+print(Re_kpc_to_FWHM_arcsec(2.6, 7))
+print(Re_kpc_to_FWHM_arcsec(3, 7))
+
+print(Re_kpc_to_FWHM_arcsec(3.3, 7))
+# exit()
 
 # print(FWHM_arcsec_to_Re_kpc(1.6, 7))
 # exit()
@@ -122,7 +144,7 @@ bins = np.arange(20, 30, 0.5)
 plt.fill_between(bins[:-1], fwhm_upper, fwhm_lower, color='black', alpha=0.2, edgecolor='none', zorder=0)
 
 # --- Euclid PSF FWHM ---
-plt.axhline(0.51, color='black', linestyle='dotted', linewidth=3, alpha=0.3, zorder=1)
+#plt.axhline(0.51, color='black', linestyle='dotted', linewidth=3, alpha=0.3, zorder=1)
 
 
 # --- Plot FWHM vs J-Magnitude for Euclid ---
@@ -135,9 +157,9 @@ mAB = MUV_to_mAB(M, z, DL)
 relations = {
     "Roper+2022": size_luminosity_relation(1.126, -21, M, 0.29),
     #"Kawamata+2018": size_luminosity_relation(0.94, -21, M, 0.46),
-    "Shibuya+2015": size_luminosity_relation(0.75, -21, M, 0.27),
-    "Yang+2022": size_luminosity_relation(10**(-0.09), -21, M, 0.50),
-    "Sun+2022": size_luminosity_relation(0.85, -21, M, 0.28),
+    #"Shibuya+2015": size_luminosity_relation(0.75, -21, M, 0.27),
+    #"Yang+2022": size_luminosity_relation(10**(-0.09), -21, M, 0.50),
+    #"Sun+2022": size_luminosity_relation(0.85, -21, M, 0.28),
     "Bowler+2017": size_luminosity_relation(1.1, -21, M, 0.5),
 }
 
@@ -145,6 +167,10 @@ linestyles = ['-', '-.', (0, (1, 1)), '--', '-']
 #colours = ['brown', 'mediumorchid', 'seagreen', 'orange', 'black']
 colours = ['orange', 'purple', 'green', 'turquoise', 'black']
 alpha=[0.95, 0.95, 0.95, 0.95, 0.95]
+
+linestyles = ['-.', '-']
+colours = ['tab:orange', 'black']
+alpha=[0.95, 0.95]
 
 # Convert sizes to FWHM in arcseconds
 for key in relations:
@@ -156,18 +182,21 @@ for i, (label, values) in enumerate(relations.items()):
 
 # Labels and legends
 ax2 = plt.gca().secondary_xaxis('top', functions=(mAB_to_MUV, MUV_to_mAB))
-ax2.set_xlabel(r'$M_{\rm{UV}}$', fontsize=20)
+ax2.set_xlabel(r'$M_{\rm{UV}}$', fontsize=27)
 
-plt.xlabel(r'$J_{E}$ (mag)', fontsize=20)
-plt.ylabel('FWHM (arcsec)', fontsize=20)
+plt.xlabel(r'$J_{\rm{E}}$', fontsize=27)
+plt.ylabel('FWHM [arcsec]', fontsize=27)
 
-plt.tick_params(axis='both', which='major', width=2.5, length=5)
-ax2.tick_params(axis='both', which='major', width=2.5, length=5)
+plt.tick_params(axis='both', which='major', width=2.5, length=10)
+ax2.tick_params(axis='both', which='major', width=2.5, length=10)
 
 # Increase marker label sizes
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-ax2.tick_params(axis='x', labelsize=20)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
+ax2.tick_params(axis='x', labelsize=24)
+
+plt.minorticks_on()
+ax2.minorticks_on()
 
 # plt.xlim(22.9, 28)
 # plt.ylim(0.3, 3.1)
@@ -176,8 +205,18 @@ ax2.tick_params(axis='x', labelsize=20)
 plt.xlim(22.9, 27.5)
 plt.ylim(0.35, 2.1)
 
-plt.legend(ncols=2, frameon=False, loc='upper right', alignment='left')
+# Dummy blue dots and red stars for legend and gray box for PSF sizes
+plt.fill_between([], [], [], color='black', alpha=0.2, edgecolor='none', label=r'JWST PSF sizes in $Euclid$')
+plt.scatter([], [], color='blue', marker='o', s=100, alpha=0.65, label='LBG')
+plt.scatter([], [], color='red', marker='*', s=270, alpha=0.9, label='UCD')
+# Gray dotted line
+plt.axhline(0.51, color='black', linestyle='dotted', linewidth=3, alpha=0.9, zorder=1, label=r'$J_{\rm{E}}$ PSF FWHM')
+
+
+
+
+plt.legend(ncols=2, frameon=False, loc='upper left', alignment='left')
 plt.tight_layout()
-plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag.pdf')
+plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag_bowler.pdf')
 plt.show()
 

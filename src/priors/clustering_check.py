@@ -18,7 +18,7 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
 #! Field name
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Dictionary to map field name into Natalia's directory structure
 field_info = {
@@ -43,13 +43,14 @@ cat_file = zphot_dir / field_info[field_name]['filename']
 
 t = Table.read(cat_file)
 print(t)
+print(t.colnames)
 
 
 #! Read in my candidate galaxies
 candidate_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 candidate_dict = {
     'XMM': 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits',
-    'COSMOS': 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits',
+    'COSMOS': 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits',
     'CDFS': 'CDFS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits',
 }
 
@@ -60,7 +61,7 @@ print(cands.colnames)
 
 ID_to_check = 1258338  # Change this to the ID of the candidate you want to check
 
-input_file = Path.cwd() / 'low_z_with_prior_IDs.txt'
+input_file = Path.cwd() / f'low_z_with_prior_IDs_{field_name}.txt'
 
 with open(input_file, 'r') as f:
     low_z_ids = [int(line.strip()) for line in f]
@@ -115,11 +116,17 @@ for i, candidate in enumerate(cands):
         # Plot histogram of their redshifts
         z_nearby = nearby_galaxies['Z_BEST_peak']
         plt.figure(figsize=(10, 6))
-        plt.hist(z_nearby, bins=np.arange(0,2,0.2), alpha=0.7, color='tab:red', histtype='step')
+        plt.hist(z_nearby, bins=np.arange(0,2,0.05), alpha=0.7, color='tab:red', histtype='step', lw=3, density=True, label='Within 1 arcminute')
+
+        # Plot also the hist of all galaxies in this range
+        z_all = t['Z_BEST_peak']
+        plt.hist(z_all, bins=np.arange(0,2,0.01), alpha=0.5, color='gray', histtype='step', lw=3, density=True, label='All Galaxies')
+
         plt.xlabel(r'$z$')
         plt.ylabel('Number of Galaxies')
         plt.title(f'ID: {candidate["ID"]}' +  r', $M_{\rm{UV}}=$' + f'{candidate["Muv"]:.2f}' +  r', $z_{\rm{LBG}}=$' + f'{z_lbg:.2f}' +  r', $z_{\rm{dusty}}=$' + f'{z_dusty:.2f}')
-        plt.axvline(z_dusty, color='green', linestyle='--', label='z_dusty')
+        plt.axvline(z_dusty, color='green', linestyle='--', label=r'$z_{\rm{dusty}}$')
+        plt.legend()
         plt.show()
 
     else:

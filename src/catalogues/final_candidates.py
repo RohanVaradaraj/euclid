@@ -18,20 +18,27 @@ sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file, LymanAlphaModel
 
 #! Det/non-det filters
+# filters = {
+#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
 filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'Y+J': {'type': 'stacked-detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
 
 #! Field name
 field_name = 'COSMOS' #'XMM'
 
 #! Run type - governing the filter set used.
-run_type = 'all_filters' #''
+run_type = '' #''
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'best_highz'
+run_flag = ''
 
 # Only get lya if we are looking at the LBG sample
 #run_lya = (run_flag == 'z7')
@@ -116,7 +123,9 @@ today_date = datetime.datetime.now().strftime('%Y_%m_%d')
 if run_flag == 'z7':
     new_cat_name = cat_name.split('.fits')[0] + '_candidates_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_candidates_' + today_date + '.fits'
 else:
-    new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
+    #new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
+    new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '.fits'
+    #new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + today_date + '.fits'
 
 print('Creating catalogue with name:')
 print(new_cat_name)
@@ -124,12 +133,17 @@ print(new_cat_name)
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
 t = Table.read(cat_dir / cat_name)
+print(t)
 
 # Get the list of objects that made it through the SED fitting
-obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
+obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name #/ 'best_fits'
+
+folder = folder.replace('+', '_')[:-1]
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
+print(len(obj_list))
 
 print(obj_dir / folder)
+
 
 # And lyman-alpha emitters
 if run_lya:
@@ -173,6 +187,8 @@ if run_lya:
 
 # Loop through the objects in the table and get its SED properties
 for i, ID in enumerate(IDs):
+
+    print('object number:', i + 1, 'of', len(IDs))
 
     # Find the row index in the table with this ID
     row_index = np.where(t_candidates['ID'] == ID)[0]

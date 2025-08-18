@@ -45,7 +45,8 @@ def flux_to_mag(flux):
 	mag = -2.5*np.log10(flux)-48.6
 	return mag
 
-
+#! Run with Kron-derived Muv?
+kron = True
 
 # Define the cosmology
 H = 70
@@ -57,30 +58,39 @@ cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 field_name = 'COSMOS'
 
 #! Det/non-det filters
+# filters = {
+#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
 filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'Y+J': {'type': 'stacked-detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
+
 
 #! Run type
 run_type = ''
 
 #! Redshifting parameters
 dz = 0.01
-zmin = 5.5
-zmax = 6.5
+zmin = 6.5
+zmax = 7.5
 
 #! Vmax parameters
 if field_name == 'COSMOS':
     field_area = 1.7201431257141546 # COSMOS
+    field_area = 0.6536 # Euclid COSMOS
 if field_name == 'XMM':
     field_area = 4.335562874179884 # XMM
 covering_fraction = 0.8
 field_area *= covering_fraction
 
 #! Photometry params
-aperture_size = 2.0 # arcsec
+aperture_size = 1.8 # arcsec
 
 #! SED Fitting folder
 # Generate name of the directory we want to use to make the catalogue
@@ -106,6 +116,9 @@ if field_name == 'COSMOS':
         cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6
     if run_type == 'with_euclid':
         cat_name = 'COSMOS_5sig_det_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+        if kron:
+            cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid_WITH_MAG_AUTO.fits' # Adjusting magnitudes with Kron photometry
+
 
 if field_name == 'XMM': 
     #cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
@@ -260,7 +273,7 @@ for i, ID in enumerate(IDs):
     dec = t['DEC'][row_index]
 
     # Get Muv
-    Muv = t['Muv'][row_index]
+    Muv = t['Muv_kron'][row_index]
     print('Muv =', round(Muv[0], 2))
 
     # Get the redshift
@@ -285,7 +298,7 @@ for i, ID in enumerate(IDs):
     # Convert to flux
     det_flux_here = mag_to_flux(det_depth_here)
 
-    print('HSC-Z depth here =', round(det_depth_here, 2))
+    print(f'{det_filter} depth here =', round(det_depth_here, 2))
 
     #! Get SED components and compute initial flux
 
@@ -357,5 +370,5 @@ for i, ID in enumerate(IDs):
     print('Maximum Vmax =', maximum_V)
 
 print(t)
-t.write(cat_dir / cat_name, overwrite=True)
+#t.write(cat_dir / cat_name, overwrite=True)
 print(f'Saved catalogue to {cat_dir / cat_name}')

@@ -14,21 +14,25 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import numpy as np
 
-fields = ['CDFS1']
+data_dir = Path.cwd().parents[3] / 'data' # Contains the ground-based data
+euclid_dir = data_dir / 'euclid' / 'euclid_deep_field_fornax' # Contains the Euclid data
 
-filter_names = ['Y'] #, 'J', 'H'] # Euclid
+#! Switches/variables
+fields = ['CDFS1'] # 'CDFS2', 'CDFS3'] #? VIDEO field(s) we want to reproject the Euclid images to.
+filter_names = ['Y'] #, 'J', 'H'] #? Euclid filter(s) we want to resample/swarp.
 #filter_names = ['YJH'] # Euclid stack
 
-data_dir = Path.cwd().parents[3] / 'data'
-calib_dir = data_dir / 'bertin_config'
+#! Dictionary of centres
+centres = {'CDFS1':['03:30:07.91247899','-27:34:29.89999999']}
 
-
-
+#! Loop through the fields/VIDEO tiles
 for field in fields:
 
+    # Point to the input file for this VIDEO tile
     input_swarp_filename = f'regrid_{field}.swarp'
     input_swarp = Path.cwd() / input_swarp_filename
 
+    # Get a reference image with the desired astrometry
     reference_dir = data_dir / f'{field}'
     reference_file = reference_dir / 'HSC-G.fits'
 
@@ -52,11 +56,10 @@ for field in fields:
         # Find the RA and DEC of the centre pixel
         centre_ra, centre_dec = ref_wcs.all_pix2world(centre_x, centre_y, 0) 
 
-
-    euclid_dir = data_dir / 'euclid' / 'euclid_deep_field_fornax'
-
+    # Now loop through the Euclid filters we want to swarp
     for filter_name in filter_names:
 
+        #! Set up the output file names - we will have MOSAICS, but specify a filter stack with 'STACK'
         if filter_name != 'YJH':
             euclid_image = euclid_dir / f'{field}_{filter_name}_MOSAIC.fits' #! Original images
             weight_image = euclid_dir / f'{field}_{filter_name}_MOSAIC_RMS.fits'

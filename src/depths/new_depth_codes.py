@@ -283,7 +283,8 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
     for fi, filter_name in enumerate(req_filters):
 
         # Read in the images file
-        dirHere = data_dir / filter_name / field_name
+        #dirHere = data_dir / filter_name / field_name
+        dirHere = data_dir / field_name
         print(dirHere)
         imagedata = read_image_lis(dirHere)
         availableFilters = np.array(imagedata['Name'])
@@ -300,7 +301,7 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
             maskName = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'masks' / field_name / imagedata['mask'][j]
             
             if image_dir == 'here':
-                image_dir = data_dir / filter_name / field_name
+                image_dir = data_dir / field_name
             
             # Now spawn the depths!
             if queue == 'none':
@@ -324,11 +325,11 @@ def get_depths(field_name: str, req_filters: list, queue: str = 'none',
                 tmpName = "tmp_{1}_{0}.sh".format(tile_name, field_name)
                 f = open(tmpName, 'w')
                 f.write('#!/bin/bash\n')
-                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir+'/'+image_name), str(image_dir+'/'+wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
+                f.write('python3 stupid.py {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}'.format(str(image_dir/image_name), str(image_dir/wht_name), wht_type, zeropoint, output_dir, strips, tile_name, overwrite, maskName, gridSepAS, ap_diametersASstring))
                 f.close()
                 
                 # now execute this
-                command = "addqueue -c 'tmp_{0}' -m 8 -q {0} -d ./{1}".format(queue, tmpName)
+                command = "addqueue -c 'tmp_{0}' -m 12 -q {0} ./{1}".format(queue, tmpName)
                 #print(command)
                 os.system('chmod +x {0}'.format(tmpName))
                 os.system(command)

@@ -7,6 +7,32 @@ import sys
 # Set plotting defaults
 plt.rcParams.update({'axes.linewidth': 4, 'font.size': 25, 'figure.dpi': 100})
 
+plt.rcParams['axes.linewidth'] = 4
+plt.rcParams.update({'font.size': 25})
+plt.rcParams['figure.dpi'] = 100
+
+plt.rcParams['xtick.top'] = True
+plt.rcParams['xtick.bottom'] = True
+plt.rcParams['ytick.left'] = True
+plt.rcParams['ytick.right'] = True
+
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+# Make ticks larger and thicker
+plt.rcParams['xtick.major.size'] = 10  # Length of major ticks
+plt.rcParams['ytick.major.size'] = 10
+
+plt.rcParams['xtick.major.width'] = 3  # Width of major ticks
+plt.rcParams['ytick.major.width'] = 3
+
+# (Optional) control minor ticks too
+plt.rcParams['xtick.minor.size'] = 5
+plt.rcParams['ytick.minor.size'] = 5
+plt.rcParams['xtick.minor.width'] = 2
+plt.rcParams['ytick.minor.width'] = 2
+
+
 # Constants and config
 MAG_FLOOR = 30
 LW = 5
@@ -19,7 +45,7 @@ from sed_fitting_codes import parse_spec_file
 
 filter_dir = Path.home() / 'lephare' / 'lephare_dev' / 'filt' / 'myfilters'
 plot_dir = base_path.parent / 'plots' / 'filters'
-sed_dir = base_path.parent / 'data' / 'sed_fitting' / 'zphot' / 'COSMOS' / 'best_fits' / 'det_Y_J_with_euclid_z7'
+sed_dir = base_path.parent / 'data' / 'sed_fitting' / 'zphot' / 'COSMOS' / 'best_fits' / 'det_Y_J_with_euclid_best_highz_good'
 
 # Functions
 
@@ -47,6 +73,7 @@ def compute_fwhm(wavelength, trans, depth):
         interp = lambda x1, x2, y1, y2: x1 + (0.5 - y1) * (x2 - x1) / (y2 - y1)
         left = interp(wavelength[crossings[0]], wavelength[crossings[0]+1], norm[crossings[0]], norm[crossings[0]+1])
         right = interp(wavelength[crossings[1]], wavelength[crossings[1]+1], norm[crossings[1]], norm[crossings[1]+1])
+        print(left, right)
         return left, right, (left + right) / 2
     return None, None, None
 
@@ -163,7 +190,7 @@ def load_filter_curve(filter_path):
     return wl, trans
 
 # Euclid filters
-order = [r'$I_{E}$', r'$Y_{E}$', r'$J_{E}$', r'$H_{E}$']
+order = [r'$I_{\rm{E}}$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$']
 euclid_colours = ['tab:purple', 'tab:blue', 'tab:green', 'tab:red']
 euclid_depths = [27.7, 26.4, 26.4, 26.3]
 euclid_filters = sorted(
@@ -186,17 +213,21 @@ hsc_depths = [27.8, 27.4, 27.2, 26.7, 26.0, 26.2, 26.0]
 
 # Plot setup
 plt.figure(figsize=(18, 9))
+
+print('Euclid')
 fwhm_centres_euclid = process_filter_group(
     euclid_filters, euclid_depths, colours=euclid_colours, labels=order, text=True
 )
 for i, colour in enumerate(euclid_colours):
     plt.hlines([], [], [], colors=colour, linewidth=6, alpha=1)
+print('VISTA')
 fwhm_centres_vista = process_filter_group(vista_filters, vista_depths, color='tab:orange', label='VISTA')
-fwhm_centres_hsc = process_filter_group(hsc_filters, hsc_depths, color='deepskyblue', label='HSC')
+print('HSC')
+fwhm_centres_hsc = process_filter_group(hsc_filters, hsc_depths, color='black', label='HSC')
 
 # Final plot tweaks
-plt.xlabel(r'$\lambda \ (\mu \mathrm{m})$', fontsize=35)
-plt.ylabel('Depth (mag)', fontsize=30)
+plt.xlabel(r'$\lambda \ [\rm{\mu} \mathrm{m}]$', fontsize=35)
+plt.ylabel('Depth [mag]', fontsize=30)
 plt.tick_params(axis='both', which='major', size=10, width=4)
 plt.xticks(fontsize=30)
 plt.yticks(fontsize=30)
@@ -220,7 +251,7 @@ all_filters = euclid_filters + vista_filters + hsc_filters
 all_colours = (
     ['tab:purple', 'tab:blue', 'tab:green', 'tab:red']
     + ['tab:orange'] * len(vista_filters)
-    + ['deepskyblue'] * len(hsc_filters)
+    + ['black'] * len(hsc_filters)
 )
 fwhm_centres_all = fwhm_centres_euclid + fwhm_centres_vista + fwhm_centres_hsc
 
@@ -236,7 +267,7 @@ for i, fpath in enumerate(all_filters):
     plt.scatter(fwhm_centres_all[i], mag_primary, color=all_colours[i], s=300, zorder=29,
                 marker='o', edgecolors='black')
 
-    print(f"Filter: {Path(fpath).name}, mag (primary): {mag_primary:.3f}")
+    #print(f"Filter: {Path(fpath).name}, mag (primary): {mag_primary:.3f}")
 
 # Dummy legend markers
 plt.plot([], [], color='gray', marker='o', markersize=20, linestyle='--',
@@ -244,6 +275,7 @@ plt.plot([], [], color='gray', marker='o', markersize=20, linestyle='--',
 plt.plot([], [], color='gray', marker='*', markersize=20,
          label='Ultra-cool dwarf', alpha=1, lw=LW, markeredgecolor='black')
 
+plt.minorticks_on()
 
 plt.xlim(0.4, 2.5)
 plt.ylim(29,23.5)

@@ -22,6 +22,10 @@ plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 run_type = ''
 #run_type = 'with_euclid'   
 
+field_name = 'COSMOS'
+
+do_completeness = False
+
 #! ############### FUNCTIONS ####################
 def dpl(M, Mstar, phiStar, alpha, beta):
 
@@ -92,17 +96,21 @@ def concatenate_arrays(*arrays):
 
 #? Read catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
-
+if field_name == 'XMM':
+    cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
+if field_name == 'COSMOS':
+    cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits'
 
 
 t = Table.read(cat_dir / cat_name)
 print(len(t))
-exit()
 
 # Remove the Lya emitters which have z>7.5 with no emission line.
 t = t[t['Vmax'] > 0]
 t = t[t['Muv'] < 0]
+
+t = t[t['Zphot'] > 5.7]
+t = t[t['Zphot'] < 6.3]
 
 # plt.scatter(t['Muv'], t['Vmax'], c=t['Zphot'], cmap='viridis', s=10)    
 # plt.show()
@@ -127,7 +135,7 @@ z_completeness_bins = np.arange(6.5, 7.5, 0.05)
 
 #! ################## Muv BINNING ####################
 
-Muv_bins = [-23., -22.5, -22.25, -22., -21.75, -21.5, -21.25, -21., -20.75, -20.5, -20.25, -20.]
+Muv_bins = [-23., -22.5, -22.25, -22., -21.75, -21.5, -21.25, -21., -20.75, -20.5, -20.25, -20., -19.75, -19.5]
 bin_widths = np.abs(np.diff(Muv_bins))
 bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
 
@@ -178,7 +186,10 @@ for i, sub_table in enumerate(binned_tables):
         completeness = completeness_matrix[Muv_bin, z_bin]
 
         # Summand
-        summand = 1 / (Vmax) #* completeness)
+        if do_completeness:
+            summand = 1 / (Vmax * completeness)
+        else:
+            summand = 1 / Vmax
         phi[i] += summand
 
         # Compute error term
@@ -208,30 +219,46 @@ bowler15_M = [-22.625, -22.125, -21.75, -21.5, -21.25]
 bowler15_phi = [1.16e-6, 5.98e-6, 1.9e-5, 3.92e-5, 9.14e-5]
 bowler15_dphi = [0.67e-6, 1.64e-6, 0.41e-5, 0.7e-5, 1.39e-5]
 
-#? MY VALUES, VARIOUS CUTS
-sample_chi2_10_cut_LF = [1.33157075e-07, 1.18241778e-06, 2.52909446e-06, 9.08111135e-06, 
-                         1.65676294e-05, 2.97647415e-05, 3.56246948e-05, 3.88829869e-05,
-                         2.74801812e-05, 1.70064150e-05, 1.04995291e-05]
-sample_chi2_10_cut_LF_err = [9.41586427e-08, 4.18552119e-07, 6.35377120e-07, 1.24680926e-06,
-                             1.79523078e-06, 2.52202978e-06, 2.70418308e-06, 3.84325176e-06,
-                             3.62746107e-06, 2.65738666e-06, 3.28051799e-06]
+#? MY VALUES IN XMM, VARIOUS CUTS
+if field_name == 'XMM':
+    sample_chi2_10_cut_LF = [1.33157075e-07, 1.18241778e-06, 2.52909446e-06, 9.08111135e-06, 
+                            1.65676294e-05, 2.97647415e-05, 3.56246948e-05, 3.88829869e-05,
+                            2.74801812e-05, 1.70064150e-05, 1.04995291e-05]
+    sample_chi2_10_cut_LF_err = [9.41586427e-08, 4.18552119e-07, 6.35377120e-07, 1.24680926e-06,
+                                1.79523078e-06, 2.52202978e-06, 2.70418308e-06, 3.84325176e-06,
+                                3.62746107e-06, 2.65738666e-06, 3.28051799e-06]
+
+if field_name == 'COSMOS':
+    full_zspan_LF = [3.18107849e-06, 7.72650799e-06, 1.65541048e-05, 3.33368956e-05, 7.87426461e-05, 1.21480570e-04, 
+                     1.93707969e-04, 2.78364345e-04, 3.12493734e-04, 4.73882743e-04, 4.13148837e-05]
+
+    full_zspan_LF_err = [1.06290027e-06, 1.69434097e-06, 2.53083832e-06, 3.80276015e-06, 6.08074184e-06, 7.82026245e-06, 
+                         1.17891825e-05, 1.83488356e-05, 2.59915168e-05, 2.75335959e-04, 8.89131186e-06]
 
 
 #############! PLOT MY DATA ###############
 plt.figure(figsize=(10, 10))
 
+label= field_name + r', ($\chi^2_{\mathrm{BD}} < \chi^2_{\mathrm{high-}z}$)'
+label = r'COSMOS, $6.7 < z < 7.3$'
+
 plt.errorbar(bin_centres, phi, yerr=delta_phi, fmt='o', color='red', 
-             markersize=14, label=r'XMM-LSS ($\chi^2_{\mathrm{BD}} < \chi^2_{\mathrm{high-}z}$)', 
+             markersize=14, label=label, 
              elinewidth=3, markeredgecolor='black')
 
 # plot my sample_chi2_10 data with offset in M
-sample_chi2_10_cut_LF = np.array(sample_chi2_10_cut_LF)
-sample_chi2_10_cut_LF_err = np.array(sample_chi2_10_cut_LF_err)
+# sample_chi2_10_cut_LF = np.array(sample_chi2_10_cut_LF)
+# sample_chi2_10_cut_LF_err = np.array(sample_chi2_10_cut_LF_err)
 
-plt.errorbar(bin_centres + 0.1, sample_chi2_10_cut_LF, yerr=sample_chi2_10_cut_LF_err, fmt='o', color='orange', 
-             markersize=12, label=r'XMM-LSS ($\chi^2_\mathrm{BD} < 10$)', elinewidth=3, markeredgecolor='black',
+#? PLOTTING DIFFERENT BD CUTS IN XMM
+# plt.errorbar(bin_centres + 0.1, sample_chi2_10_cut_LF, yerr=sample_chi2_10_cut_LF_err, fmt='o', color='orange', 
+#              markersize=12, label=r'XMM-LSS ($\chi^2_\mathrm{BD} < 10$)', elinewidth=3, markeredgecolor='black',
+#              marker='h')
+
+#? PLOTTING DIFFERENT REDSHIFT RANGES IN COSMOS
+plt.errorbar(bin_centres[2:] + 0.07, full_zspan_LF, yerr=full_zspan_LF_err, fmt='o', color='orange',
+             markersize=12, label=r'COSMOS, $6.5 < z < 7.5$', elinewidth=3, markeredgecolor='black',
              marker='h')
-
 
 
 ###############! PLOT LITERATURE DATA ###############
@@ -252,8 +279,8 @@ plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 
 
-plt.ylim([1e-8, 4e-4])
-plt.xlim(-23.5, -19.5)
+plt.ylim([1e-7, 1e-3])
+plt.xlim(-23.5, -19)
 
 
 plt.legend(loc='lower right', fontsize=17)
@@ -261,5 +288,5 @@ plt.legend(loc='lower right', fontsize=17)
 
 plt.tight_layout()  # Leaves extra space at the bottom
 plt.yscale('log')
-plt.savefig(plot_dir / f'z6_LF_XMM.pdf', dpi=100, bbox_inches='tight')
+plt.savefig(plot_dir / f'z6_LF_{field_name}.pdf', dpi=100, bbox_inches='tight')
 plt.show()

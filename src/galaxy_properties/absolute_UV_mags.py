@@ -19,8 +19,24 @@ import math
 import matplotlib.gridspec as gridspec
 
 plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({'font.size': 27})
 plt.rcParams['figure.dpi'] = 100
+
+
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 6.5, 'ytick.major.size': 6.5,
+    'xtick.major.width': 2, 'ytick.major.width': 2,
+
+    # Minor tick size and width
+    'xtick.minor.size': 3, 'ytick.minor.size': 3,
+    'xtick.minor.width': 1.5, 'ytick.minor.width': 1.5,
+})
 
 import sys
 sed_path = Path.cwd().parents[0] / 'sed_fitting'
@@ -28,21 +44,28 @@ sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
 #! Field name
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Det/non-det filters
+# filters = {
+#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
 filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'Y+J': {'type': 'stacked-detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
 
 #! Run type
-#run_type = 'with_euclid'
 run_type = ''
+#run_type = ''
 
 # Switch to stop computing Muv if we've already done it.
-compute_Muv = True
+compute_Muv = False
 
 def mag_to_flux(m):
     '''Convert mags to flux count'''
@@ -92,6 +115,7 @@ if field_name == 'COSMOS':
         ref_cat = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits'
     if run_type == '':
         cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+        #cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6 sample
 
 #? XMM
 if field_name == 'XMM':
@@ -200,10 +224,10 @@ if compute_Muv:
 z_Muv_ = np.load('z_Muv_sample_.npy')
 z_Muv_with_euclid = np.load('z_Muv_sample_with_euclid.npy')
 
-# Split table into where EW is non-zero
-# t_lya = t[t['Lyman_alpha_EW'] > 0]
-# print(len(t_lya))
-#print(t['Muv'])
+#Split table into where EW is non-zero
+t_lya = t[t['Lyman_alpha_EW'] > 0]
+print(len(t_lya))
+print(t['Muv'])
 
 # Plot Muv vs redshift
 plt.figure(figsize=(12, 8))
@@ -221,17 +245,17 @@ plt.gca().invert_yaxis()
 plt.xlabel(r'$z_{\rm phot}$')
 plt.ylabel(r'$M_{\rm UV}$')
 
-plt.show()
-
+#plt.show()
+plt.close()
 
 
 #! paper 1 galaxies
-# paper1_dir = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
-# dataCDFS = Table.read(paper1_dir / 'vmax_CDFS_comp.txt', format='ascii.commented_header')
-# dataXMM = Table.read(paper1_dir / 'vmax_XMM_comp.txt', format='ascii.commented_header')
+paper1_dir = Path.cwd().parents[3] / 'HSC_SSP_DR3' / 'codes'
+dataCDFS = Table.read(paper1_dir / 'vmax_CDFS_comp.txt', format='ascii.commented_header')
+dataXMM = Table.read(paper1_dir / 'vmax_XMM_comp.txt', format='ascii.commented_header')
 
-# errorXMM = Table.read(paper1_dir / 'errorsMin_primary_XMM.txt', format='ascii.commented_header')
-# errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.commented_header')
+errorXMM = Table.read(paper1_dir / 'errorsMin_primary_XMM.txt', format='ascii.commented_header')
+errorCDFS = Table.read(paper1_dir / 'errorsMin_primary_CDFS.txt', format='ascii.commented_header')
 
 
 # plt.errorbar(dataXMM['z'], dataXMM['Muv'], xerr=(errorXMM['zinf'], errorXMM['zsup']), yerr=(np.abs(errorXMM['Muv_inf']), errorXMM['Muv_sup']), 
@@ -260,9 +284,9 @@ plt.show()
 # plt.text(7.469, -20.65, '40%', fontsize=20, color='gray')
 # plt.text(7.469, -20.9, '50%', fontsize=20, color='dimgray')
 
-#! UltraVISTA
+# #! UltraVISTA
 
-#t = t[t['Zphot'] > 6.5]
+# t = t[t['Zphot'] > 6.5]
 
 # if run_type == 'with_euclid':
 
@@ -311,9 +335,9 @@ plt.show()
 #     # zorder=4,
 # )
 
-# # Bouwens 2021
+# Bouwens 2021
 
-# dataBouwens = Table.read(paper1_dir.parent / 'ref_catalogues' / 'bouwens21_z7.dat', format='ascii.commented_header')
+dataBouwens = Table.read(paper1_dir.parent / 'ref_catalogues' / 'bouwens21_z7.dat', format='ascii.commented_header')
 # plt.scatter(dataBouwens['col11'], dataBouwens['Muv'], label='Bouwens+21', s=40, color='gray', alpha=0.4, zorder=-1, edgecolor='none')
 
 # # # Add 50% completeness limit
@@ -343,7 +367,7 @@ plt.show()
 #     plt.text(6.01, -19.9, 'UltraVISTA only', size=25)
 #     plt.savefig(plot_dir / 'z_Muv_sample.pdf')
 # #plt.show()
-exit()
+# exit()
 ##############! ##############! ##############! ##############! ##############! ##############! ##############! ##############! 
 
 # Define figure with GridSpec layout
@@ -353,20 +377,25 @@ gs = gridspec.GridSpec(4, 4, wspace=0, hspace=0, width_ratios=[6, 1, 0.2, 0.2], 
 # Main scatter plot
 ax_main = plt.subplot(gs[1, 0])
 
+ax_main.minorticks_on()
+
 # Top histogram (Zphot distribution)
 ax_histx = plt.subplot(gs[0, 0], sharex=ax_main)
 
 # Right histogram (Muv distribution)
 ax_histy = plt.subplot(gs[1, 1], sharey=ax_main)
 
+ax_histx.minorticks_on()
+ax_histy.minorticks_on()
+
 ax_main.errorbar(dataXMM['z'], dataXMM['Muv'], xerr=(errorXMM['zinf'], errorXMM['zsup']), yerr=(np.abs(errorXMM['Muv_inf']), errorXMM['Muv_sup']), 
-    color='black', alpha=1, linestyle='none', marker='^', markersize=12, elinewidth=2.5,
-    label='Varadaraj+23, XMM')
+    color='gray', alpha=0.7, linestyle='none', marker='^', markersize=12, elinewidth=2.5,
+    label='Varadaraj+23, XMM', zorder=-1)
 
 
 ax_main.errorbar(dataCDFS['z'], dataCDFS['Muv'], xerr=(errorCDFS['zinf'], errorCDFS['zsup']), yerr=(np.abs(errorCDFS['Muv_inf']), errorCDFS['Muv_sup']), 
-    color='black', marker='s', alpha=1, linestyle='none', markersize=12, elinewidth=2.5,
-    label='Varadaraj+23, CDFS')
+    color='gray', marker='s', alpha=0.7, linestyle='none', markersize=12, elinewidth=2.5,
+    label='Varadaraj+23, CDFS', zorder=-1)
 
 # Imshow completeness as grayscale in the background
 completeness_z = np.arange(6.5, 7.5, 0.05)
@@ -381,9 +410,9 @@ contour = ax_main.contour(completeness_z[1:], completeness_Muv[1:], completeness
 contour = ax_main.contour(completeness_z[1:], completeness_Muv[1:], completeness_matrix, levels=[0.4], colors='gray', linewidths=5, zorder=5, linestyles='--')
 contour = ax_main.contour(completeness_z[1:], completeness_Muv[1:], completeness_matrix, levels=[0.5], colors='dimgray', linewidths=5, zorder=5, linestyles='--')
 
-ax_main.text(7.469, -20.4, '30%', fontsize=20, color='darkgray')
-ax_main.text(7.469, -20.65, '40%', fontsize=20, color='gray')
-ax_main.text(7.469, -20.9, '50%', fontsize=20, color='dimgray')
+ax_main.text(7.469, -20.4, '30%', fontsize=22, color='darkgray')
+ax_main.text(7.469, -20.65, '40%', fontsize=22, color='gray')
+ax_main.text(7.469, -20.9, '50%', fontsize=22, color='dimgray')
 
 # Plot main scatter plot
 
@@ -403,7 +432,7 @@ if run_type == 'with_euclid':
         # xerr=[np.abs(t_matched['Zphot']-t_matched['Zinf']), np.abs(t_matched['Zsup']-t_matched['Zphot'])],
         yerr=0,
         xerr=0,
-        fmt='o', color='magenta', markersize=12,
+        fmt='o', color='tab:red', markersize=12,
         alpha=0.8, markeredgecolor='none', elinewidth=2.5,
     )
 
@@ -413,7 +442,7 @@ if run_type == 'with_euclid':
         # xerr=[np.abs(t_unmatched['Zphot']-t_unmatched['Zinf']), np.abs(t_unmatched['Zsup']-t_unmatched['Zphot'])],
         yerr=0,
         xerr=0,
-        fmt='s', color='magenta', markersize=14,
+        fmt='s', color='tab:red', markersize=14,
         alpha=0.8, markeredgecolor='black', elinewidth=2.5, zorder=3,
         markeredgewidth=2
     )
@@ -424,7 +453,7 @@ if run_type == 'with_euclid':
             # xerr=[np.abs(t_lya['Zphot']-t_lya['Zinf']), np.abs(t_lya['Zsup']-t_lya['Zphot'])],
             yerr=0,
             xerr=0,
-            fmt='o', color='magenta', markersize=12,
+            fmt='o', color='tab:red', markersize=12,
             alpha=0.8, markeredgecolor='none', elinewidth=2.5,
             # fmt='D', color='red', markersize=16, alpha=1., markeredgecolor='none', elinewidth=2.5,
             # zorder=4,
@@ -435,7 +464,7 @@ if run_type == 'with_euclid':
     mean_error_sup = np.mean(np.abs(t_matched['Zsup']-t_matched['Zphot']))
     mean_error_Muv_inf = np.mean(t_matched['dMuv_inf'])
     mean_error_Muv_sup = np.mean(t_matched['dMuv_sup'])
-    ax_main.errorbar(6.23, -20.5, xerr=mean_error_sup, yerr=mean_error_Muv_sup, fmt='o', color='magenta', 
+    ax_main.errorbar(6.23, -20.5, xerr=mean_error_sup, yerr=mean_error_Muv_sup, fmt='o', color='tab:red', 
                      markersize=12, alpha=1, markeredgecolor='none', elinewidth=3, markerfacecolor='none')
 
 
@@ -487,12 +516,12 @@ if run_type == 'with_euclid':
 if run_type == '':
     comparison_z = z_Muv_with_euclid[0]
     comparison_M = z_Muv_with_euclid[1]
-    ax_histx.hist(comparison_z, bins=np.arange(6.45, 7.55, 0.05), histtype='step', color='magenta', density=density, linewidth=2, alpha=0.7)
-    ax_histy.hist(comparison_M, bins=np.arange(-22.6, -20.2, 0.1), orientation='horizontal', histtype='step', color='magenta', density=density, linewidth=2, alpha=0.7)
+    ax_histx.hist(comparison_z, bins=np.arange(6.45, 7.55, 0.05), histtype='step', color='tab:red', density=density, linewidth=2, alpha=0.7)
+    ax_histy.hist(comparison_M, bins=np.arange(-22.6, -20.2, 0.1), orientation='horizontal', histtype='step', color='tab:red', density=density, linewidth=2, alpha=0.7)
 
 
 if run_type=='with_euclid':
-    color='magenta'
+    color='tab:red'
 else:
     color='dodgerblue'
 ax_histx.hist(t['Zphot'], bins=np.arange(6.45, 7.55, 0.05), histtype='step', color=color, density=density, linewidth=3)
@@ -502,9 +531,20 @@ ax_histy.hist(t['Muv'], bins=np.arange(-22.6, -20.2, 0.1), histtype='step', colo
 
 # Remove tick labels for clean aesthetics
 ax_histx.set_yticklabels([])
+ax_histx.set_yticklabels([])
 ax_histy.set_xticklabels([])
-ax_histx.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-ax_histy.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
+ax_histy.set_xticklabels([])
+
+ax_histx.tick_params(axis='x', which='both', labelbottom=False)
+ax_histy.tick_params(axis='y', which='both', labelleft=False)
+
+# Remove the y ticks of the top and x ticks of the right
+ax_histx.tick_params(axis='y', which='both', left=False, right=False)
+ax_histy.tick_params(axis='x', which='both', bottom=False, top=False)
+
+# Make tick size and width same as main plot
+ax_histx.tick_params(which='major', length=10, width=3)
+ax_histy.tick_params(which='major', length=10, width=3)
 
 
 #ax_main.set_xticklabels([6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6])
@@ -527,21 +567,25 @@ ax_main.invert_yaxis()
 ax_main.set_xlim(6.0, 7.65)
 ax_main.set_ylim(-19.8, -24.2)
 
-ax_main.legend(loc='upper left', fontsize=19.6, ncol=1, frameon=False)
+ax_main.legend(loc='upper left', fontsize=22, ncol=1, frameon=False)
 
 # Add text label
 if run_type == 'with_euclid':
-    ax_main.text(6.01, -19.9, r'UltraVISTA + $Euclid$', size=25)
+    ax_main.text(6.05, -19.95, r'UltraVISTA + $Euclid$', size=29)
 else:
-    ax_main.text(6.01, -19.9, 'UltraVISTA only', size=25)
+    ax_main.text(6.05, -19.95, 'UltraVISTA only', size=29)
 
 plt.tight_layout()
 
 # Save figure
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
-plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
+if run_type == 'with_euclid':
+    plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
+else:
+    plt.savefig(plot_dir / f'z_Muv_sample_marg.pdf', bbox_inches='tight')
+#plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
 
-#plt.show()
+plt.show()
 
 
 

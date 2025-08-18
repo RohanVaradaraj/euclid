@@ -34,10 +34,17 @@ plt.rcParams['figure.dpi'] = 100
 field_name = 'COSMOS'
 
 #! Det/non-det filters
+# filters = {
+#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
 filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'Y+J': {'type': 'stacked-detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
 
 #! Run type

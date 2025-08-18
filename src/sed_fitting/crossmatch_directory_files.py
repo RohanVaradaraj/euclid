@@ -88,10 +88,10 @@ if cat_to_dir:
 if dir_to_cat:
 
     # Base SED directory
-    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'COSMOS'
 
     # Directory to copy files from
-    dir_to_copy_from = base_dir / 'best_fits' / 'det_Y_J_z7_conservative'
+    dir_to_copy_from = base_dir / 'best_fits' / 'det_Y_J_with_euclid_dustyInterlopers'
 
     # file names
     file_names = glob.glob(str(dir_to_copy_from / '*.spec'))
@@ -101,7 +101,7 @@ if dir_to_cat:
 
     # Catalogue to match IDs with
     cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-    base_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+    base_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_5percent_IRACfloor.fits'
     t = Table.read(cat_dir / base_cat_name)
     IDs = t['ID']
 
@@ -111,6 +111,6 @@ if dir_to_cat:
     print(t)
 
     # Save the catalogue with some new desired name
-    new_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_conservative_2024_11_20.fits'
+    new_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_dustyInterlopers_2025_08_14.fits'
     t.write(cat_dir / 'candidates' / new_cat_name, overwrite=True)
 

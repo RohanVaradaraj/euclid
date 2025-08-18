@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 
 ######################### Set-up ####################################
-fields = ['COSMOS']
+fields = ['CDFS1']
 
 reqFilters = ['f150w', 'f277w', 'f444w']
 

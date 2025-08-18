@@ -17,6 +17,21 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 10, 'ytick.major.size': 10,
+    'xtick.major.width': 3, 'ytick.major.width': 3,
+
+    # Minor tick size and width
+    'xtick.minor.size': 5, 'ytick.minor.size': 5,
+    'xtick.minor.width': 2, 'ytick.minor.width': 2,
+})
+
 # Function to scale plotting values from one range to another
 def scale_values(values, min_old, max_old, min_new, max_new):
     return ((values - min_old) / (max_old - min_old)) * (min_new - max_new) + max_new
@@ -111,7 +126,7 @@ for Av in Avs:
             # Limit the colourbar 
             plt.clim(-1.0, 5)
 
-            plt.colorbar(label=r'$y - Y_{E}$')
+            plt.colorbar(label=r'$y - Y_{\rm{E}}$')
             plt.xlabel(r'$z$')
             plt.ylabel(r'$\mathrm{EW}_{o} (\AA)$')
             plt.show()
@@ -141,7 +156,7 @@ for Av in Avs:
 
                 #! Plotting commands
                 plt.xlabel(r'$z_{\mathrm{HSC}} - y_{\mathrm{HSC}}$')
-                plt.ylabel(r'$I_{E} - z_{\mathrm{HSC}}$')
+                plt.ylabel(r'$I_{\rm{E}} - z_{\mathrm{HSC}}$')
 
             if z_LAE == 7:
 
@@ -225,8 +240,8 @@ for Av in Avs:
                 # plt.scatter(c1_lbg, c2_lbg, c='deepskyblue', s=14, marker='o', label='LBGs', alpha=0.7)
 
                 #! Plotting commands
-                plt.xlabel(r'$y_{\mathrm{HSC}} - Y_{E}$')
-                plt.ylabel(r'$Y_{E} - Y_{\mathrm{VISTA}}$')
+                plt.xlabel(r'$y_{\mathrm{HSC}} - Y_{\rm{E}}$')
+                plt.ylabel(r'$Y_{\rm{E}} - Y_{\mathrm{VISTA}}$')
 
 
                 plt.xlim(-0.5, 0.7)
@@ -297,8 +312,8 @@ for Av in Avs:
                     plt.text(c1_dwarf_template[i]+0.01, c2_dwarf_template[i]+0.01, f'{spectral_type[i]}', fontsize=8, color='black')
 
                 #! Plotting commands
-                plt.xlabel(r'$J_{E} - J_{\mathrm{VISTA}}$')
-                plt.ylabel(r'$Y_{E} - J_{E}$')
+                plt.xlabel(r'$J_{\rm{E}} - J_{\mathrm{VISTA}}$')
+                plt.ylabel(r'$Y_{\rm{E}} - J_{\rm{E}}$')
 
                 plt.colorbar(label=r'$\mathrm{EW}_{0} \ (\AA)$')
                 plt.clim(0, 240)

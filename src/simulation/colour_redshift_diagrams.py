@@ -10,6 +10,21 @@ from pathlib import Path
 import numpy as np
 from brown_dwarf_colours import *
 
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 10, 'ytick.major.size': 10,
+    'xtick.major.width': 3, 'ytick.major.width': 3,
+
+    # Minor tick size and width
+    'xtick.minor.size': 5, 'ytick.minor.size': 5,
+    'xtick.minor.width': 2, 'ytick.minor.width': 2,
+})
+
 # Set up the grid
 redshifts = np.arange(5.5, 10.01, 0.01)
 EWs = np.arange(0, 250, 10)
@@ -130,15 +145,15 @@ for i in range(2):
     ax[i].set_xlabel(r'$z$', fontsize=25)
 
     if redshift == '8':
-        ax[i].set_ylabel(['$Y_{E} - J_{E}$', '$J_{\mathrm{VISTA}} - J_{E}$'][i], fontsize=25)
+        ax[i].set_ylabel(['$Y_{\rm{E}} - J_{\rm{E}}$', '$J_{\mathrm{VISTA}} - J_{\rm{E}}$'][i], fontsize=25)
     if redshift == '7':
-        ax[i].set_ylabel([r'$\mathrm{HSC} \ y - Y_{E}$', 
-                        r'$\mathrm{VISTA} \ Y - Y_{E}$'][i], fontsize=20)   
+        ax[i].set_ylabel([r'$\mathrm{HSC} \ y - Y_{\rm{E}}$', 
+                        r'$\mathrm{VISTA} \ Y - Y_{\rm{E}}$'][i], fontsize=25)   
     if redshift == '6':
         ax[i].set_ylabel(['$i_{\mathrm{HSC}} - VIS$', '$VIS - z_{\mathrm{HSC}}$'][i], fontsize=25)
 
   
-ax[1].plot([], [], color='deepskyblue', label=r'EW > 80 $\AA$', linewidth=10)
+ax[1].plot([], [], color='deepskyblue', label=r'$\rm{EW}_{0}\,>\,80\,\rm{\AA}$', linewidth=10)
 ax[1].plot([], [], color='gray', label=r'No Lyman-$\alpha$ emission', linewidth=10)
 ax[1].legend(loc='lower left', fontsize=20, frameon=False)
 plot_dir = Path.cwd().parent.parent / 'plots' / 'LAEs'
@@ -197,12 +212,14 @@ ax[1].errorbar(lae_z, Y_minus_Ye, yerr=Y_minus_Ye_err, xerr=[[dz_inf], [dz_sup]]
 
 # Increase axes tick label size
 for i in range(2):
-    ax[i].tick_params(axis='both', which='major', labelsize=20)
-    ax[i].tick_params(axis='both', which='minor', labelsize=20)
+    ax[i].tick_params(axis='both', which='major', labelsize=24)
+    ax[i].tick_params(axis='both', which='minor', labelsize=24)
 
 # Increase tick size
 for i in range(2):
     ax[i].tick_params(axis='both', which='major', length=5, width=3)
+    ax[i].minorticks_on()
+    ax[i].tick_params(axis='both', which='minor', length=3, width=2)
     #ax[i].tick_params(axis='both', which='minor', length=5)
 
 plt.savefig(plot_dir / f'colour_redshift_evolution_z{redshift}_WITH_LAE.pdf', bbox_inches='tight')

@@ -321,15 +321,19 @@ def runPhotometricRedshifts(parameter_file: str, zphot_dir: Path,
     """
 
     code_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'rohan' / 'euclid' /'src' / 'sed_fitting'
-    
+
     # Move into the directory where we will output the .spec files
-    os.chdir(zphot_dir)
+    if zphot_dir != None:
+        os.chdir(zphot_dir)
 
-    # Run the command
-    os.system(f'$LEPHAREDIR/source/zphota -c $LEPHAREDIR/config/{parameter_file}')
+        # Run the command
+        os.system(f'$LEPHAREDIR/source/zphota -c $LEPHAREDIR/config/{parameter_file}')
 
-    # Move back to the original directory
-    os.chdir(code_dir)
+        # Move back to the original directory
+        os.chdir(code_dir)
+    
+    else:
+        os.system(f'$LEPHAREDIR/source/zphota -c $LEPHAREDIR/config/{parameter_file}')
 
     #################! $LEPHAREDIR NOT WORKING ####################
     #os.system(f'~/lephare/lephare_dev/source/zphota -c ~/lephare/lephare_dev/config/{parameter_file}')
@@ -408,7 +412,7 @@ def filter_files():
 
 
 def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_type: str, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
-    file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05]) -> None:
+    file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / 'euclid.para', filter_file_name='FILTERS.filt', z_step=[0.05, 10.0, 0.05], spec_out=True, custom_name='') -> None:
     """
     Generate a LePhare configuration file.
 
@@ -424,6 +428,12 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         If True, run the Lyman-alpha template set (modified BC03)
     file_name : Path
         The name of the parameter file to save. Default is 'euclid.para'.
+    filter_file_name : str
+        The name of the file containing the filter names.
+    z_step : list
+        List containing the redshift step, maximum redshift, and additional step if zmax > 6. Default is [0.05, 10.0, 0.05].
+    spec_out : bool
+        If True, the .spec files will be outputted.
 
     Returns
     -------
@@ -570,23 +580,33 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         f.write('#-------    Input Catalog Information \n')
 
 
-
-        det_string = generate_input_name(det_filters, run_type, run_brown_dwarfs, run_dusty, run_lya)
-        print('####################')
-        print(det_string)
+        if custom_name == '':
+            det_string = generate_input_name(det_filters, run_type, run_brown_dwarfs, run_dusty, run_lya)
+            print('####################')
+            print(det_string)
+        else:
+            det_string = custom_name
 
             
         cat_in = '/mnt/hoy/temporaryFilesROHAN/lephare/inputs/euclid/'  + det_string.replace('_DR3', '')
+
+        # Check if '.in' is in cat_in, if not, append it
+        if not cat_in.endswith('.in'):
+            cat_in += '.in'
 
         f.write(f'CAT_IN		{cat_in}		# Input Catalog (full path)\n')
         f.write('INP_TYPE     F		          # Input type      (F:Flux or M:MAG)\n')
         f.write('CAT_MAG      AB                   # Input Magnitude (AB or VEGA)\n')
         f.write('CAT_FMT      MEME		  # MEME: (Mag,Err)i , MMEE: (Mag)i,(Err)i\n')
-        f.write('CAT_LINES    1,300000             #  MIN and MAX RANGE of ROWS used in input cat [def:-99,-99]\n')
+        f.write('CAT_LINES    1,2000000            #  MIN and MAX RANGE of ROWS used in input cat [def:-99,-99]\n')
         f.write('CAT_TYPE     SHORT	          # Input Format    (LONG,SHORT-def)\n')
 
         # Use the input name to determine the .out name (replace .in with .out)
         cat_out = det_string.replace('.in', '.out').replace('_DR3', '')
+
+        # Check if '.out' is in cat_out, if not, append it
+        if not cat_out.endswith('.out'):
+            cat_out += '.out'
 
 
         f.write(f'CAT_OUT	     $LEPHAREDIR/test/{cat_out}	# Output catalog (full path)\n')
@@ -634,7 +654,10 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         f.write('#########   OUTPUT SPECTRA                     ###########\n')
         
         #! SPEC_OUT
-        f.write('SPEC_OUT	YES	 	 # spectrum for each object?  [YES,NO-def]\n')
+        if spec_out:
+            f.write('SPEC_OUT	YES	 	 # spectrum for each object?  [YES-def]\n')
+        else:
+            f.write('SPEC_OUT	NO	 	 # spectrum for each object?  [YES,NO-def]\n')
 
         #! CHI2_OUT
         f.write('CHI2_OUT        NO               # output file with all values : z,mod,chi2,E(B-V),... takes up a lot of space! \n')

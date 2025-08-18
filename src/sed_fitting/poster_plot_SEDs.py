@@ -18,6 +18,21 @@ from matplotlib.backends.backend_pdf import PdfPages
 #from make_comparison_tables import stellar_type
 import matplotlib.ticker as mticker
 
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    # 'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 6.5, 'ytick.major.size': 6.5,
+    'xtick.major.width': 2, 'ytick.major.width': 2,
+
+    # Minor tick size and width
+    'xtick.minor.size': 3, 'ytick.minor.size': 3,
+    'xtick.minor.width': 1.5, 'ytick.minor.width': 1.5,
+})
+
 cutout_path = Path.cwd().parents[0] / 'cutouts'
 sys.path.append(str(cutout_path))
 from lae_cutouts import *
@@ -83,9 +98,9 @@ def flux_to_mag(flux):
 # }
 
 survey_style = {
-    'y (HSC)': {'marker': 'D', 'color': 'deepskyblue'},   
-    'Y (VISTA)' : {'marker': 'D', 'color': 'orange'},     
-    r'$Y_{E} \ (\mathrm{Euclid})$': {'marker': 'D', 'color': 'deeppink'},
+    'y (HSC)': {'marker': 'D', 'color': 'deepskyblue', 'markeredgecolor':'black'},   
+    'Y (VISTA)' : {'marker': 'D', 'color': 'orange', 'markeredgecolor':'black'},     
+    r'$Y_{\rm{E}} \ (\mathrm{Euclid})$': {'marker': 'D', 'color': 'deeppink', 'markeredgecolor':'black'},
     'Other' : {'marker': 'o', 'color': 'black'}
 }
 
@@ -104,15 +119,16 @@ def get_survey_name(filter_name):
     if filter_name == 'Y':
         return 'Y (VISTA)'
     if filter_name == 'Ye':
-        return r'$Y_{E} \ (\mathrm{Euclid})$'
+        return r'$Y_{\rm{E}} \ (\mathrm{Euclid})$'
     else:
         return 'Other'
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-#output_pdf = 'LAE_SED_fit.pdf'
-output_pdf = 'LAE_STAMP.pdf'
+output_pdf = 'LAE_SED_fit.pdf'
+#output_pdf = 'LAE_STAMP.pdf'
 #output_pdf = 'det_NB0921_Ye.pdf'
+#output_pdf = 'test.pdf'
 
 # Set up directories
 #zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'test_euclid'
@@ -316,8 +332,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         fig = plt.figure(figsize=(10, 6))
         ax1 = fig.add_subplot(111)
         left, bottom, width, height = [0.70, 0.23, 0.18, 0.18]
-        left, bottom, width, height = [0.70, 0.51, 0.18, 0.18]
+        left, bottom, width, height = [0.67, 0.5, 0.2, 0.2]
         ax2 = fig.add_axes([left, bottom, width, height])
+
 
         ############! PLOT RESULTS OF FITTING #############
         # Plot best model
@@ -336,11 +353,21 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         print(f'z = {zphot_2}, ' + r'$\chi^{2} = $' + f'{chi2_2}')
 
         ax2.plot(zpdf['z'], zpdf['P'], color='black', linewidth=2)
-        ax2.set_xlim(0, 10)
-        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=20)
-        ax2.set_ylabel(r'$P(z)$', fontsize=20)
+        ax2.set_xlim(0, 9)
+        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=23)
+        ax2.set_ylabel(r'$P(z)$', fontsize=23)
+        
         # Make tick labels larger
-        ax2.tick_params(axis='both', which='major', labelsize=20)
+        ax2.tick_params(axis='both', which='major', labelsize=23)
+
+        # ticks on x at 0, 3, 5, 7, 9
+        ax2.set_xticks([1, 3, 5, 7, 9])
+        ax2.set_yticks([0, 0.5, 1])
+
+        # Show left-side ticks without labels
+        ax2.yaxis.set_ticks_position('both')  # Enable ticks on both left and right
+        ax2.tick_params(axis='y', which='both', labelright=False)
+
 
         ###########! PLOT MODEL AND REAL PHOTOMETRY ##############
 
@@ -383,7 +410,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #     ax1.set_title(f'ID {ID}')
 
         ax1.set_yscale('log')
-        ax1.legend(loc='lower right', fontsize=15, ncol=2)
+        ax1.legend(loc='lower right', fontsize=16, ncol=2)
         ax1.set_ylim(1e-32, 1e-29)
         ax1.set_xlim(3000, 35000)
 
@@ -393,8 +420,12 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
         ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
 
-        ax1.set_ylabel(r'$f_{\nu}$ (erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$)', fontsize=fontsize)
-        ax1.set_xlabel(r'$\lambda (\mu m)$', fontsize=fontsize)
+        yticks = [1e-31, 1e-30, 1e-29]
+        ax1.set_yticks(yticks)
+        ax1.set_yticklabels([r"$-31$", r"$-30$", r"$-29$"])
+
+        ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=fontsize) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
+        ax1.set_xlabel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)
 
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
@@ -416,19 +447,24 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.tick_params(axis='both', which='major', labelsize=fontsize)
         secax.tick_params(axis='both', which='major', labelsize=fontsize)
 
+        ax1.minorticks_on()
 
-        #pdf.savefig(fig, bbox_inches='tight')
+
+
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.show()
         plt.close(fig)
 
         ############! CUTOUT ##############
         #Get ra, dec of object from parent catalogue
-        obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
-        print(obj)
-        ra = obj['RA'][0]
-        dec = obj['DEC'][0]
+        # obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
+        # print(obj)
+        # ra = obj['RA'][0]
+        # dec = obj['DEC'][0]
 
-        cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
+        # cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
 
-        pdf.savefig(cutout_fig, bbox_inches='tight')
-        plt.close(cutout_fig)
+        # pdf.savefig(cutout_fig, bbox_inches='tight')
+        # plt.show()
+        # plt.close(cutout_fig)
 

@@ -44,19 +44,19 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
 #! field name
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! If I want to plot individual things, overwrite the standard output pdf
-individual_sed = False
-indiv_ID = '661703'
-indiv_pdf_name = 'FAINT_BD_SED.pdf'
+individual_sed = True
+indiv_ID = '828001'
+indiv_pdf_name = 'ecr_example_4.pdf'
 
 #! TEST by plotting first N objects
 test = False
-N = 10
+N = 50
 
 #! Plot final samples sorted by Muv
-sort_by_Muv = False
+sort_by_Muv = True
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -226,10 +226,10 @@ if det_list == ['Y', 'J'] or det_list == ['HSC-Z_DR3']:
     # filter_dict.pop('Ye')
     # filter_dict.pop('Je')
     # filter_dict.pop('He')
-    # filter_dict.pop('f115w')
-    # filter_dict.pop('f150w')
-    # filter_dict.pop('f277w')
-    # filter_dict.pop('f444w')'
+    filter_dict.pop('f115w')
+    filter_dict.pop('f150w')
+    filter_dict.pop('f277w')
+    #filter_dict.pop('f444w')
     print('f115w', 'f150w', 'f277w', 'f444w')
 
 if bools[0]:
@@ -272,7 +272,11 @@ spec_files = glob.glob(str(zphot_dir / '*.spec'))
 
 #! Catalogue of final sample with Muv
 #sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
-sample_cat = Table.read(parent_cat_dir / 'candidates' / 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits', format='fits')
+if field_name == 'COSMOS':
+    sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits', format='fits')
+    sample_cat = Table.read(parent_cat_dir / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
+if field_name == 'XMM':
+    sample_cat = Table.read(parent_cat_dir / 'candidates' / 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits', format='fits')
 
 if sort_by_Muv:
     sample_cat.sort('Muv')
@@ -315,7 +319,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Get each of the SEDs
         model_wlens = [table['wlen'] for table in sed]
-        model_fluxes = [table['flux'] for table in sed]  
+        model_fluxes = [table['flux'] for table in sed]
+        print(len(model_wlens), len(model_fluxes))
+        exit()
 
         # Get the ID of the object from the file name
         ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
@@ -384,8 +390,14 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
                 # Get each of the SEDs
                 model_wlens = [table['wlen'] for table in secondary_sed]
                 model_fluxes = [table['flux'] for table in secondary_sed]
-                secondary_sed = mag_to_flux(model_fluxes[1])
-                secondary_wlen = model_wlens[1]
+                
+                if sec_params['Zphot'][1] == -1:
+                    secondary_sed = None
+                    secondary_wlen = None
+                else:
+                    secondary_sed = mag_to_flux(model_fluxes[1])
+                    secondary_wlen = model_wlens[1]
+
         else:
             secondary_sed = mag_to_flux(model_fluxes[1])
             secondary_wlen = model_wlens[1]
@@ -512,8 +524,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         obj_ra = parent_cat[np.where(parent_cat['ID'] == int(ID))]['RA'][0]
         obj_dec = parent_cat[np.where(parent_cat['ID'] == int(ID))]['DEC'][0]
 
-        #obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
-        #print(obj_Muv)
+        obj_Muv = sample_cat[np.where(sample_cat['ID'] == int(ID))]['Muv'][0]
+        print(obj_Muv)
 
         # Get the RA and DEC of all objects in the crossmatch catalog
         xmatch_ra = crossmatch['RA']
@@ -551,24 +563,24 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
             # Update the title of the plot with the matched information. Add crosstalk if it is non-zero.
             #title_string = f'ID {ID}, z = {redshift}, {name}'
-            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}, ' + f'{name}'
+            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}, ' + f'{name}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)
             ax1.set_title(title_string, pad=10)
         else:
             # If no match is found, just set the title with the ID
-            title_string = f'ID {ID}'
-            #title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
+            #title_string = f'ID {ID}'
+            title_string = f'ID {ID}, ' +  r'$M_{\rm{UV}}=$'+f'{obj_Muv:.2f}'
             # if ct > 0:
             #     title_string += f', POSSIBLE CROSSTALK'
             #ax1.set_title(title_string, pad=23)
-            ax1.set_title(title_string, pad=10)
+            #ax1.set_title(title_string, pad=10)
 
 
 
         ax1.set_yscale('log')
-        ax1.legend(loc='upper right', fontsize=15)
+        #ax1.legend(loc='upper right', fontsize=15)
         ax1.set_ylim(3e-32, 1e-29)
         ax1.set_xlim(3000, 40000)
         if field_name == 'XMM' or field_name == 'CDFS':
@@ -608,7 +620,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         pdf.savefig(fig, bbox_inches='tight')
 
         # Also save fig as its own pdf
-        plt.savefig(str(sed_dir / f'{ID}_SED.pdf'), bbox_inches='tight')
+        #plt.savefig(str(sed_dir / f'{ID}_SED.pdf'), bbox_inches='tight')
 
         plt.close(fig)
 
@@ -627,12 +639,13 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
 
             # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
-            if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0'):
+            if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0') or (det_list == ['HSC-Z_DR3'] and euclid_blind):
+                print('Doing Vista cutout')
                 cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
                 #cutout_fig, cutout_axs = AllCutout(ra, dec, size=cutout_size, save_cutout=False)
             if field_name == 'XMM':
                 cutout_fig, cutout_axs = XMMCutout(ra, dec, size=cutout_size, save_cutout=False)
-            else:
+            if not euclid_blind:
                 print('Doing all cutouts')
                 cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
                 #cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)

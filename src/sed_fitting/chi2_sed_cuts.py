@@ -23,7 +23,7 @@ from sed_fitting_codes import remove_items
 
 # Configure the chi2 cuts. redshift cuts, etc
 selection_config = {
-    "z_threshold": 5,
+    "z_threshold": 6,
     "chi2_threshold_factor": 2,  # for 2-sigma
     "delta_chi2_lbg_lowz": 4,
     "bd_chi2_max": 10,
@@ -166,13 +166,18 @@ dusty_table = tables['dusty']
 #lya_table = tables['lya']
 
 #! Apply the chi2 cuts
+# COL2 = z_best
+# COL6 = chi2_best
+# COL15 = chi2_lowz
+# COL21 = chi2_bd
 
 # LBGs
 condition_1 = lbg_table[:]['col2'] > selection_config['z_threshold']                       # LBG solution at z>6
 condition_2 = lbg_table[:]['col6'] < two_sigma_thresh        # High-z solution has chi2 < 2sigma threshold
+good_lbg = lbg_table[:][condition_1 & condition_2]
+
 condition_3 = lbg_table[:]['col6'] + 4 < lbg_table[:]['col15'] # delta-chi2 between high-z and low-z is more than 4
 good_lbg = lbg_table[:][condition_1 & condition_2 & condition_3]
-#good_lbg = lbg_table[:][condition_1 & condition_2]
 
 # Brown dwarfs
 good_bd = bd_table[:][(bd_table['col21'] < lbg_table[:]['col2']) | (bd_table['col21'] < lbg_table[:]['col15']) & (bd_table['col21'] < 10)]  # BD solution has chi2_star < chi2_LBG

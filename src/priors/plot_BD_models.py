@@ -17,8 +17,8 @@ plt.rcParams.update({
 })
 
 # --- Switches ---
-field_name = 'XMM'   # Choose from: 'COSMOS', 'XMM', 'CDFS'
-bd_type = 'T'        # Choose from: 'M', 'L', 'T'
+field_name = 'COSMOS'   # Choose from: 'COSMOS', 'XMM', 'CDFS'
+bd_type = 'M'        # Choose from: 'M', 'L', 'T'
 
 # --- File paths ---
 cat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
@@ -32,7 +32,7 @@ catalogues = {
 tables = {name: Table.read(path, format='ascii') for name, path in catalogues.items()}
 
 # Read actual brown dward numbers
-t_bd = Table.read('brown_dwarfs.fits')
+t_bd = Table.read(f'brown_dwarfs_{field_name}.fits')
 
 # --- Select band names based on BD type ---
 band_dict = {
@@ -60,12 +60,17 @@ type_filters = {
 t_bd_filtered = t_bd[type_filters[bd_type]]
 
 # --- Area and binning ---
-area_deg2 = 4.33
+field_areas = {
+    'COSMOS': 1.7201431257141546,  # in square degrees
+    'XMM': 4.335562874179884,
+    'CDFS': 3.281356705677671
+}
+area_deg2 = field_areas[field_name]
 mapp = np.array(tables[field_name]['mapp'])
 
 # --- Histogram of real sources ---
 counts, bins = np.histogram(t_bd_filtered['mJ'], bins=mapp)
-counts_per_deg2 = counts / area_deg2
+counts_per_deg2 = counts #/ area_deg2
 bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
 # --- Plotting ---
@@ -75,18 +80,19 @@ plt.figure(figsize=(12, 8))
 plt.step(bin_centers, counts_per_deg2, where='mid', color='black', lw=2, label=f'{bd_type} dwarfs (data)')
 
 # Plot BD model for selected field
-plt.plot(
-    tables[field_name]['mapp'],
-    tables[field_name][f'{bd_type}_total'],
-    label=f'{field_name} model',
-    color='tab:purple',
-    marker='o'
-)
+# plt.plot(
+#     tables[field_name]['mapp'],
+#     tables[field_name][f'{bd_type}_total'],
+#     label=f'{field_name} model',
+#     color='tab:purple',
+#     marker='o'
+# )
 
 plt.xlabel(r'$m_{\rm{AB}}$')
 plt.ylabel('Number per square degree')
 plt.title(f'{bd_type} dwarfs in {field_name}')
 plt.legend()
 plt.grid(True, alpha=0.3)
+plt.xlim(18,24.5)
 plt.tight_layout()
 plt.show()

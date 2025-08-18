@@ -27,6 +27,7 @@ plt.rcParams['figure.dpi'] = 100
 #! SWITCH TO PLOT P(z) FOR ALL OBJECTS, TO TAKE A LOOK
 plot_all_pdfs = False
 plot = False
+field_name = 'COSMOS'
 
 #! INTERESTING IDs
 # IDs = [376795, 905849, 1053436]
@@ -39,7 +40,7 @@ plot = False
 
 # ID = 688921
 
-sed_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'XMM' / 'best_fits' / 'det_HSC-Z_DR3_z7'
+sed_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits' / 'det_HSC-Z_DR3_z7'
 spec_files = glob.glob(str(sed_dir / '*.spec'))
 
 #! Define a cosmological model
@@ -96,7 +97,10 @@ def Schecter_function(M, alpha, phi_star, M_star):
 
 #! Open the parent catalogue ID
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-parent_cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
+if field_name == 'XMM':
+    parent_cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
+if field_name == 'COSMOS':
+    parent_cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits'
 parent_cat = Table.read(cat_dir / parent_cat_name)
 
 parent_cat.sort('Muv', reverse=False)
@@ -220,7 +224,7 @@ for i, ID in enumerate(parent_cat['ID']):
         plt.show()
 
 # Save low-z IDs to a file
-output_file = Path.cwd() / f'low_z_with_prior_IDs.txt'
+output_file = Path.cwd() / f'low_z_with_prior_IDs_{field_name}.txt'
 with open(output_file, 'w') as f:
     for id_val in low_z_ids:
         f.write(f'{id_val}\n')

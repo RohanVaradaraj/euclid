@@ -16,10 +16,18 @@ from pathlib import Path
 import time
 from datetime import datetime, timedelta
 
-euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'images'
-save_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 
-telescope = 'jwst'
+
+telescope = 'euclid'
+field_name = 'CDFS'
+
+if field_name == 'COSMOS':
+    euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'images'
+    save_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
+if field_name == 'CDFS':
+    euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax' / 'tmp'
+    save_dir = Path.cwd().parents[3] / 'data'
+
 
 filter_names = ['Y', 'J', 'H', 'VIS']
 filter_names = ['f115w', 'f150w', 'f277w', 'f444w']

@@ -30,16 +30,26 @@ if len(sys.argv) > 1:
     run_type = json.loads(run_type_json)
     field_name_json = sys.argv[5]
     field_name = json.loads(field_name_json)
+    run_all_json = sys.argv[6]
+    run_all_objects = json.loads(run_all_json)
+    custom_name = sys.argv[7] if len(sys.argv) > 7 else None
+    custom_name = json.loads(custom_name) if custom_name else None
 
 #! BOOL ARRAY
 #![RUN_BROWN_DWARFS, RUN_DUSTY, RUN_LYA]
+
+#????? PAPER CORRECTION: CHECK WHEN SPITZER ERROR FLOOR IS 5% OF FLUX
+spitzer_five_percent = False
+
+#???? PAPER CORRECTION: CUSTOM CATALOGUES. WANT TO RERUN U+E SAMPLE WITH ONLY EUCLID PHOTOMETRY
+custom_cat = True
+custom_cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
 
 # Example usage
 if __name__ == "__main__":
 
     # Generate catalogue name from input filters
     cat_name = generate_selection_name(field_name, filters)
-
 
     '''SETUP'''
     cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
@@ -58,6 +68,8 @@ if __name__ == "__main__":
 
     # Get input name
     out_name = generate_input_name(filters, run_type, *bools)
+    if run_all_objects:
+        out_name = custom_name + '.in'
     print(out_name)
 
     # Delete blue filters if we are running fitting for brown dwarfs
@@ -80,7 +92,22 @@ if __name__ == "__main__":
     availFilters = np.array(inputs['Name'])
 
     # Read data table
-    t = Table.read(cat_dir / cat_name, format='fits', hdu=1)
+    if not run_all_objects:
+        #????? SETTING SPITZER ERROR FLOOR TO 5% OF FLUX
+        if spitzer_five_percent:
+            cat_name = cat_name.replace('.fits', '_5percent_IRACfloor.fits')
+        if custom_cat:
+            cat_name = custom_cat_name
+            cat_dir = cat_dir / 'candidates'
+
+        print(f'Reading catalogue: {cat_dir / cat_name}')
+        t = Table.read(cat_dir / cat_name, format='fits', hdu=1)
+    if run_all_objects:
+        cat_names = {
+            'XMM': Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL' / 'XMMFULL_DR3_MASKVISTADET_HSC-Z_DR3_2.0as_IRAC2.8as_2024_01_18.fits',
+            'COSMOS': Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other' / 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits',
+        }
+        t = Table.read(cat_names[field_name], format='fits', hdu=1)
 
     # Limit to where JWST errors are positive
     #t = t[t['err_f115w'] > 0]

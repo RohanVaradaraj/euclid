@@ -11,9 +11,24 @@ from pathlib import Path
 from scipy.optimize import curve_fit
 
 
-plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'font.size': 25})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
+
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 10, 'ytick.major.size': 10,
+    'xtick.major.width': 3, 'ytick.major.width': 3,
+
+    # Minor tick size and width
+    'xtick.minor.size': 5, 'ytick.minor.size': 5,
+    'xtick.minor.width': 2, 'ytick.minor.width': 2,
+})
 
 ms = 12
 elinewidth = 2.5
@@ -317,7 +332,7 @@ plot_data = lambda ax, z, val, err, label, style, zorder: ax.errorbar(
 
 # Define styles for different datasets
 styles = {
-    "my":          {"color": "red",      "marker": "o",  "ms": 18, "elinewidth": 4},
+    "my":          {"color": "tab:red",      "marker": "o",  "ms": 18, "elinewidth": 4},
     "donnan23":    {"color": "blue",     "marker": "s",  "ms": 10,  "elinewidth": 3},
     "donnan24":    {"color": "green",    "marker": "^",  "ms": 10,  "elinewidth": 3},
     "bowler20":    {"color": "orange",   "marker": "d",  "ms": 10,  "elinewidth": 3},
@@ -351,8 +366,8 @@ plot_data(axs[0, 0], whitler25_z, whitler25_phi, [whitler25_phi_err_lo, whitler2
 plot_data(axs[0, 0], adams24_z, adams24_phi, [adams24_phi_err_lo, adams24_phi_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[0, 0], perez23_z, perez23_phi, [perez23_phi_err_lo, perez23_phi_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
 
-axs[0, 0].set_xlabel('z')
-axs[0, 0].set_ylabel(r'$\mathrm{log}_{10}\phi^*$')
+axs[0, 0].set_xlabel('z', fontsize=30)
+axs[0, 0].set_ylabel(r'$\log_{10}(\phi^{*}\,/\,\rm{mag}^{-1}\,\rm{Mpc}^{-3})$')
 axs[0, 0].set_xlim(5.5, 13)
 axs[0, 0].set_ylim(-6., -2.7)
 
@@ -374,7 +389,7 @@ plot_data(axs[0, 1], chemerynska24_z, chemerynska24_M_star, chemerynska24_M_star
 plot_data(axs[0, 1], whitler25_z, whitler25_M_star, [whitler25_M_star_err_lo, whitler25_M_star_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[0, 1], adams24_z, adams24_M_star, [adams24_M_star_err_lo, adams24_M_star_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[0, 1], perez23_z, perez23_M_star, [perez23_M_star_err_lo, perez23_M_star_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
-axs[0, 1].set_xlabel('z')
+axs[0, 1].set_xlabel('z', fontsize=30)
 axs[0, 1].set_ylabel(r'$M^{*}$')
 axs[0, 1].set_xlim(5.5, 13)
 axs[0, 1].set_ylim(-23, -18.8)
@@ -395,7 +410,7 @@ plot_data(axs[1, 0], chemerynska24_z, chemerynska24_alpha, chemerynska24_alpha_e
 plot_data(axs[1, 0], whitler25_z, whitler25_alpha, [whitler25_alpha_err_lo, whitler25_alpha_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[1, 0], adams24_z, adams24_alpha, [adams24_alpha_err_lo, adams24_alpha_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[1, 0], perez23_z, perez23_alpha, [perez23_alpha_err_lo, perez23_alpha_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
-axs[1, 0].set_xlabel('z')
+axs[1, 0].set_xlabel('z', fontsize=30)
 axs[1, 0].set_xlim(5.5, 13)
 axs[1, 0].set_ylabel(r'$\alpha$')
 axs[1, 0].set_ylim(-3, -1.4)
@@ -415,7 +430,7 @@ plot_data(axs[1, 1], harikane24_z, harikane24_beta, [harikane24_beta_err_lo, har
 plot_data(axs[1, 1], chemerynska24_z, chemerynska24_beta, chemerynska24_beta_err, "Chemerynska+24", styles["chemerynska24"], zorder=zorder)
 #plot_data(axs[1, 1], whitler25_z, whitler25_beta, [whitler25_beta_err_lo, whitler25_beta_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[1, 1], adams24_z[:-1], adams24_beta[:-1], [adams24_beta_err_lo[:-1], adams24_beta_err_up[:-1]], "Adams+24", styles["Adams24"], zorder=zorder)
-axs[1, 1].set_xlabel('z')
+axs[1, 1].set_xlabel('z', fontsize=30)
 axs[1, 1].set_xlim(5.5, 13)
 axs[1, 1].set_ylabel(r'$\beta$')
 axs[1, 1].set_ylim(-6.8, -1.5)
@@ -619,7 +634,13 @@ M_fit = fit_and_plot_linear(
 ##! FINAL PLOT DETAILS
 # Add legend below the whole plot
 handles, labels = axs[0, 0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='lower center', ncol=4, fontsize=20, bbox_to_anchor=(0.5, -0.0))
+fig.legend(handles, labels, loc='lower center', ncol=4, fontsize=25, bbox_to_anchor=(0.5, -0.01))
+
+# Axes minor tickson
+axs[0, 0].minorticks_on()
+axs[0, 1].minorticks_on()
+axs[1, 0].minorticks_on()
+axs[1, 1].minorticks_on()
 
 fig.subplots_adjust(bottom=0.25)
 

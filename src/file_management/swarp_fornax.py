@@ -22,16 +22,14 @@ def get_tile_id(filename):
     return match.group(1) if match else None
 
 #! Switches/variables
-filter_names = ['Y' 'J', 'H', 'VIS'] #? Euclid filter(s) we want to resample/swarp
+filter_names = ['Y', 'J', 'H', 'VIS'] #? Euclid filter(s) we want to resample/swarp
 video_tiles = ['CDFS1', 'CDFS2', 'CDFS3'] #? VIDEO tile(s) we want to match the Euclid mosaics to.
 test = False #? If true, run on three tiles only
 
-centre_dict = {'CDFS1':'03:30:07.91247899,-27:34:29.89999999',}
-
-
+# Path to the Euclid tiles
 euclid_dir = Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax'
 
-# Output directory.
+# Output directory
 output_dir = euclid_dir / 'tmp'
 
 #! Load the Euclid tile names that lie in the VIDEO footprints.
@@ -64,11 +62,10 @@ for video_tile in video_tiles:
         # Get all the fits files for the filter
         fits_files = glob.glob(str(euclid_dir / filter_name / '*BGSUB*.fits'))
         rms_files = glob.glob(str(euclid_dir / filter_name / '*MAP_WEIGHT*.fits'))
-        print([rms_file.split('/')[-1] for rms_file in rms_files])
 
         # Get the tile numbers from the file names
-        all_tile_numbers = [file_name.split('/')[-1].split('-')[3].split('TILE')[1] for file_name in fits_files] 
-        all_tile_numbers_rms = [file_name.split('/')[-1].split('-')[3].split('TILE')[1] for file_name in rms_files]
+        all_tile_numbers = [get_tile_id(file_name) for file_name in fits_files]
+        all_tile_numbers_rms = [get_tile_id(file_name) for file_name in rms_files]
         
         #! Limit fits_files to those that lie in this specific VIDEO tile
         fits_files = [fits_file for fits_file, tile_number in zip(fits_files, all_tile_numbers) if tile_number in euclid_in_video[video_tile]]
@@ -88,7 +85,6 @@ for video_tile in video_tiles:
         fits_files = [sci_dict[tile_id] for tile_id in common_tile_ids]
         rms_files = [rms_dict[tile_id] for tile_id in common_tile_ids]
         
-
         # Also sort the tile numbers!
         tile_numbers_here = sorted(tile_numbers_here, key=lambda x: int(x))
 
@@ -107,8 +103,10 @@ for video_tile in video_tiles:
         if output_file.exists():
             print(f'Skipping {output_file} as it already exists.')
             continue
+            
         if outrms_file.exists():
             print(f'Skipping {outrms_file} as it already exists.')
+            continue
 
         #! If the file doesn't exist, go ahead and swarp it to match VIDEO!
         # Key words
@@ -124,7 +122,6 @@ for video_tile in video_tiles:
         rms_files = ','.join(rms_files)
         
         swarp_command = f'~/swarp/bin/swarp {fits_files} -WEIGHT_IMAGE {rms_files} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
-        #swarp_command = f'~/swarp/bin/swarp {fits_files} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' #? Testing without RMS/WHT files
         print(swarp_command)
         os.system(swarp_command)
 

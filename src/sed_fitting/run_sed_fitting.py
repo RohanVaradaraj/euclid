@@ -17,15 +17,16 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": '',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "run_type": 'just_euclid',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": False,
     "steps": {
         "selection": False,         #? Initial dropout selection. NOTE: MODIFY THE SOURCE CATALOGUE IN SELECTION.PY.
-        "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
+        "lephare": True,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
         "plotting": False,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs. NOTE: IF YOU SKIP THIS, YOU NEED TO MAKE THE det_{detFilt}_{run_type}_best_highz_good,bad,maybe MANUALLY. Then copy from best_highz into _good.
-        "final_selection": True   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
+        "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
+        
     }
 }
 
@@ -37,7 +38,7 @@ field_name = 'COSMOS'
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
 #! Whether to run the masking of the data to the euclid footprint
-mask_euclid = False
+mask_euclid = True
 
 #! Whether to run Lyman-alpha selection in the final part (e.g. not needed at z=6)
 run_lya = False
@@ -50,14 +51,21 @@ flag_combinations = [
     #(False, False, True)    #? Only run_lya = True
 ]
 
+#! Run SED fitting on all ojects in a field, without outputting .spec files? Needed for getting all BDs in a field. Also give a custom name.
+run_all_objects = False #? NOTE: You need to input the catalogue you want to fit in the convert_fits_txt.py script.
+custom_name = 'XMM_all'
+
 #! IF LOOPING RUN TYPES
 # ?If we want to run more than one run_type, we can loop through the run_types list
 loop_run_types = False
 
+#! PAPER CORRECTION: RUN WITH 5% SPITZER ERROR FLOOR?
+spitzer_five_percent = False  #? If True, will apply a 5% error floor to Spitzer/IRAC fluxes, and outputs SED fitting to folders with _IRACfloor appended to the folder name.
+
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'z7' #'z7' # 'BD_PLUS_EUCLID_PHOT' #'best_highz' # 'best_bd'
+plot_object_type = 'dustyInterlopers' #'z7' ' #'best_highz' # 'best_bd' # 'BD_PLUS_EUCLID_PHOT' contains the paper BDs. Make sure test=sort=False etc
 
 #! Base filter sets for different run_types, to use in the SED fitting.
 #? Filters will be removed as required based on flag_combinations, e.g. removal of G and R for fitting brown dwarfs.
@@ -80,19 +88,19 @@ base_filters = {
 
 #! Dropout selection filters
 #? z = 7 selection
-# filters = {
-#     'Y+J': {'type': 'stacked-detection', 'value': 5},
-#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-#     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-# }
-
-#? z = 6 selection
 filters = {
-    'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+    'Y+J': {'type': 'stacked-detection', 'value': 5},
     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 }
+
+#? z = 6 selection
+# filters = {
+#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+# }
 
 def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
 
@@ -135,6 +143,9 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     run_type_json = json.dumps(run_type)
     object_type_json = json.dumps(plot_object_type)
     field_name_json = json.dumps(field_name)
+    run_all_json = json.dumps(run_all_objects)
+    custom_name_json = json.dumps(custom_name) 
+    spitzer_floor_json = json.dumps(spitzer_five_percent)
 
     run_flag_dict = {
         (False, False, False): 'normal SED fitting',
@@ -165,55 +176,88 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
     #! Step 2: Run LePhare 
     #! -----------------------------
     if config["steps"]["lephare"]:
-
+        
         print("Running LePhare step...")
 
-        #? Convert catalogue to lephare format
-        convert_script = Path.cwd() / 'convert_fits_txt.py'
-        subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json], check=True)
+        #? are we running all objects in the field, without outputting .spec files?
+        if run_all_objects:
 
-        #? Set up the output file names and folders
-        #* 1) Get the detection and non-detection filters
-        det_filters = [f for f, t in filters.items() if t['type'] in {'detection', 'stacked-detection'}]
+            # #? Convert catalogue to lephare format
+            # convert_script = Path.cwd() / 'convert_fits_txt.py'
+            # subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json, 
+            # run_type_json, field_name_json, run_all_json, custom_name_json], check=True)
 
-        if not det_filters:
-            det_filters = filters[next(f for f, t in filters.items() if t['type'] == 'stacked-detection')].split('+')
+            # #? Set up the output file names and folders
+            # #* 1) Get the detection and non-detection filters
+            # det_filters = [f for f, t in filters.items() if t['type'] in {'detection', 'stacked-detection'}]
 
-        nondet_filters = [f for f, t in filters.items() if t['type'] == 'non-detection']
+            # #? Generate LePhare parameter file
+            # GenerateLePhareConfig(field_name, base_filters[run_type], det_filters, run_type=run_type, run_brown_dwarfs=run_brown_dwarfs, run_dusty=run_dusty, run_lya=run_lya,
+            #                         spec_out=False, custom_name=custom_name, file_name=Path.home() / 'lephare' / 'lephare_dev' / 'config' / f'{custom_name}.para')
 
-        # Replace '+' with '_' in detection filters
-        formatted_det_filters = [f.replace('+', '_') for f in det_filters]
+            # #? Build LePhare libraries
+            # buildLePhareLibrary(parameter_file=f'{custom_name}.para', 
+            # build_libs=True, build_filters=True, build_mags=True)
 
-        #* 2) Set up the correct folders for outputting .spec files
-        tags = [
-            '_'.join(formatted_det_filters) if formatted_det_filters else '',
-            run_type,
-            'bd' if run_brown_dwarfs else '',
-            'lya' if run_lya else '',
-            'dusty' if run_dusty else ''
-        ]
+            #? Run Photometric redshifts!
+            runPhotometricRedshifts(parameter_file=f'{custom_name}.para', zphot_dir=None)
+            
 
-        det_folder = 'det_' + '_'.join(filter(None, tags))
+    
+        #? Or are we running the SED fitting on ojects after a selection, keeping the .spec files?
+        else:
 
-        #? Generate LePhare parameter file
-        GenerateLePhareConfig(field_name, base_filters[run_type], det_filters, run_type=run_type, run_brown_dwarfs=run_brown_dwarfs, run_dusty=run_dusty, run_lya=run_lya)
+            #? Convert catalogue to lephare format
+            convert_script = Path.cwd() / 'convert_fits_txt.py'
+            subprocess.run(['python3', str(convert_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json, run_all_json], check=True)
 
-        #? Build LePhare libraries
-        buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
+            #? Set up the output file names and folders
+            #* 1) Get the detection and non-detection filters
+            det_filters = [f for f, t in filters.items() if t['type'] in {'detection', 'stacked-detection'}]
 
-        #? Run the photometric redshifts
-        zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / det_folder
+            if not det_filters:
+                det_filters = filters[next(f for f, t in filters.items() if t['type'] == 'stacked-detection')].split('+')
 
-        #? Make the zphot dir if it doesn't already exist
-        Path(zphot_dir).mkdir(parents=True, exist_ok=True)
+            nondet_filters = [f for f, t in filters.items() if t['type'] == 'non-detection']
 
-        # With an overwrite step
-        if config['overwrite']:
-            for file in zphot_dir.glob('*.spec'):
-                file.unlink()
-            print('Deleted all previous .spec files.')
+            # Replace '+' with '_' in detection filters
+            formatted_det_filters = [f.replace('+', '_') for f in det_filters]
 
-        runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir)
+            #* 2) Set up the correct folders for outputting .spec files
+            tags = [
+                '_'.join(formatted_det_filters) if formatted_det_filters else '',
+                run_type,
+                'bd' if run_brown_dwarfs else '',
+                'lya' if run_lya else '',
+                'dusty' if run_dusty else ''
+            ]
+
+            if spitzer_five_percent:
+                tags.append('IRACfloor')
+
+            det_folder = 'det_' + '_'.join(filter(None, tags))
+            print(f'Detection folder: {det_folder}')
+
+            #? Generate LePhare parameter file
+            GenerateLePhareConfig(field_name, base_filters[run_type], det_filters, run_type=run_type, run_brown_dwarfs=run_brown_dwarfs, run_dusty=run_dusty, run_lya=run_lya)
+
+            #? Build LePhare libraries
+            buildLePhareLibrary(parameter_file='euclid.para', build_libs=True, build_filters=True, build_mags=True)
+
+            #? Run the photometric redshifts
+            zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / det_folder
+            print(zphot_dir)
+
+            #? Make the zphot dir if it doesn't already exist
+            Path(zphot_dir).mkdir(parents=True, exist_ok=True)
+
+            # With an overwrite step
+            if config['overwrite']:
+                for file in zphot_dir.glob('*.spec'):
+                    file.unlink()
+                print('Deleted all previous .spec files.')
+
+            runPhotometricRedshifts(parameter_file='euclid.para', zphot_dir=zphot_dir)
 
 
 
@@ -229,12 +273,12 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
             print('Extracting good SEDs that are within the Euclid footprint...')
 
             mask_script = Path.cwd() / 'mask_euclid_pointing.py'
-            subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+            subprocess.run(['python3', str(mask_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json, spitzer_floor_json], check=True)
 
             print("Running extract SEDs step...")
 
             good_seds_script = Path.cwd() / 'chi2_sed_cuts.py'
-            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json], check=True)
+            subprocess.run(['python3', str(good_seds_script), filters_json, bools_json, all_filters_json, run_type_json, field_name_json, spitzer_floor_json], check=True)
 
         #? Otherwise, Extract the SEDs from the chi2 etc.
         else:
@@ -254,6 +298,7 @@ def run_sed_fitting(run_type, run_brown_dwarfs, run_dusty, run_lya, config):
         print("Running plotting step...")
 
         plot_script = Path.cwd() / 'plot_SEDs.py'
+        plot_script = Path.cwd() / 'plot_SEDs_neat.py'
         subprocess.run(['python3', str(plot_script), filters_json, bools_json, all_filters_json, run_type_json, object_type_json, field_name_json], check=True)
 
 

@@ -1396,7 +1396,7 @@ def run_source_extractor(field, detFilt, apDiameterAS, queue = 'none', reqFilter
 
     # standard inputs etc
     inputSex = '/mnt/vardy/vardygroupshare/data/bertin_config/video_mine.sex'
-    inputSex = '/mnt/vardy/vardygroupshare/data/bertin_config/rohan_video.sex'
+    #inputSex = '/mnt/vardy/vardygroupshare/data/bertin_config/rohan_video.sex'
     os.environ['EXTRACTOR_DIR'] = '/usr/local/shared/sextractor/2.25.0/share/sextractor'
     
     # define the directories
@@ -1489,7 +1489,7 @@ def run_source_extractor(field, detFilt, apDiameterAS, queue = 'none', reqFilter
 
 
 
-def run_se(detFilt, filterName, imagedata, apDiametersAS, inputSex, dirHere, assoc_file = 'none', queue = 'none', field = 'NONE', outputDir = '', overwrite = False, memory = 10.0, verbose = False):
+def run_se(detFilt, filterName, imagedata, apDiametersAS, inputSex, dirHere, assoc_file = 'none', queue = 'none', field = 'NONE', outputDir = '', overwrite = False, memory = 20.0, verbose = False):
     
     from astropy.io import fits
 

@@ -10,6 +10,21 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 6.5, 'ytick.major.size': 6.5,
+    'xtick.major.width': 3, 'ytick.major.width': 3,
+
+    # Minor tick size and width
+    'xtick.minor.size': 3, 'ytick.minor.size': 3,
+    'xtick.minor.width': 2, 'ytick.minor.width': 2,
+})
+
 sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import filter_widths
@@ -20,7 +35,7 @@ def flux_to_mag(flux):
     return mag
 
 plt.rcParams['axes.linewidth'] = 2.5
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({'font.size': 25})
 plt.rcParams['figure.dpi'] = 100
 
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
@@ -123,11 +138,12 @@ plt.plot([min(Y), max(Y)], [-0.1, -0.1], color='red', linestyle='dotted')
 plt.plot([min(Y), max(Y)], [0, 0], color='red', linestyle='--')
 plt.plot([min(Y), max(Y)], [0.1, 0.1], color='red', linestyle='dotted')
 #plt.text(17, 0.4, r'$| Y - J| < 0.05 \wedge |J - H| < 0.05$')
-plt.xlabel(r'$Y$', fontsize=20)
-plt.ylabel(r'$Y - Y_E$', fontsize=20)
+plt.xlabel(r'$Y$', fontsize=25)
+plt.ylabel(r'$Y - Y_{\rm{E}}$', fontsize=25)
 plt.ylim(-0.5, 0.5)
 plt.xlim(17, 21.2)
-plt.tick_params(axis='both', which='major', width=2.5, length=5)
+#plt.tick_params(axis='both', which='major', width=2.5, length=5)
+plt.minorticks_on()
 plt.tight_layout()
 plt.savefig(Path.cwd().parents[1] / 'plots' / 'psf' / 'Y_Ye.pdf', bbox_inches='tight')
 #plt.show()
@@ -138,11 +154,12 @@ plt.errorbar(J, J-Je, yerr=dJJe, xerr=dJ, fmt='o', color='black', markersize=5, 
 plt.plot([min(J), max(J)], [-0.1, -0.1], color='red', linestyle='dotted')
 plt.plot([min(J), max(J)], [0, 0], color='red', linestyle='--')
 plt.plot([min(J), max(J)], [0.1, 0.1], color='red', linestyle='dotted')
-plt.xlabel(r'$J$', fontsize=20)
-plt.ylabel(r'$J - J_E$', fontsize=20)
+plt.xlabel(r'$J$', fontsize=25)
+plt.ylabel(r'$J - J_{\rm{E}}$', fontsize=25)
 plt.ylim(-0.5, 0.5)
 plt.xlim(17, 21.2)
-plt.tick_params(axis='both', which='major', width=2.5, length=5)
+#plt.tick_params(axis='both', which='major', width=2.5, length=5)
+plt.minorticks_on()
 plt.tight_layout()
 plt.savefig(Path.cwd().parents[1] / 'plots' / 'psf' / 'J_Je.pdf', bbox_inches='tight')
 #plt.show()
@@ -163,11 +180,12 @@ plt.plot([min(H), max(H)], [-0.1, -0.1], color='red', linestyle='dotted')
 plt.plot([min(H), max(H)], [0, 0], color='red', linestyle='--')
 plt.plot([min(H), max(H)], [0.1, 0.1], color='red', linestyle='dotted')
 #plt.title(r'$| Y - J| < 0.05 \wedge |J - H| < 0.05$')
-plt.xlabel(r'$H$', fontsize=20)
-plt.ylabel(r'$H - H_E$', fontsize=20)
+plt.xlabel(r'$H$', fontsize=25)
+plt.ylabel(r'$H - H_{\rm{E}}$', fontsize=25)
 plt.ylim(-0.5, 0.5)
 plt.xlim(17, 21.2)
-plt.tick_params(axis='both', which='major', width=2.5, length=5)
+#plt.tick_params(axis='both', which='major', width=2.5, length=5)
+plt.minorticks_on()
 plt.tight_layout()
 plt.savefig(Path.cwd().parents[1] / 'plots' / 'psf' / 'H_He.pdf', bbox_inches='tight')
 #plt.show()

@@ -20,6 +20,7 @@ from photutils.aperture import CircularAperture
 from astropy.io import fits
 from astropy.wcs import WCS
 from luminosity_function import LuminosityFunction
+import bagpipes as pipes
 
 class SourceInjector:
     def __init__(self, samples, params):
@@ -421,10 +422,103 @@ class SourceInjector:
 
 
 
+    def generate_bagpipes_galaxies(self, z_array, ):
+
+        exp = {}                          # Tau model star formation history component
+        exp["age"] = 0.4                   # Gyr
+        exp["tau"] = 0.75                 # Gyr
+        exp["massformed"] = 9.            # log_10(M*/M_solar)
+        exp["metallicity"] = 0.2          # Z/Z_oldsolar
+
+        burst = {}                                   # A burst component
+        burst["age"] = 0.05                           # Fix age to 0.1 Gyr
+        burst["metallicity"] = 0.1          # Vary metallicity from 0 to 2.5 Solar
+        burst["massformed"] = 6.5 
+
+        dust = {}                         # Dust component
+        dust["type"] = "Calzetti"         # Define the shape of the attenuation curve
+        dust["Av"] = 0.4                 # magnitudes
+
+        model_components = {}                   # The model components dictionary
+        model_components["redshift"] = 5.51      # Observed redshift  
+        # model_components["burst"] = burst
+        model_components["exponential"] = exp   
+        model_components["dust"] = dust
+
+        filt_list = np.loadtxt('filter_list.txt', dtype="str")
+        model = pipes.model_galaxy(model_components, filt_list=filt_list)
+
+        # fig = model.plot()
+        # fig = model.sfh.plot()
+
+        print(dir(model))
+
+        spec_post = model.spectrum_full
+        wavs = model.wavelengths
+        print(wavs)
+
+        # convert to microJy using the conversion from Adam
+        # this is just Fnu = Flamda*lambda**2/c all in units of A
+        conversion = (wavs**2)/(10**-29*2.9979*10**18)
+        microJy = spec_post*conversion
+
+        plt.plot(wavs, microJy, label='Bagpipes SED')
+        plt.xlim(700, 3000)
+        plt.ylim(0, 0.00025)
+        plt.show()
+
+
+
+
 
 #! Testing
 if __name__ == '__main__':
 
+    # config = load_config("config.yaml")
+    # lf_config = config['luminosity_function']
+    # injection_config = config['source_injection']
+    # image_size = injection_config['image_size_arcmin']
+
+    # luminosity_function = LuminosityFunction(lf_config)
+    # Muv_sample = luminosity_function.sample_luminosities()
+    # #Muv_sample = np.linspace(-22, -20, 5)
+
+    # source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
+    # z, beta = source_injector.draw_parameters()
+    # #plt.hist(z, bins=100)
+    # #plt.hist(beta, bins=100)
+    # #plt.show()
+
+    # wavelengths, fluxes = source_injector.generate_seds(z, beta)
+    # scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
+    # filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
+
+    # #! Plotting synthetic SEDs and fluxes
+    # # x_Y = np.full(len(Muv_sample), 10214)
+    # # x_J = np.full(len(Muv_sample), 12544)
+    # # plt.plot(wavelengths, scaled_fluxes.T)
+    # # plt.scatter(x_Y, filter_fluxes['Y'], color='red')
+    # # plt.scatter(x_J, filter_fluxes['J'], color='red')
+    # # plt.yscale('log')
+    # # plt.ylim(3e-32, 1e-29)
+    # # plt.xlim(3000, 40000)
+    # # plt.show()
+
+    # #! Plotting injected sources
+    # x, y = source_injector.generate_random_positions(image_size)
+
+    # #! Get PSF fluxes corresponding to input Muv
+    # source_injector.get_psf()
+    # scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
+
+    # #! Inject sources
+    # image_name = 'UVISTA_YJ_DR6_cutout_3745_21800_4000_pix_10_arcmin.fits'
+    # wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs, overwrite=True, plot_each_source=True)
+    
+    # #! Convert x,y to RA, Dec
+    # ra, dec = wcs.all_pix2world(x, y, 0)
+
+    #? TESTING BAGPIPES
     config = load_config("config.yaml")
     lf_config = config['luminosity_function']
     injection_config = config['source_injection']
@@ -432,42 +526,9 @@ if __name__ == '__main__':
 
     luminosity_function = LuminosityFunction(lf_config)
     Muv_sample = luminosity_function.sample_luminosities()
-    #Muv_sample = np.linspace(-22, -20, 5)
 
     source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
-    z, beta = source_injector.draw_parameters()
-    #plt.hist(z, bins=100)
-    #plt.hist(beta, bins=100)
-    #plt.show()
-
-    wavelengths, fluxes = source_injector.generate_seds(z, beta)
-    scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
-    filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
-
-    #! Plotting synthetic SEDs and fluxes
-    # x_Y = np.full(len(Muv_sample), 10214)
-    # x_J = np.full(len(Muv_sample), 12544)
-    # plt.plot(wavelengths, scaled_fluxes.T)
-    # plt.scatter(x_Y, filter_fluxes['Y'], color='red')
-    # plt.scatter(x_J, filter_fluxes['J'], color='red')
-    # plt.yscale('log')
-    # plt.ylim(3e-32, 1e-29)
-    # plt.xlim(3000, 40000)
-    # plt.show()
-
-    #! Plotting injected sources
-    x, y = source_injector.generate_random_positions(image_size)
-
-    #! Get PSF fluxes corresponding to input Muv
-    source_injector.get_psf()
-    scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
-
-    #! Inject sources
-    image_name = 'UVISTA_YJ_DR6_cutout_3745_21800_4000_pix_10_arcmin.fits'
-    wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs, overwrite=True, plot_each_source=True)
-    
-    #! Convert x,y to RA, Dec
-    ra, dec = wcs.all_pix2world(x, y, 0)
+    source_injector.generate_bagpipes_galaxies()
 
 
 

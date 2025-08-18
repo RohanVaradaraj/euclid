@@ -10,11 +10,27 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.optimize import curve_fit
 import emcee
+from matplotlib.lines import Line2D
 import corner
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams['figure.dpi'] = 100
+
+plt.rcParams.update({
+    # Ticks on all sides, pointing inwards
+    'xtick.top': True, 'xtick.bottom': True,
+    'ytick.left': True, 'ytick.right': True,
+    'xtick.direction': 'in', 'ytick.direction': 'in',
+
+    # Major tick size and width
+    'xtick.major.size': 6.5, 'ytick.major.size': 6.5,
+    'xtick.major.width': 2, 'ytick.major.width': 2,
+
+    # Minor tick size and width
+    'xtick.minor.size': 3, 'ytick.minor.size': 3,
+    'xtick.minor.width': 1.5, 'ytick.minor.width': 1.5,
+})
 
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 
@@ -22,6 +38,7 @@ plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 #run_type = ''
 run_type = 'with_euclid'   
 fit = True
+kron = False # Use Muv updates based on Kron photometry
 
 #! ############### FUNCTIONS ####################
 def dpl(phiStar, alpha, beta, M, Mstar):
@@ -196,12 +213,19 @@ if run_type == '':
     cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
 if run_type == 'with_euclid':
     cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+    cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
+    #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid_WITH_MAG_AUTO.fits' # with euclid and mag_auto
 
 t = Table.read(cat_dir / cat_name)
 
 # Remove the Lya emitters which have z>7.5 with no emission line.
 t = t[t['Vmax'] > 0]
 t = t[t['Muv'] < 0]
+
+# Remove certain IDs
+IDs_to_remove = [345668, 488168, 605134, 729259, 796957]
+for remove in IDs_to_remove:
+    t = t[t['ID'] != remove]
 
 # print('Min/max Muv:')
 # print(np.min(t['Muv']), np.max(t['Muv']))
@@ -244,6 +268,10 @@ if run_type == 'with_euclid':
     Muv_bins = [-22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
     bin_widths = np.abs(np.diff(Muv_bins))
     bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
+    #? Adding brighter bin after adjusting Muv with kron photometry
+    # Muv_bins = [-22.8, -22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
+    # bin_widths = np.abs(np.diff(Muv_bins))
+    # bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
 
 print(f'Muv bins: {np.round(Muv_bins, 2)}')
 print(f'Bin widths: {np.round(bin_widths, 2)}')
@@ -256,10 +284,16 @@ print(f'Bin centres: {np.round(bin_centres, 2)}')
 # plt.show()
 # exit()
 
+#! Depending on whether we want to use Kron-adjusted magnitudes, we use different columns for Muv
+if kron == False:
+    Muv_str = 'Muv'
+if kron:
+    Muv_str = 'Muv_linear_fit'
+
 # Split the table into these bins
 binned_tables = []
 for i in range(len(Muv_bins)-1):
-    mask = (t['Muv'] >= Muv_bins[i]) & (t['Muv'] < Muv_bins[i+1])
+    mask = (t[Muv_str] >= Muv_bins[i]) & (t[Muv_str] < Muv_bins[i+1])
     binned_tables.append(t[mask])
 
 # Initialise LF sum
@@ -284,7 +318,7 @@ for i, sub_table in enumerate(binned_tables):
         ID = obj['ID']
         Vmax = obj['Vmax']
         z = obj['Zphot']
-        Muv = obj['Muv']
+        Muv = obj[Muv_str]
         
         # Find completeness for this Muv,z
         Muv_bin = np.digitize([Muv], Muv_completeness_bins)[0] - 1
@@ -319,6 +353,7 @@ if run_type == '':
     cv_per_bin = [0.118, 0.110, 0.108, 0.110, 0.102, 0.097, 0.095, 0.097, 0.096, 0.103, 0.123]
 if run_type == 'with_euclid':
     cv_per_bin = [0.175, 0.171, 0.164, 0.157, 0.148, 0.144, 0.142, 0.144, 0.149, 0.171]
+    #cv_per_bin = [0.118, 0.110, 0.108, 0.110, 0.102, 0.097, 0.095, 0.097, 0.096, 0.103, 0.123]
 
 # Add this much percentage error to the LF in quadrature
 delta_phi = np.sqrt(delta_phi**2 + (cv_per_bin * phi)**2)
@@ -377,6 +412,18 @@ b17x = [-22.86, -22.40, -21.85]
 b17y = [3.59e-7, 1.16e-6, 2.75e-6]
 b17dy = [2.54e-7, 0.58e-6, 1.04e-6]
 b17x, b17y, b17dy = np.array(b17x), np.array(b17y), np.array(b17dy)
+
+#Rojas-ruiz+25 LF points
+rr25x = [-21, -22]
+rr25y = [107.31e-6, 4.6464e-6]
+rr25dy_up = [54.76e-6, 5.231e-6]
+rr25dy_lo = [40.77e-6, 2.918e-6]
+
+# Franco+25 JWST COSMOS-Web points at z=6.4 (5.1 < z < 8.8)
+fr25x = [-22.75, -22.25, -21.75, -21.25, -20.75, -20.25, -19.75]
+fr25y = [3.72e-6, 7.1e-6, 26.58e-6, 69.76e-6, 151.07e-6, 232.66e-6, 260.12e-6]
+fr25dy_up = [1.16e-6, 1.55e-6, 3.91e-6, 7.72e-6, 13.25e-6, 17.84e-6, 18.83e-6]
+fr25dy_lo = [1.16e-6, 1.61e-6, 3.98e-6, 7.81e-6, 13.73e-6, 18.53e-6, 19.35e-6]
 
 # # UVISTA DR6 LF points, without completeness, on full inclusive sample of 243 objects
 # muv = [-22.79501799, -22.29501799, -21.79501799, -21.29501799, -20.79501799, -20.29501799]
@@ -554,6 +601,9 @@ DPLy_h22 = dpl(10**(-3.05), -1.89, -3.81, M, -20.12) + dpl(10**(-8.49), -1.23, -
 # Bouwens+21
 b21_schechter = schechter(0.19e-3, -2.06, M, -21.15)
 
+# Franco+25 DPL
+fr25_dpl = dpl(23.39e-5, -2.10, -3.42, M, -20.88)
+
 # Print ratio between my LF points and the Harikane+24 LF function at that magnitude
 ratios = []
 for i, M_ in enumerate(Muv_bins[:-1]):
@@ -568,11 +618,15 @@ for i, M_ in enumerate(Muv_bins[:-1]):
 if fit == True:
     plt.figure(figsize=(10, 10))
 if fit == False:
-    plt.figure(figsize=(10, 6))
-#plt.plot(M, z7_gal, color='green', linewidth=3, label='Bowler+17', alpha=0.6, linestyle=':')
-#plt.plot(M, z7_harikane, color='blue', linewidth=3, label='Harikane+25', alpha=0.9, linestyle='-.')
-plt.plot(M, DPLy_h22, color='gray', linewidth=3, label='Harikane+22', alpha=0.8, linestyle=':')
-plt.plot(M, b21_schechter, color='orange', linewidth=3, label='Bouwens+21', alpha=0.9, linestyle='--')
+    plt.figure(figsize=(10, 7))
+
+#! Literature functional fits
+plt.plot(M, z7_gal, color='green', linewidth=3, alpha=0.6, linestyle=':') # label='Bowler+17', 
+plt.plot(M, z7_harikane, color='blue', linewidth=3, alpha=0.9, linestyle='-.') #label='Harikane+25', 
+plt.plot(M, DPLy_h22, color='gray', linewidth=3, alpha=0.8, linestyle=':') #label='Harikane+22', 
+plt.plot(M, b21_schechter, color='orange', linewidth=3, alpha=0.9, linestyle='--') #label='Bouwens+21', 
+if fit:
+    plt.plot(M, fr25_dpl, color='tab:orange', linewidth=3, alpha=0.9, linestyle=':') # label=Franco+25
 
 #! My best fit DPL function
 if fit:
@@ -582,24 +636,22 @@ if fit:
 
     # Plot the best-fit DPL function from emcee
     LF_fit_sch = schechter_fit(M_fit, phi_star_best_sch, M_star_best_sch, alpha_best_sch)
-    plt.plot(M_fit, LF_fit_sch, color='red', linewidth=5, label="Best-fit Schechter", alpha=0.9, linestyle='--')
+    plt.plot(M_fit, LF_fit_sch, color='tab:red', linewidth=5, label="Best-fit Schechter", alpha=0.9, linestyle='--')
 
     LF_fit = dpl_fit(M_fit, phi_star_best, M_star_best, alpha_best, beta_best)
-    plt.plot(M_fit, LF_fit, color='red', linewidth=7, label="Best-fit DPL", alpha=0.9)
+    plt.plot(M_fit, LF_fit, color='tab:red', linewidth=7, label="Best-fit DPL", alpha=0.9)
 
 
 
-
-
-
+#! Literature LF points
 # McLure+13
-#plt.errorbar(m13x, m13y, yerr=m13dy, color='magenta', label='McLure+13', marker='D', markersize=10, alpha=0.8, linestyle='none', markerfacecolor='none')
+plt.errorbar(m13x, m13y, yerr=m13dy, color='yellowgreen', label='McLure+13', marker='D', markersize=10, alpha=0.8, linestyle='none', markerfacecolor='none')
 
 # Bowuens et al. 2021
-plt.errorbar(b21x, b21y, color='orange', yerr=b21dy, label='Bouwens+21', marker='o', markerfacecolor='none', markersize=10, alpha=0.8, linestyle='none')
+plt.errorbar(b21x, b21y, color='orange', yerr=b21dy, marker='o', markerfacecolor='none', markersize=10, alpha=0.8, linestyle='none') #label='Bouwens+21',
 
 # Bowler+17
-#plt.errorbar(b17x-0.05, b17y, color='green', yerr=b17dy, label='Bowler+17', marker='s', markersize=10, alpha=0.8, linestyle='none', zorder=3)
+plt.errorbar(b17x-0.05, b17y, color='green', yerr=b17dy, marker='s', markersize=10, alpha=0.8, linestyle='none', zorder=3) #label='Bowler+17'
 
 # Varadaraj+23
 if fit == False:
@@ -612,27 +664,77 @@ if fit == True:
 #              ecolor='red', elinewidth=4, label='Varadaraj+23', markersize=13, markeredgecolor='black', zorder=4)
 
 # Harikane+24 LF points
-#plt.errorbar(h24x, h24y, yerr=[h24dy_lo, h24dy_up], fmt='D', color='blue', alpha=0.8, label='Harikane+25', markersize=10, zorder=2)
+plt.errorbar(h24x, h24y, yerr=[h24dy_lo, h24dy_up], fmt='D', color='blue', alpha=0.8, markersize=10, zorder=2) #label='Harikane+25',
 
 # Plot Finkelstein+15
-plt.errorbar(f15x-0.05, f15y, yerr=[f15y_lo, f15y_up], fmt='p', color='purple', alpha=0.8, label='Finkelstein+15', markersize=12, zorder=4)
+plt.errorbar(f15x-0.05, f15y, yerr=[f15y_lo, f15y_up], fmt='p', color='tab:purple', alpha=0.9, label='Finkelstein+15', markersize=12, zorder=4)
 
 # Harikane+22 LF points
-plt.errorbar(yh22x-0.05, yh22y, yerr=[yh22dyL, yh22dyU], fmt='s', color='gray', alpha=0.8, label='Harikane+22', markersize=10, zorder=2, markerfacecolor='none')
+plt.errorbar(yh22x-0.05, yh22y, yerr=[yh22dyL, yh22dyU], fmt='s', color='gray', alpha=0.8, markersize=10, zorder=2, markerfacecolor='none') #label='Harikane+22',
+
+# Rojas-ruiz+25 points
+plt.errorbar(rr25x, rr25y, yerr=[rr25dy_lo, rr25dy_up], fmt='P', color='tab:pink', alpha=0.8, label=r'Rojas-Ruiz+25', markersize=10, zorder=2) #, markerfacecolor='none')
+
+# Franco+25 CWEB points
+plt.errorbar(fr25x, fr25y, yerr=[fr25dy_lo, fr25dy_up], fmt='H', color='tab:orange', alpha=0.8, markersize=13, zorder=2)
 
 # Plot the LF new points
 if run_type == 'with_euclid':
     if fit == False:
-        #We are leaving out the last three points in the fitting, so make them faint
-        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
-                    ecolor='red', elinewidth=4, label='This work', markersize=15, markeredgecolor='black', zorder=5)
-        # plt.errorbar(bin_centres[-3:], phi[-3:], yerr=delta_phi[-3:], fmt='o', color='red', xerr=bin_widths[-3:]/2,
-        #             ecolor='red', elinewidth=3, markersize=8, markeredgecolor='red', markeredgewidth=1, markerfacecolor='white', zorder=5, alpha=1,
-        #             label='Not used in fitting')
+        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='tab:red', xerr=bin_widths[:-3]/2,
+                    ecolor='tab:red', elinewidth=4, label=r'UltraVISTA + $Euclid$', markersize=15, markeredgecolor='black', zorder=5)
+        
+        # Add an upper limit at a -22.6 bin
+        up_lim = 1.841 / 4090450.2883619294 / 0.4
+        print('2sigma upper limit:' , up_lim)
+        x = -22.6
+        y = up_lim           # your y value
+        yerr = up_lim * 0.4  # your y error
+        xerr = 0.2           # your x error
+
+        # 1. Plot y error bar with upper limit arrow and capsize
+        plt.errorbar(
+            x, y,
+            yerr=yerr,
+            fmt='o',
+            color='tab:red',
+            ecolor='tab:red',
+            elinewidth=4,
+            markersize=15,
+            markeredgecolor='black',
+            zorder=5,
+            uplims=True,
+            capsize=9  # Controls the size of the upper limit arrow
+        )
+
+        # 2. Add x error bar separately with no capsize (capsize=0 removes caps)
+        plt.errorbar(
+            x, y,
+            xerr=xerr,
+            fmt='none',
+            ecolor='tab:red',
+            elinewidth=4,
+            capsize=0  # No caps for x-error
+        )
+
+        #? Put the VISTA LF on the same plot to compare the scatter directly
+        LF_vista = [1.30515748e-06, 3.32642337e-06, 7.34422140e-06, 6.27708092e-06,
+        1.57390423e-05, 2.74080836e-05, 4.12950686e-05, 3.83475493e-05,
+        5.04532349e-05, 3.29772144e-05, 4.49456387e-06]
+        LF_vista_err = [4.42753787e-07, 7.49204721e-07, 1.55601274e-06, 1.41177516e-06,
+        2.48501893e-06, 3.60833675e-06, 5.01404632e-06, 4.72413805e-06,
+        5.90207334e-06, 4.52903972e-06, 9.73488143e-07]
+        Muv_bins_vista = [-22.8, -22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
+        bin_widths_vista = np.abs(np.diff(Muv_bins_vista))
+        bin_centres_vista = 0.5 * (np.array(Muv_bins_vista[:-1]) + np.array(Muv_bins_vista[1:]))
+
+        plt.errorbar(bin_centres_vista[:-3], LF_vista[:-3], yerr=LF_vista_err[:-3], fmt='o', color='dodgerblue',
+            ecolor='dodgerblue', elinewidth=2, label='UltraVISTA-only', markersize=11, markeredgecolor='black', zorder=5, markerfacecolor='dodgerblue', alpha=1)
+
     if fit == True:
         #We are leaving out the last three points in the fitting, so make them faint
-        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
-                    ecolor='red', elinewidth=4, label='This work', markersize=20, markeredgecolor='black', zorder=5)
+        plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='tab:red', xerr=bin_widths[:-3]/2,
+                    ecolor='tab:red', elinewidth=4, label='This work', markersize=20, markeredgecolor='black', zorder=5)
 if run_type == '':
     # We are leaving out the last four points in the fitting, so make them faint
     plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='red', xerr=bin_widths[:-3]/2,
@@ -646,20 +748,31 @@ if run_type == '':
 #             ecolor='red', elinewidth=4, label='This work', markersize=15, markeredgecolor='black', zorder=5)
 
 #Draw an up arrow at the value of M*
-plt.annotate('', xy=(M_star_best, 2e-5), xytext=(M_star_best, 4e-7),
-                arrowprops=dict(facecolor='black',  lw=1), fontsize=40)
-plt.text(M_star_best-1, 2e-7, r'$M^*=-21.13^{+0.27}_{-0.25}$', fontsize=20)
+if fit:
+    plt.annotate('', xy=(M_star_best, 2e-5), xytext=(M_star_best, 4e-7),
+                    arrowprops=dict(facecolor='black',  lw=1), fontsize=40)
+    plt.text(M_star_best-1, 2e-7, r'$M^*=-21.13^{+0.27}_{-0.25}$', fontsize=20)
 
 
 plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)
 
-plt.xlabel(r'$M_{\mathrm{UV}}$', fontsize=25)
-plt.ylabel(r'$\mathrm{Number \ of \ objects \  / \ mag \ / \ Mpc^{3}}$', fontsize=21.5)
+if fit == False:
+    plt.xlabel(r'$M_{\mathrm{UV}}$', fontsize=25)
+    # plt.ylabel(r'$\mathrm{Number \ of \ objects \  / \ mag \ / \ Mpc^{3}}$', fontsize=21.5)
+    plt.ylabel(r'$\log_{10}(\phi\,/\,\rm{mag}^{-1}\,\rm{Mpc}^{-3})$', fontsize=25)
+if fit:
+    plt.xlabel(r'$M_{\mathrm{UV}}$', fontsize=28)
+    # plt.ylabel(r'$\mathrm{Number \ of \ objects \  / \ mag \ / \ Mpc^{3}}$', fontsize=21.5)
+    plt.ylabel(r'$\log_{10}(\phi\,/\,\rm{mag}^{-1}\,\rm{Mpc}^{-3})$', fontsize=28)
+# 
 
 # Increase size of tick labels
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
+
+# Add minor ticks in between x axis ticks
+plt.minorticks_on()
 
 #plt.xlim(-25, -19)
 # plt.ylim(1e-10, 1e-2)
@@ -668,30 +781,84 @@ if fit == True:
     if run_type == '':
         plt.text(-21, 1.5e-10, 'UltraVISTA only', size=25)
     if run_type == 'with_euclid':
-        plt.text(-21.93, 1.3e-9, r'UltraVISTA + $Euclid$', size=30)
-    plt.text(-19.9, 2e-3,  r'$z=7$', size=30)
+        #plt.text(-21.93, 1.3e-9, r'UltraVISTA + $Euclid$', size=31)
+        plt.text(-24.4, 2e-3, r'UltraVISTA + $Euclid$', size=31)
+    plt.text(-19.9, 2e-3,  r'$z=7$', size=31)
 if fit == False:
     if run_type == '':
         plt.text(-21.6, 2.4e-7, 'UltraVISTA only', size=25)
     if run_type == 'with_euclid':
-        plt.text(-21.85, 2.4e-7, r'UltraVISTA + $Euclid$', size=25)
-    plt.text(-21.03, 1.5e-4,  r'$z=7$', size=25)
+        #plt.text(-21.85, 2.4e-7, r'UltraVISTA + $Euclid$', size=25)
+        plt.text(-21.85, 2.4e-7, r'', size=25)
+    plt.text(-22.9, 9e-5,  r'$z=7$', size=25)
 
 if fit == True:
     plt.ylim([1e-9, 5e-3])
     plt.xlim(-24.5, -19)
 if fit == False:
-    plt.ylim([2e-7, 3e-4])
-    plt.xlim([-23.2, -20.7])
+    plt.ylim([3e-7, 2e-4])
+    plt.xlim([-23, -20.7])
 
 if fit == True:
-    plt.legend(loc='upper left', fontsize=17)
+
+    # custom legend handles
+    mclure13_handle = Line2D([], [], color='yellowgreen', linestyle='none', marker='D', markersize=10, label='McLure+13', markerfacecolor='none')
+    finkelstein15_handle = Line2D([], [], color='tab:purple', linestyle='none', marker='p', markersize=12, label='Finkelstein+15')
+    bowler17_handle = Line2D([], [], color='green', linestyle=':', marker='s', markersize=10, label='Bowler+17')
+    bouwens21_handle = Line2D([], [], color='orange', linestyle='--', marker='o', markersize=10, label='Bouwens+21', markerfacecolor='none')
+    harikane22_handle = Line2D([], [], color='gray', linestyle=':', marker='s', markersize=10, label='Harikane+22', markerfacecolor='none')
+    varadaraj23_handle = Line2D([], [], color='black', linestyle='none', marker='o', markersize=15, label='Varadaraj+23', markeredgecolor='black')
+    harikane25_handle = Line2D([], [], color='blue', linestyle='-.', marker='D', markersize=10, label='Harikane+25')
+    this_work_handle = Line2D([], [], color='tab:red', linestyle='none', marker='o', markersize=15, label='This work', markeredgecolor='black')
+    this_work_dpl_handle = Line2D([], [], color='tab:red', linestyle='-', linewidth=7, label='DPL fit', alpha=0.9)
+    this_work_sch_handle = Line2D([], [], color='tab:red', linestyle='--', linewidth=5, label='Schechter fit', alpha=0.9)
+    rojasruiz25_handle = Line2D([], [], marker='P', color='tab:pink', alpha=0.8, label=r'Rojas-Ruiz+25', markersize=10, zorder=2, linestyle='none')
+    franco25_handle = Line2D([], [], marker='h', color='tab:orange', alpha=0.8, label='Franco+25', markersize=13, zorder=2, linestyle=':', linewidth=3)
+
+    # Now manually create the legend using only the desired handles
+    handles = [
+        mclure13_handle,
+        finkelstein15_handle,
+        bowler17_handle,
+        bouwens21_handle,
+        harikane22_handle,
+        varadaraj23_handle,
+        harikane25_handle,
+        rojasruiz25_handle,
+        franco25_handle,
+        this_work_handle,
+        this_work_dpl_handle,
+        this_work_sch_handle,
+]
+
+    #plt.legend(loc='upper left', fontsize=17)
+    plt.legend(handles=handles, loc='lower right', fontsize=17.5 if fit else 12, ncol=2 if not fit else 2, frameon=True)
 if fit == False:
-    plt.legend(loc='upper left', fontsize=14, ncol=2)
-    #plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
+    # Dummy plots for studies with LF points and a best fit function, to combine the two
+    plt.plot([], [], color='green', linestyle=':', marker='s', markersize=10, label='Bowler+17')
+    plt.plot([], [], color='gray', linestyle=':', marker='s', markersize=10, label='Harikane+22', markerfacecolor='none')
+    plt.plot([], [], color='blue', linestyle='-.', marker='D', markersize=10, label='Harikane+25')
+    plt.plot([], [], color='orange', linestyle='--', marker='o', markersize=10, label='Bouwens+21', markerfacecolor='none')
+    plt.plot([], [], marker='h', color='tab:orange', alpha=0.8, label='Franco+25', markersize=13, zorder=2, linestyle='none')
+    plt.legend(fontsize=17.5, ncol=3, bbox_to_anchor=(0.45, -0.15), loc='upper center')
+
+
+
+plt.yscale('log')
+
+if fit == False:
+    yticks = [1e-6, 1e-5, 1e-4]
+    plt.yticks(yticks)
+    plt.gca().set_yticklabels([r"$-6\,$", r"$-5\,$", r"$-4\,$"])
+if fit == True:
+    yticks = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+    plt.yticks(yticks)
+    plt.gca().set_yticklabels([r"$-9\,$", r"$-8\,$", r"$-7\,$", r"$-6\,$", r"$-5\,$", r"$-4\,$", r"$-3\,$"])
+    # Make axis labels larger
+    plt.gca().tick_params(axis='both', which='major', labelsize=24)
+
 
 plt.tight_layout()  # Leaves extra space at the bottom
-plt.yscale('log')
 #plt.savefig(plot_dir / 'LF_UVISTA.pdf')
 #plt.savefig(plot_dir / 'LF_UVISTA_complete_emcee_finer_bins.pdf')
 if run_type == '':
@@ -699,11 +866,11 @@ if run_type == '':
     #plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_fit.pdf')
 if run_type == 'with_euclid':
     if fit == False:
-        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_points.pdf', bbox_inches='tight')
+        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_points_with_CWEB_kron.pdf', bbox_inches='tight')
     #plt.savefig(plot_dir / 'LF_UVISTA_bologna_interview.pdf')
     if fit == True:
-        #plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_fit.pdf', bbox_inches='tight')
-        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_UMASS_interview.pdf', bbox_inches='tight')
-#plt.show()
+        plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_fit_with_CWEB_kron.pdf', bbox_inches='tight')
+        #plt.savefig(plot_dir / 'LF_UVISTA_newbdcut_with_euclid_UMASS_interview.pdf', bbox_inches='tight')
+plt.show()
 
 

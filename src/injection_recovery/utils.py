@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from astropy.visualization.wcsaxes import WCSAxes
 from matplotlib.patches import Rectangle
 from astropy.coordinates import SkyCoord
+import struct
+from scipy.io import FortranFile
 
 data_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 
@@ -161,6 +163,86 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
 
 
 
+def read_binary_SED_file(file_name, file_dir=Path.home() / 'lephare' / 'lephare_work' / 'lib_mag', verbose=False):
+    """
+    Read in the .bin file produced by LePhare after running the sedtolib step.
+
+    :param file_dir: The directory where the file is located.
+    :param file_name: The name of the file to read.
+    """
+
+    #? First read in the .doc file
+    doc_info = {}
+    
+    doc_file = file_dir / (file_name.split('.bin')[0] + '.doc')
+    with open(doc_file, "r") as f:
+        for line in f:
+            # Skip empty lines
+            if not line.strip():
+                continue
+            parts = line.strip().split()
+            key = parts[0]
+            value = parts[1:]  # rest of the line
+            doc_info[key] = value
+    
+    if verbose:
+        print(".doc info:")
+        for key, value in doc_info.items():
+            print(f"{key}: {' '.join(value)}")
+
+    n_seds = int(doc_info["NUMBER_SED"][0])
+    n_rows = int(doc_info["NUMBER_ROWS"][0])
+    record_length = int(doc_info["RECORD_LENGTH"][0])  # number of float32 per SED
+
+    n_rows = 153_850
+    n_seds = 48
+
+    data = np.fromfile(file_dir / file_name, dtype=np.uint8)
+
+    # assert data.size == n_rows * n_seds, "Unexpected file size!"
+
+    # Reshape: each row is 48 SED fluxes at one wavelength
+    # data_matrix = data.reshape((n_rows, 384))
+
+    # To get SED_i as a function of λ:
+    # each column is one SED
+    # seds = data_matrix.T  # Shape: (48, 153850)
+
+    print("Loaded SEDs:", seds.shape)  # (n_seds, n_wavelengths)
+
+    # plt.plot(seds[24])
+    # plt.show()
+
+
+    # data = np.fromfile(file_dir / file_name, dtype=np.float32)
+    # data = data.reshape((n_rows, int(record_length/4)))
+
+
+    # f = open(file_dir / file_name, "rb")
+    # print(f.read()[0:200])
+
+    # 384 bytes / 8 = 48 float64s per row
+#     dtype = np.dtype([('values', 'f8', 48)])  # structured row: 48 float64s
+
+#     # Read entire file as structured array
+#     data = np.fromfile(file_dir / file_name, dtype=dtype)
+#     print(data.shape)
+#    #data = data.T
+
+#     plt.plot(data[0:1000])
+#     plt.show()
+
+#     print(data)
+    # for row in data:
+    #     print(row)
+    #     plt.plot(row)
+    #     plt.show()
+
+
+
+
+
 if __name__ == "__main__":
 
-    cutout_subimage('UVISTA_YJ_DR6.fits', 5000, 5000, 10, random=True)
+    #cutout_subimage('UVISTA_YJ_DR6.fits', 5000, 5000, 10, random=True)
+    read_binary_SED_file('GAL_COS.bin', verbose=True)

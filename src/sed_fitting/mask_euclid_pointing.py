@@ -41,6 +41,7 @@ if len(sys.argv) > 1:
     all_filters = json.loads(all_filters_json)
     run_type_json = sys.argv[4]
     run_type = json.loads(run_type_json)
+    field_name = json.loads(sys.argv[5])
 
 overwrite = True
 
@@ -75,18 +76,18 @@ if run_type != '':
 else:
     zphot_folder = base_det
 
-zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / zphot_folder
+zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / zphot_folder
 print('Taking SEDs from: ', zphot_dir)
 
 # Get corresponding dusty, bd and lya zphot dirs too
 if run_type != '':
-    make_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + run_type + '_' + folder) 
+    get_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / (base_det + '_' + run_type + '_' + folder) 
 else:
-    make_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / (base_det + '_' + folder) 
+    get_zphot_dir = lambda folder: Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / (base_det + '_' + folder) 
 
-dusty_zphot_dir = make_zphot_dir('dusty')
-bd_zphot_dir = make_zphot_dir('bd')
-lya_zphot_dir = make_zphot_dir('lya')
+dusty_zphot_dir = get_zphot_dir('dusty')
+bd_zphot_dir = get_zphot_dir('bd')
+lya_zphot_dir = get_zphot_dir('lya')
 
 #! Load the parent catalogue to get RA,DEC
 # Generate the name of the parent catalogue
@@ -133,11 +134,12 @@ t_filtered.write(parent_cat_dir / output_file, overwrite=True)
 #? We now have the objects in the Euclid mask.
 #? Now, of these, we need those that made the VISTA SED cut.
 #vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'best_fits' / (base_det + '_best_highz')
-vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / base_det
+vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / base_det
+print(vista_dir)
 
 #? If masking the VISTA only, take from the initial run.
 if run_type == '':
-    vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / base_det
+    vista_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / base_det
 
 # Plot the filtered and unfiltered objects in RA,DEC
 # plt.figure(figsize=(8, 6))
@@ -155,7 +157,7 @@ if run_type == '':
 outside_euclid_dir = zphot_dir.parents[0] / (zphot_folder + '_outside_footprint')
 
 # Corresponding directories for the other selections, to copy into
-base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name
 if run_type != '':
     folder_creator = lambda folder: base_dir / f"{base_det}_{run_type}_best_{folder}"
 else:

@@ -19,6 +19,27 @@ import numpy as np
 plt.rcParams['axes.linewidth'] = 4
 plt.rcParams.update({'font.size': 25})
 plt.rcParams['figure.dpi'] = 100
+# Put ticks on all sides and inward
+plt.rcParams['xtick.top'] = True
+plt.rcParams['xtick.bottom'] = True
+plt.rcParams['ytick.left'] = True
+plt.rcParams['ytick.right'] = True
+
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
+# Make ticks larger and thicker
+plt.rcParams['xtick.major.size'] = 10  # Length of major ticks
+plt.rcParams['ytick.major.size'] = 10
+
+plt.rcParams['xtick.major.width'] = 3  # Width of major ticks
+plt.rcParams['ytick.major.width'] = 3
+
+# (Optional) control minor ticks too
+plt.rcParams['xtick.minor.size'] = 5
+plt.rcParams['ytick.minor.size'] = 5
+plt.rcParams['xtick.minor.width'] = 1.5
+plt.rcParams['ytick.minor.width'] = 1.5
 
 euclid_dir = Path.home() / 'euclid' / 'Y' / 'COSMOS'
 
@@ -154,15 +175,17 @@ with fits.open(dash) as hdu_dash:
 ax.set_xlim(150.9, 149.1)
 ax.set_ylim(1.5, 3.0)
 
+ax.minorticks_on()
+
 # Squish ra axis by np.cos(dec) to account for declination
 
 
-ax.set_xlabel('RA (deg)')
-ax.set_ylabel('DEC (deg)')
+ax.set_xlabel('RA [deg]')
+ax.set_ylabel('Dec [deg]')
 #ax.legend(loc='upper right')
 
 plt.tight_layout()
-plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_poster.png')
+plt.savefig(Path.cwd().parent.parent / 'plots' / 'mosaic' / 'mosaic_poster.pdf')
 plt.show()
 
 

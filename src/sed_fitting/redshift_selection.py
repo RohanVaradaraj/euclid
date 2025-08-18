@@ -117,7 +117,7 @@ for i, spec_file in enumerate(spec_files):
     # First check if the original SED has z>6.5
     zphot_primary = original_params['Zphot'][0]
     chi2_primary = original_params['Chi2'][0]
-    is_z7 = (zphot_primary > 5.5) & (zphot_primary < 6.5)
+    is_z7 = (zphot_primary > 6.5) & (zphot_primary < 7.5)
 
     # If at z=7, copy over to z7_dir, else copy to not_z7_dir
     if is_z7:

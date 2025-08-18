@@ -17,7 +17,7 @@ plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
-field_name = 'XMM'
+field_name = 'COSMOS'
 
 #! Define prior functional form
 # def prior_func(z, C, gamma, z_0):
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     field_cat_dict = {
         'XMM': 'XMM_DR3_MASKED_Ks-stellar-cut_peters-LP-photo-z_LPz-AGN_chi2_LPclass_ModBest_LPmasses_LPsfr_LPssfr_flag_20-05-2025.fits',
         'CDFS': 'ECDFS_MASKED_Ks-stellar-cut_LP-photo-z_LPz-AGN_chi2_LPclass_ModBest_LPmasses_LPsfr_LPssfr_flag_Spec-z_20-05-2025.fits',
-        'COSMOS': 'COSMOS_DR6_HSC-DR3_MASKED_Ks-stellar-cut_peters-LP-photo-z_LPz-AGN_chi2_LPclass_ModBest_LPmasses_LPsfr_LPssfr_flag_20-05-2025.fits'
+        'COSMOS': 'COSMOS_DR6_HSC-DR3_MASKED_Ks-stellar-cut_peters-LP-photo-z_LPz-AGN_chi2_LPclass_ModBest_LPmasses_LPsfr_LPssfr_flag_25-05-2025.fits'
     }
 
     # Load the catalogue

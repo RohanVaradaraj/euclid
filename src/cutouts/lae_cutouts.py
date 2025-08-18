@@ -25,9 +25,9 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', category=AstropyWarning)
 
-# plt.rcParams['axes.linewidth'] = 2.5
-# plt.rcParams.update({'font.size': 15})
-# plt.rcParams['figure.dpi'] = 100
+plt.rcParams['axes.linewidth'] = 2.5
+plt.rcParams.update({'font.size': 15})
+plt.rcParams['figure.dpi'] = 100
 
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home() / 'euclid'
@@ -248,7 +248,7 @@ def isCoordInCWEB(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 
-def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
+def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, jwst_size: float = 10.0,
            save_cutout: bool = True, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
            plot_title: Optional[str] = None,
            add_centre_lines: Optional[bool] = False) -> None:
@@ -401,7 +401,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=jwst_size/pix_scale, wcs=wcs_CWEB)
 
         #### F150W ####
         with fits.open(tile_f150w) as hdu_CWEB:
@@ -411,7 +411,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f150w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            cutout_f150w_cweb = Cutout2D(data_CWEB, c, size=jwst_size/pix_scale, wcs=wcs_CWEB)
 
         #### F277W ####
         with fits.open(tile_f277w) as hdu_CWEB:
@@ -421,7 +421,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f277w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            cutout_f277w_cweb = Cutout2D(data_CWEB, c, size=jwst_size/pix_scale, wcs=wcs_CWEB)
         
         #### F444W ####
         with fits.open(tile_f444w) as hdu_CWEB:
@@ -432,7 +432,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             wcs_CWEB = WCS(hdr_CWEB)
             pa = hdr_CWEB['PA_APER']
 
-            cutout_f444w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            cutout_f444w_cweb = Cutout2D(data_CWEB, c, size=jwst_size/pix_scale, wcs=wcs_CWEB)
 
 
     # Rotate CWEB stamps to match the orientation of the Euclid stamps
@@ -451,7 +451,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     #! Plot
     cutouts = [ cutout_euVIS, cutout_grI, cutout_grY, cutout_euY, cutout_euJ, cutout_euH, cutout_f115w_cweb, cutout_f150w_cweb, cutout_f277w_cweb, cutout_f444w_cweb]
-    cutout_titles = [r'$I_E$', r'HSC-$y$', r'VISTA-$Y$', r'$Y_E$', r'$J_E$', r'$H_E$', r'$F115W$',  r'$F150W$', r'$F277W$', r'$F444W$']
+    cutout_titles = [r'$I_{\rm{E}}$', r'HSC $y$', r'VISTA $Y$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$F115W$',  r'$F150W$', r'$F277W$', r'$F444W$']
 
     fig, ax = plt.subplots(2, 5, figsize=(20, 12))
 
@@ -465,11 +465,13 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         ax[i//5, i%5].set_title(cutout.wcs.wcs.ctype[0])
         ax[i//5, i%5].set_xticks([])
         ax[i//5, i%5].set_yticks([])
-        ax[i//5, i%5].set_title(cutout_titles[i], size=30)
+        ax[i//5, i%5].set_title(cutout_titles[i], size=35)
 
         # Remove axis labels
         ax[i//5, i%5].set_xticks([])
         ax[i//5, i%5].set_yticks([])
+
+    #plt.show()
 
     return fig, ax
 
@@ -702,9 +704,11 @@ if __name__ == '__main__':
         #print(class_star[i], flag[i], elong[i], fwhm[i])
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
+        Cutout(ra[i], dec[i], size=6., plot_title=ID[i], jwst_size=3.)
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   #
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 
+        plt.savefig(plot_dir / f'LAE_STAMP.pdf', bbox_inches='tight')
+        plt.show()
 
     

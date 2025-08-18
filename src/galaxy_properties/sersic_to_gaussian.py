@@ -16,7 +16,7 @@ Reff = 1.0
 profile = sersic_n1(r, Reff)
 
 # Fit only the core (e.g., r < 1.5)
-fit_mask = r < 1.5
+fit_mask = r < 4
 r_fit = r[fit_mask]
 profile_fit = profile[fit_mask]
 
