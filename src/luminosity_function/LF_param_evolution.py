@@ -40,22 +40,41 @@ plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 
 # My LF parameters
 
+# my_z = np.array([7])
+# my_phi = np.array([9.1146e-05])
+# my_phi_err_up = np.array([6.654507642353416e-05])
+# my_phi_err_lo = np.array([3.8252481522955595e-05])
+
+# my_M_star = np.array([-21.1304])
+# my_M_star_err_up = np.array([0.27047277962511274])
+# my_M_star_err_lo = np.array([0.24948880288177477])
+
+# my_alpha = np.array([-2.1085])
+# my_alpha_err_up = np.array([0.21369413904090906])
+# my_alpha_err_lo = np.array([0.17156830499011377])
+
+# my_beta = np.array([-4.5987])
+# my_beta_err_up = np.array([0.32097933349011587])
+# my_beta_err_lo = np.array([0.3703468864815038])
+
+#? My LF parameters after kron and larger errors
 my_z = np.array([7])
-my_phi = np.array([9.1146e-05])
-my_phi_err_up = np.array([6.654507642353416e-05])
-my_phi_err_lo = np.array([3.8252481522955595e-05])
+my_phi = np.array([9.0598e-05])
+my_phi_err_up = np.array([6.704259904493972e-05])
+my_phi_err_lo = np.array([3.806543369065727e-05])
 
-my_M_star = np.array([-21.1304])
-my_M_star_err_up = np.array([0.27047277962511274])
-my_M_star_err_lo = np.array([0.24948880288177477])
+my_M_star = np.array([-21.1431])
+my_M_star_err_up = np.array([0.27714872059357987])
+my_M_star_err_lo = np.array([0.25054261288004653])
 
-my_alpha = np.array([-2.1085])
-my_alpha_err_up = np.array([0.21369413904090906])
-my_alpha_err_lo = np.array([0.17156830499011377])
+my_alpha = np.array([-2.1029])
+my_alpha_err_up = np.array([0.21467644551429])
+my_alpha_err_lo = np.array([0.17300217202221013])
 
-my_beta = np.array([-4.5987])
-my_beta_err_up = np.array([0.32097933349011587])
-my_beta_err_lo = np.array([0.3703468864815038])
+my_beta = np.array([-4.6266])
+my_beta_err_up = np.array([0.3357791319020107])
+my_beta_err_lo = np.array([0.385521158264428])
+
 
 # Donnan+23
 donnan23_z = np.array([8.0])

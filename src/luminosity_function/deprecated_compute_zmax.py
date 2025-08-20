@@ -17,6 +17,7 @@ from astropy.wcs import WCS
 import glob
 import sys
 from scipy.interpolate import interp1d
+import pickle
 
 sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
@@ -48,7 +49,10 @@ filters = {
 }
 
 #! Run type
-run_type = ''
+run_type = 'with_euclid'
+
+#! Paper correction: run Kron correction?
+kron_corr = True
 
 def mag_to_flux(m):
 	'''Convert mags to flux'''
@@ -60,11 +64,24 @@ def flux_to_mag(flux):
 	mag = -2.5*np.log10(flux)-48.6
 	return mag
 
+
+def kron_correction(flux, slope, intercept):
+    val = slope * np.log10(flux) + intercept
+    return np.maximum(1.0, val)
+
+
 # Define the cosmology
 H = 70
 omegaM = 0.3
 omegaV = 0.7
 cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
+
+paper_corr_dir = Path.cwd().parent / 'paper_corrections'
+if kron_corr:
+    if run_type == 'with_euclid':
+        kron_coeffs = pickle.load(open(paper_corr_dir / 'kron_fit_coeffs.pkl', 'rb'))
+    if run_type == '':
+        kron_coeffs = pickle.load(open(paper_corr_dir / 'kron_fit_coeffs_U_only.pkl', 'rb'))
 
 #! SED Fitting folder
 # Generate name of the directory we want to use to make the catalogue
@@ -74,6 +91,8 @@ if run_type != '':
     folder = f'det_{det_filter_str}_{run_type}_z7'
 else:
     folder = f'det_{det_filter_str}_z7'
+
+folder = folder.replace('+', '_')
 
 # Get the list of objects that made it through the SED fitting
 obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
@@ -91,10 +110,11 @@ IDs = [int(ID) for ID in IDs]
 
 if field_name == 'COSMOS':
     if run_type == '':
-        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
-        cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6 sample
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_kron_piecewise.fits' # just vista, with kron correction
+        #cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6 sample
     if run_type == 'with_euclid':
-        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+        #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise.fits' # With euclid, with kron correction
 
 if field_name == 'XMM':
      cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
@@ -102,6 +122,7 @@ if field_name == 'XMM':
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 t = Table.read(cat_dir / cat_name)
+print(t)
 
 #! Add a column for zmax if it doesnt exist already
 if 'zmax' not in t.colnames:
@@ -187,6 +208,8 @@ for i, ID in enumerate(IDs):
     # High-z model is the first component
     sed = sed[0]
 
+    flux_J = t['flux_J'][row_index][0]
+
     # Get model photometry
     model_phot = spec_data.get('phot')
     
@@ -233,6 +256,19 @@ for i, ID in enumerate(IDs):
     wlen = np.array([float(w) for w in wlen])
     sed = np.array([float(s) for s in sed])
     sed = mag_to_flux(sed)
+
+
+    #! Kron correction
+    if kron_corr:
+
+        slope = kron_coeffs['slope']
+        intercept = kron_coeffs['intercept']
+
+        correction = kron_correction(flux_J, slope, intercept)
+        print('Kron correction factor:', correction)
+
+        # Scale the SED by this factor
+        sed *= correction
 
     #! Interpolate the SED to the same grid as the filters
     Y_interpol = np.interp(Y_filter_wlen, wlen, sed)

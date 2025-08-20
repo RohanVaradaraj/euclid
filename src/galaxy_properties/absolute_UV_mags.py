@@ -17,6 +17,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import math
 import matplotlib.gridspec as gridspec
+import pickle
 
 plt.rcParams['axes.linewidth'] = 2.5
 plt.rcParams.update({'font.size': 27})
@@ -43,6 +44,11 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
+#! Paper correction: run Kron correction?
+kron_corr = True
+#? If true, are we doing a full correction or piecewise, ignoring kron/aper < 1?
+piecewise = True
+
 #! Field name
 field_name = 'COSMOS'
 
@@ -61,11 +67,11 @@ filters = {
 }
 
 #! Run type
-run_type = ''
+run_type = 'with_euclid'
 #run_type = ''
 
 # Switch to stop computing Muv if we've already done it.
-compute_Muv = False
+compute_Muv = True
 
 def mag_to_flux(m):
     '''Convert mags to flux count'''
@@ -75,6 +81,16 @@ def mag_to_flux(m):
 def flux_to_mag(f):
     mag = -2.5 * np.log10(f) - 48.6
     return mag
+
+def kron_correction(flux, slope, intercept, piecewise=True):
+    val = slope * np.log10(flux) + intercept
+
+    if piecewise:
+        # Clip at 1
+        return np.maximum(1.0, val)
+    else:
+        # Use fitted line directly
+        return val
 
 # Define the cosmology
 H = 70
@@ -87,10 +103,20 @@ completeness_dir = Path.cwd().parent / 'injection_recovery'
 completeness_name = 'completeness_matrix_2.npy'
 completeness_matrix = np.load(completeness_dir / completeness_name)
 
+#! If Kron, load the fit param files
+paper_corr_dir = Path.cwd().parent / 'paper_corrections'
+if kron_corr:
+    if run_type == 'with_euclid':
+        kron_coeffs = pickle.load(open(paper_corr_dir / 'kron_fit_coeffs.pkl', 'rb'))
+    if run_type == '':
+        kron_coeffs = pickle.load(open(paper_corr_dir / 'kron_fit_coeffs_U_only.pkl', 'rb'))
+
+
 #! SED Fitting folder
 # Generate name of the directory we want to use to make the catalogue
 det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
 det_filter_str = '_'.join(det_filters)
+det_filter_str = det_filter_str.replace('+', '_')
 if run_type != '':
     folder = f'det_{det_filter_str}_{run_type}_z7'
 else:
@@ -111,10 +137,11 @@ IDs = [int(ID) for ID in IDs]
 #? COSMOS
 if field_name == 'COSMOS':
     if run_type == 'with_euclid':
-        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+        #cat_name = 'Euclid_UltraVISTA_z7_sample.fits' #? with euclid
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid.fits' #? with euclid
         ref_cat = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits'
     if run_type == '':
-        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' #?just vista
         #cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits' # z=6 sample
 
 #? XMM
@@ -126,6 +153,7 @@ if field_name == 'XMM':
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 t = Table.read(cat_dir / cat_name)
+print(t.colnames)
 
 if run_type == 'with_euclid':
     t_ref = Table.read(cat_dir / ref_cat)
@@ -140,6 +168,9 @@ if compute_Muv:
     # Loop through the objects in the table and get its SED properties
     for i, ID in enumerate(IDs):
         print(i)
+
+        # Get the J-band flux of this object
+        flux_J = t['flux_J'][i]
 
         # Find the row index in the table with this ID
         row_index = np.where(t['ID'] == ID)[0]
@@ -175,6 +206,25 @@ if compute_Muv:
         wlen = np.array([float(w) for w in wlen])
         sed = np.array([float(s) for s in sed])
         sed = mag_to_flux(sed)
+
+        #! Kron correction
+        if kron_corr:
+
+            slope = kron_coeffs['slope']
+            intercept = kron_coeffs['intercept']
+
+            correction = kron_correction(flux_J, slope, intercept, piecewise=piecewise)
+            print('Kron correction factor:', correction)
+
+            # Scale the SED by this factor
+            sed *= correction
+            
+
+        #* Plotting the Kron-scaled SED
+        # plt.plot(wlen, sed, alpha=0.7, color='tab:blue', label='Old')
+        # plt.plot(wlen, sed_new, alpha=0.7, color='tab:orange', label='New')
+        # plt.yscale('log')
+        # plt.show()
 
         # Place tophat filter, rest 1500A, width 100A, in the observed frame
         filter_obs = np.zeros(len(wlen))
@@ -214,11 +264,16 @@ if compute_Muv:
         t['dMuv_sup'][row_index] = plus
 
     # Overwrite table
+    if kron_corr and piecewise:
+            cat_name = cat_name.replace('.fits', '_kron_piecewise.fits')
+    if kron_corr and not piecewise:
+            cat_name = cat_name.replace('.fits', '_kron_linear.fits')
     t.write(cat_dir / cat_name, format='fits', overwrite=True)
+    print(f'Wrote catalogue to {cat_dir / cat_name}')
 
 # Save the redshift and Muv values to a numpy file
-# output_file = f'z_Muv_sample_{run_type}.npy'
-# np.save(output_file, np.array([t['Zphot'], t['Muv']]))
+output_file = f'z_Muv_sample_{run_type}.npy'
+np.save(output_file, np.array([t['Zphot'], t['Muv']]))
 
 # Load the numpy files
 z_Muv_ = np.load('z_Muv_sample_.npy')
@@ -230,23 +285,23 @@ print(len(t_lya))
 print(t['Muv'])
 
 # Plot Muv vs redshift
-plt.figure(figsize=(12, 8))
+# plt.figure(figsize=(12, 8))
 
-zlo = t['Zphot'] - t['Zinf']
-zhi = t['Zsup'] - t['Zphot']
-zerr = np.array([zlo, zhi])
+# zlo = t['Zphot'] - t['Zinf']
+# zhi = t['Zsup'] - t['Zphot']
+# zerr = np.array([zlo, zhi])
 
-plt.scatter(t['Zphot'], t['Muv'], s=100, color='dodgerblue', alpha=0.9, edgecolor='none', label='XMM')
-plt.errorbar(t['Zphot'], t['Muv'], yerr=[t['dMuv_inf'], t['dMuv_sup']], xerr=zerr, fmt='o', color='dodgerblue', markersize=16,)
+# plt.scatter(t['Zphot'], t['Muv'], s=100, color='dodgerblue', alpha=0.9, edgecolor='none', label='XMM')
+# plt.errorbar(t['Zphot'], t['Muv'], yerr=[t['dMuv_inf'], t['dMuv_sup']], xerr=zerr, fmt='o', color='dodgerblue', markersize=16,)
 
-# Reverse y axis
-plt.gca().invert_yaxis()
+# # Reverse y axis
+# plt.gca().invert_yaxis()
 
-plt.xlabel(r'$z_{\rm phot}$')
-plt.ylabel(r'$M_{\rm UV}$')
+# plt.xlabel(r'$z_{\rm phot}$')
+# plt.ylabel(r'$M_{\rm UV}$')
 
-#plt.show()
-plt.close()
+# #plt.show()
+# plt.close()
 
 
 #! paper 1 galaxies
@@ -580,10 +635,20 @@ plt.tight_layout()
 # Save figure
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 if run_type == 'with_euclid':
-    plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
+    if not kron_corr:
+        plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
+    if kron_corr and piecewise:
+        plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_kron_piecewise.pdf', bbox_inches='tight')
+    if kron_corr and not piecewise:
+        plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_kron_linear.pdf', bbox_inches='tight')
 else:
-    plt.savefig(plot_dir / f'z_Muv_sample_marg.pdf', bbox_inches='tight')
-#plt.savefig(plot_dir / f'z_Muv_sample_{run_type}_marg.pdf', bbox_inches='tight')
+    if not kron_corr:
+        plt.savefig(plot_dir / f'z_Muv_sample_marg.pdf', bbox_inches='tight')
+    if kron_corr and piecewise:
+        plt.savefig(plot_dir / f'z_Muv_sample_kron_piecewise.pdf', bbox_inches='tight')
+    if kron_corr and not piecewise:
+        plt.savefig(plot_dir / f'z_Muv_sample_kron_linear.pdf', bbox_inches='tight')
+
 
 plt.show()
 

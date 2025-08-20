@@ -35,14 +35,14 @@ filters = {
 field_name = 'COSMOS' #'XMM'
 
 #! Run type - governing the filter set used.
-run_type = '' #''
+run_type = 'with_euclid' #''
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = ''
+run_flag = 'z7'
 
 # Only get lya if we are looking at the LBG sample
-#run_lya = (run_flag == 'z7')
-run_lya = False # Not running for z=6
+run_lya = (run_flag == 'z7')
+#run_lya = False # Not running for z=6
 
 
 def stellar_type(model):
@@ -92,8 +92,6 @@ else:
     folder = f'det_{det_filter_str}_{run_flag}'
     lya_folder = f'det_{det_filter_str}_lya'
 
-print(f'Folder name: {folder}')
-
 #! Generate parent catalogue name
 cat_name_parts = [field_name]
 
@@ -123,8 +121,8 @@ today_date = datetime.datetime.now().strftime('%Y_%m_%d')
 if run_flag == 'z7':
     new_cat_name = cat_name.split('.fits')[0] + '_candidates_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_candidates_' + today_date + '.fits'
 else:
-    #new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
-    new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '.fits'
+    new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
+    #new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + 'ALL_SEDFITS_' + today_date + '.fits'
     #new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + today_date + '.fits'
 
 print('Creating catalogue with name:')
@@ -136,9 +134,10 @@ t = Table.read(cat_dir / cat_name)
 print(t)
 
 # Get the list of objects that made it through the SED fitting
-obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name #/ 'best_fits'
+obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 
-folder = folder.replace('+', '_')[:-1]
+folder = folder.replace('+', '_') #[:-1]
+print(f'Folder name: {folder}')
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 print(len(obj_list))
 

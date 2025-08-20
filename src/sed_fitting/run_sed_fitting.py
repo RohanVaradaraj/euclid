@@ -17,15 +17,15 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": 'just_euclid',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "run_type": 'with_euclid',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
     "overwrite": False,
     "steps": {
         "selection": False,         #? Initial dropout selection. NOTE: MODIFY THE SOURCE CATALOGUE IN SELECTION.PY.
-        "lephare": True,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
+        "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
         "extract_seds": False,      #? Take all the good SEDs from the LePhare fitting.
         "plotting": False,          #? Plot the SEDs
         "visual_selection": False,  #? Visual selection of SEDs. NOTE: IF YOU SKIP THIS, YOU NEED TO MAKE THE det_{detFilt}_{run_type}_best_highz_good,bad,maybe MANUALLY. Then copy from best_highz into _good.
-        "final_selection": False   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
+        "final_selection": True   #? Final selection of SEDs with BD, dusty, lya and z>6.5 cuts.
         
     }
 }
@@ -41,14 +41,14 @@ run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 mask_euclid = True
 
 #! Whether to run Lyman-alpha selection in the final part (e.g. not needed at z=6)
-run_lya = False
+run_lya = True
 
 #! Specific combinations of flags for running A) normal SED fitting, B) brown dwarf selection, C) low-redshift dusty galaxy selection, D) Lyman-alpha emitter selection.
 flag_combinations = [
-    (False, False, False),  #? All False = Normal SED fitting
+    #(False, False, False),  #? All False = Normal SED fitting
     #(True, False, False),   #? Only run_brown_dwarfs = True
     #(False, True, False),   #? Only run_dusty = True
-    #(False, False, True)    #? Only run_lya = True
+    (False, False, True)    #? Only run_lya = True
 ]
 
 #! Run SED fitting on all ojects in a field, without outputting .spec files? Needed for getting all BDs in a field. Also give a custom name.

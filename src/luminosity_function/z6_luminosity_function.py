@@ -175,7 +175,7 @@ for i, sub_table in enumerate(binned_tables):
         Muv = obj['Muv']
         
         # Find completeness for this Muv,z
-        Muv_bin = np.digitize([Muv], Muv_completeness_bins)[0] - 1
+        Muv_bin = np.digitize(['Muv'], Muv_completeness_bins)[0] - 1
         z_bin = np.digitize([z], z_completeness_bins)[0] - 1
 
         # Ensure indices stay within bounds

@@ -19,11 +19,11 @@ sed_path = Path.cwd().parents[0] / 'sed_fitting'
 sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
-verbose = False
+verbose = True
 
 overwrite = True
 
-lya = False
+lya = True
 
 if len(sys.argv) > 1:
     filters_json = sys.argv[1]
@@ -112,6 +112,8 @@ normal_sed_dir = zphot_dir.parents[1] / base_det
 spec_files = glob.glob(str(zphot_dir / '*.spec'))
 spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]))
 
+print(spec_files)
+
 number_z7 = 0
 number_not_z7 = 0
 
@@ -142,8 +144,8 @@ for i, spec_file in enumerate(spec_files):
     # First check if the original SED has z>6.5
     zphot_primary = original_params['Zphot'][0]
     chi2_primary = original_params['Chi2'][0]
-    #is_z7 = (zphot_primary > 6.5) & (zphot_primary < 7.5)
-    is_z7 = (zphot_primary > 5.5) & (zphot_primary < 6.5)
+    is_z7 = (zphot_primary > 6.5) & (zphot_primary < 7.5)
+    #is_z7 = (zphot_primary > 5.5) & (zphot_primary < 6.5)
 
     # If at z=7, copy over to z7_dir, else copy to not_z7_dir
     if is_z7:

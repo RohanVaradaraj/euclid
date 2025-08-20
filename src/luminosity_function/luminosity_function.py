@@ -37,8 +37,7 @@ plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 #! Switches
 #run_type = ''
 run_type = 'with_euclid'   
-fit = True
-kron = False # Use Muv updates based on Kron photometry
+fit = False
 
 #! ############### FUNCTIONS ####################
 def dpl(phiStar, alpha, beta, M, Mstar):
@@ -105,42 +104,6 @@ def concatenate_arrays(*arrays):
 
     return x_concat, y_concat, dy_concat
 
-
-
-def adaptive_muv_binning(muv_values, min_bin_size=10):
-    """
-    Bins Muv values starting from the brightest end (most negative) such that each bin contains at least `min_bin_size` galaxies.
-
-    Parameters:
-        muv_values (array-like): The Muv values of the galaxies.
-        min_bin_size (int): Minimum number of galaxies per bin.
-
-    Returns:
-        bin_centers (numpy array): The central value of each bin.
-        bin_widths (numpy array): The width of each bin.
-        bin_edges (numpy array): The bin edges.
-    """
-    # Sort Muv values in descending order (brightest first)
-    muv_sorted = np.sort(muv_values)
-    
-    bin_edges = [muv_sorted[0]]  # Start from the brightest galaxy
-    i = 0
-
-    while i < len(muv_sorted):
-        # Ensure at least `min_bin_size` galaxies per bin
-        next_i = min(i + min_bin_size, len(muv_sorted))
-        
-        # Define bin edge
-        bin_edges.append(muv_sorted[next_i - 1])  # Include the faintest galaxy in this bin
-        i = next_i  # Move to the next bin
-
-    bin_edges = np.array(bin_edges)
-    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])  # Midpoints
-    bin_widths = np.abs(np.diff(bin_edges))  # Bin width
-
-    return bin_centers, bin_widths, bin_edges
-
-
 # Log-likelihood function
 def log_likelihood(theta, M, phi, phi_err):
     #!DPL
@@ -159,7 +122,7 @@ def log_prior(theta):
         return 0.0
     return -np.inf
 
-#* Gaussiean priors on alpha, beta
+#* Gaussian priors on alpha, beta
 # def log_prior(theta):
 #     M_star, phi_star, alpha, beta = theta
 
@@ -177,15 +140,15 @@ def log_prior(theta):
 #* Gaussian priors on all params?
 def log_prior(theta):
     #!DPL
-    #M_star, phi_star, alpha, beta = theta
-    # Gaussian priors (mean, sigma)
+    # M_star, phi_star, alpha, beta = theta
+    # # Gaussian priors (mean, sigma)
     # logp_M_star  = -0.5 * ((M_star  + 21) / 1.0) ** 2   # Mean = -20.5, Sigma = 1.0
     # logp_phi_star = -0.5 * ((phi_star - 4e-4) / 1e-3) ** 2  # Mean = 4e-4, Sigma = 1e-3
     # logp_alpha   = -0.5 * ((alpha + 2.0) / 0.5) ** 2   # Mean = -2.0, Sigma = 0.5
     # logp_beta    = -0.5 * ((beta + 5.0) / 0.5) ** 2   # Mean = -4.0, Sigma = 0.5
-    #return logp_phi_star + logp_M_star + logp_alpha + logp_beta
+    # return logp_phi_star + logp_M_star + logp_alpha + logp_beta
 
-    #! DPL
+    #! Schechter
     M_star, phi_star, alpha = theta
     # Gaussian priors (mean, sigma)
     logp_M_star  = -0.5 * ((M_star  + 21.15) / 1.0) ** 2   # Mean = -20.5, Sigma = 1.0
@@ -210,22 +173,29 @@ cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits' # inclusive
 
 if run_type == '':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+    #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' # just vista
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_kron_piecewise.fits' #?U-only with Kron correction
 if run_type == 'with_euclid':
-    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
-    cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
+    #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits' # with euclid
+    #cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
+    cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise.fits' #?U+E with Kron correction
     #cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid_WITH_MAG_AUTO.fits' # with euclid and mag_auto
 
+print('Reading catalogue: ', cat_name)
 t = Table.read(cat_dir / cat_name)
 
 # Remove the Lya emitters which have z>7.5 with no emission line.
-t = t[t['Vmax'] > 0]
+# if run_type == '':
+#     t = t[t['Vmax'] > 6.0e6]
+# if run_type == 'with_euclid':
+#     t = t[t['Vmax'] > 1.8e6]  #? VISTA+Euclid
+t = t[t['Vmax'] > 0]  #? VISTA+Euclid
 t = t[t['Muv'] < 0]
 
 # Remove certain IDs
-IDs_to_remove = [345668, 488168, 605134, 729259, 796957]
-for remove in IDs_to_remove:
-    t = t[t['ID'] != remove]
+# IDs_to_remove = [345668, 488168, 605134, 729259, 796957]
+# for remove in IDs_to_remove:
+#     t = t[t['ID'] != remove]
 
 # print('Min/max Muv:')
 # print(np.min(t['Muv']), np.max(t['Muv']))
@@ -236,7 +206,6 @@ for remove in IDs_to_remove:
 
 # plt.scatter(t['Muv'], t['Vmax'], c=t['Zphot'], cmap='viridis', s=10)    
 # plt.show()
-# exit()
 
 # Restrict to Muv < -20.5
 print('Number of galaxies before Muv cut: ', len(t))
@@ -250,6 +219,10 @@ completeness_matrix = np.load(completeness_dir / completeness_name)
 
 # Flip in y-axis to get correct Muv ordering
 completeness_matrix = np.flip(completeness_matrix, axis=0)
+# plt.imshow(completeness_matrix, aspect='auto', origin='lower',
+#               extent=[6.5, 7.5, -23, -20], cmap='viridis', vmin=0, vmax=1)
+# plt.show()
+# exit()
 
 # Bins to snap galaxy zphot and Muv to
 Muv_completeness_bins = np.arange(-23, -20., 0.1)
@@ -284,16 +257,10 @@ print(f'Bin centres: {np.round(bin_centres, 2)}')
 # plt.show()
 # exit()
 
-#! Depending on whether we want to use Kron-adjusted magnitudes, we use different columns for Muv
-if kron == False:
-    Muv_str = 'Muv'
-if kron:
-    Muv_str = 'Muv_linear_fit'
-
 # Split the table into these bins
 binned_tables = []
 for i in range(len(Muv_bins)-1):
-    mask = (t[Muv_str] >= Muv_bins[i]) & (t[Muv_str] < Muv_bins[i+1])
+    mask = (t['Muv'] >= Muv_bins[i]) & (t['Muv'] < Muv_bins[i+1])
     binned_tables.append(t[mask])
 
 # Initialise LF sum
@@ -302,6 +269,56 @@ delta_phi = np.zeros(len(Muv_bins)-1)
 
 # Get number of galaxies in each bin
 n_gals = np.array([len(sub_table) for sub_table in binned_tables])
+
+# Initialize arrays
+# phi = np.zeros(len(binned_tables))
+# delta_phi_upper = np.zeros(len(binned_tables))
+# delta_phi_lower = np.zeros(len(binned_tables))
+
+# for i, sub_table in enumerate(binned_tables):
+#     N = len(sub_table)  # number of galaxies in this bin
+    
+#     phi_sum = 0
+#     var_sum = 0  # sum of (1/(Vmax*C))^2 for Gaussian approximation
+    
+#     for obj in sub_table:
+#         Vmax = obj['Vmax']
+#         Muv = obj['Muv']
+#         z = obj['Zphot']
+        
+#         # Find completeness
+#         Muv_bin = np.digitize([Muv], Muv_completeness_bins)[0] - 1
+#         z_bin = np.digitize([z], z_completeness_bins)[0] - 1
+#         z_bin = max(0, min(z_bin, completeness_matrix.shape[1] - 1))
+#         Muv_bin = max(0, min(Muv_bin, completeness_matrix.shape[0] - 1))
+#         completeness = completeness_matrix[Muv_bin, z_bin]
+#         completeness = max(completeness, 1e-3)  # avoid zero
+        
+#         weight = 1 / (Vmax * completeness)
+#         phi_sum += weight
+#         var_sum += weight**2  # used for Gaussian error if N>=6
+    
+#     # Normalize by bin width
+#     phi[i] = phi_sum / bin_widths[i]
+    
+#     if N >= 6:
+#         # Gaussian approximation
+#         delta_phi_upper[i] = np.sqrt(var_sum) / bin_widths[i]
+#         delta_phi_lower[i] = delta_phi_upper[i]
+#     else:
+#         # Gehrels 1986 1-sigma confidence interval
+#         # Convert N to Gehrels limits
+#         if N == 0:
+#             N_lower = 0.0
+#             N_upper = 1.841
+#         else:
+#             N_lower = N - np.sqrt(N - 0.25)
+#             N_upper = 1 + np.sqrt(N + 0.75) - N
+        
+#         # Scale by sum of weights
+#         scale = phi_sum / N if N > 0 else 1 / (Vmax * completeness)
+#         delta_phi_lower[i] = N_lower * scale / bin_widths[i]
+#         delta_phi_upper[i] = N_upper * scale / bin_widths[i]
 
 #! Loop through the bins
 for i, sub_table in enumerate(binned_tables):
@@ -315,10 +332,19 @@ for i, sub_table in enumerate(binned_tables):
     #! Go through all the objects in the sub-table
     for j, obj in enumerate(sub_table):
 
+        # Plot completeness heat map
+        # plt.imshow(completeness_matrix, aspect='auto', origin='lower',
+        #           extent=[6.5, 7.5, -23, -20], cmap='viridis', vmin=0, vmax=1)
+        # plt.colorbar(label='Completeness')
+        # plt.xlabel('z')
+        # plt.ylabel('Muv')
+        # plt.show()
+        # exit()
+
         ID = obj['ID']
         Vmax = obj['Vmax']
         z = obj['Zphot']
-        Muv = obj[Muv_str]
+        Muv = obj['Muv']
         
         # Find completeness for this Muv,z
         Muv_bin = np.digitize([Muv], Muv_completeness_bins)[0] - 1
@@ -330,15 +356,13 @@ for i, sub_table in enumerate(binned_tables):
     
 
         completeness = completeness_matrix[Muv_bin, z_bin]
-
         # Summand
         summand = 1 / (Vmax * completeness)
         phi[i] += summand
 
         # Compute error term
-        err_summand = 1 / Vmax ** 2
+        err_summand = 1 / (Vmax*completeness) ** 2
         delta_phi[i] += err_summand
-
 
 
 ##############################! ERROR, INCLUDING COSMIC VARIANCE ##############################
@@ -355,8 +379,12 @@ if run_type == 'with_euclid':
     cv_per_bin = [0.175, 0.171, 0.164, 0.157, 0.148, 0.144, 0.142, 0.144, 0.149, 0.171]
     #cv_per_bin = [0.118, 0.110, 0.108, 0.110, 0.102, 0.097, 0.095, 0.097, 0.096, 0.103, 0.123]
 
+cv_per_bin = np.array(cv_per_bin)
+
 # Add this much percentage error to the LF in quadrature
 delta_phi = np.sqrt(delta_phi**2 + (cv_per_bin * phi)**2)
+# delta_phi_lower = np.sqrt(delta_phi_lower**2 + (cv_per_bin/2 * phi)**2)
+# delta_phi_upper = np.sqrt(delta_phi_upper**2 + (cv_per_bin/2 * phi)**2)
 
 print('LF values:', phi)
 print('LF errors:', delta_phi)
@@ -473,7 +501,7 @@ Muv_combined, LF_combined, delta_phi_combined = concatenate_arrays(
 
 #? ####################### EMCEE ############################
 if fit:
-    ##!! DPL
+    # # !! DPL
     # # Initial parameter guesses
     # initial = [-21.2, 2.5e-4, -2.0, -4.5]
     # ndim, nwalkers = len(initial), 50
@@ -516,7 +544,7 @@ if fit:
     # print('Upper errors on best-fit parameters:', M_star_best_err_up, phi_star_best_err_up, alpha_best_err_up, beta_best_err_up)
     # print('Lower errors on best-fit parameters:', M_star_best_err_lo, phi_star_best_err_lo, alpha_best_err_lo, beta_best_err_lo)    
 
-    ##!! SCHECHTER
+    # #!! SCHECHTER
     # # Initial parameter guesses
     # initial = [-21.15, 0.19e-3, -2.06]
     # ndim, nwalkers = len(initial), 50
@@ -559,6 +587,7 @@ if fit:
 
 
     if run_type == 'with_euclid':
+        #! DPL
         # Best-fit parameters from emcee]
         # M*: -21.1304, phi*: 9.1146e-05, Alpha: -2.1085, Beta: -4.5987
         # Upper errors on best-fit parameters: 0.27047277962511274 6.654507642353416e-05 0.21369413904090906 0.32097933349011587
@@ -567,23 +596,41 @@ if fit:
         phi_star_best = 9.1146e-05
         alpha_best = -2.1085
         beta_best = -4.5987
+        #? AFTER KRON AND INCLUDING COMPLETENESS IN LF ERRORS
+        # M*: -21.1431, phi*: 9.0598e-05, Alpha: -2.1029, Beta: -4.6266
+        # Upper errors on best-fit parameters: 0.27714872059357987 6.704259904493972e-05 0.21467644551429 0.3357791319020107
+        # Lower errors on best-fit parameters: 0.25054261288004653 3.806543369065727e-05 0.17300217202221013 0.385521158264428
+        M_star_best = -21.1431
+        phi_star_best = 9.0598e-05
+        alpha_best = -2.1029
+        beta_best = -4.6266
 
-        # Schechter
+
+        #! Schechter
         # M*: -20.9796, phi*: 1.6091e-04, Alpha: -1.9935
         # Upper errors on best-fit parameters: 0.1891394070272625 7.51883613921671e-05 0.16454132162330004
         # Lower errors on best-fit parameters: 0.20335279382762295 5.686421729145396e-05 0.15175426010573934
         M_star_best_sch = -20.9796
         phi_star_best_sch = 1.6091e-04
         alpha_best_sch = -1.9935
+        #? AFTER KRON AND INCLUDING COMPLETENESS IN LF ERRORS
+        # Best-fit parameters:
+        # M*: -20.9832, phi*: 1.6270e-04, Alpha: -1.9812
+        # WARNING:root:Too few points to create valid contours
+        # Upper errors on best-fit parameters: 0.2033047661816525 8.32789695818742e-05 0.17844616114820755
+        # Lower errors on best-fit parameters: 0.21775827998119723 6.115895569398277e-05 0.16371438726958365
+        M_star_best_sch = -20.9832
+        phi_star_best_sch = 1.6270e-04
+        alpha_best_sch = -1.9812
 
-    if run_type == '':
-        # M*: -20.8885, phi*: 1.3985e-04, Alpha: -2.0130, Beta: -4.2563
-        # Upper errors on best-fit parameters: 0.27409088522794534 9.835983881875717e-05 0.25148557544353145 0.24448325643043045
-        # Lower errors on best-fit parameters: 0.2850048058690291 6.376084300199492e-05 0.21107831155776502 0.2876519425081936
-        M_star_best = -20.8885
-        phi_star_best = 1.3985e-04
-        alpha_best = -2.0130
-        beta_best = -4.2563
+    # if run_type == '':
+    #     # M*: -20.8885, phi*: 1.3985e-04, Alpha: -2.0130, Beta: -4.2563
+    #     # Upper errors on best-fit parameters: 0.27409088522794534 9.835983881875717e-05 0.25148557544353145 0.24448325643043045
+    #     # Lower errors on best-fit parameters: 0.2850048058690291 6.376084300199492e-05 0.21107831155776502 0.2876519425081936
+    #     M_star_best = -20.8885
+    #     phi_star_best = 1.3985e-04
+    #     alpha_best = -2.0130
+    #     beta_best = -4.2563
 
 #############################! Plotting ##########################§
 # mag range to plot over
@@ -682,10 +729,12 @@ plt.errorbar(fr25x, fr25y, yerr=[fr25dy_lo, fr25dy_up], fmt='H', color='tab:oran
 if run_type == 'with_euclid':
     if fit == False:
         plt.errorbar(bin_centres[:-3], phi[:-3], yerr=delta_phi[:-3], fmt='o', color='tab:red', xerr=bin_widths[:-3]/2,
-                    ecolor='tab:red', elinewidth=4, label=r'UltraVISTA + $Euclid$', markersize=15, markeredgecolor='black', zorder=5)
+                  ecolor='tab:red', elinewidth=4, label=r'UltraVISTA + $Euclid$', markersize=15, markeredgecolor='black', zorder=5)
+        # plt.errorbar(bin_centres[:-3], phi[:-3], yerr=[delta_phi_upper[:-3], delta_phi_lower[:-3]], fmt='o', color='tab:red', xerr=bin_widths[:-3]/2,
+        #            ecolor='tab:red', elinewidth=4, label=r'UltraVISTA + $Euclid$', markersize=15, markeredgecolor='black', zorder=5)
         
         # Add an upper limit at a -22.6 bin
-        up_lim = 1.841 / 4090450.2883619294 / 0.4
+        up_lim = 3.0 / 4090450.2883619294 / 0.4
         print('2sigma upper limit:' , up_lim)
         x = -22.6
         y = up_lim           # your y value
@@ -718,12 +767,20 @@ if run_type == 'with_euclid':
         )
 
         #? Put the VISTA LF on the same plot to compare the scatter directly
+        # LF_vista = [1.30515748e-06, 3.32642337e-06, 7.34422140e-06, 6.27708092e-06,
+        # 1.57390423e-05, 2.74080836e-05, 4.12950686e-05, 3.83475493e-05,
+        # 5.04532349e-05, 3.29772144e-05, 4.49456387e-06]
+        # LF_vista_err = [4.42753787e-07, 7.49204721e-07, 1.55601274e-06, 1.41177516e-06,
+        # 2.48501893e-06, 3.60833675e-06, 5.01404632e-06, 4.72413805e-06,
+        # 5.90207334e-06, 4.52903972e-06, 9.73488143e-07]
+        #? UPDATE WITH KRON ADJUSTED PHOTOMETRY
         LF_vista = [1.30515748e-06, 3.32642337e-06, 7.34422140e-06, 6.27708092e-06,
-        1.57390423e-05, 2.74080836e-05, 4.12950686e-05, 3.83475493e-05,
+        1.57194554e-05, 2.74080836e-05, 4.12950686e-05, 3.83475493e-05,
         5.04532349e-05, 3.29772144e-05, 4.49456387e-06]
         LF_vista_err = [4.42753787e-07, 7.49204721e-07, 1.55601274e-06, 1.41177516e-06,
-        2.48501893e-06, 3.60833675e-06, 5.01404632e-06, 4.72413805e-06,
+        2.48372874e-06, 3.60833675e-06, 5.01404632e-06, 4.72413805e-06,
         5.90207334e-06, 4.52903972e-06, 9.73488143e-07]
+
         Muv_bins_vista = [-22.8, -22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
         bin_widths_vista = np.abs(np.diff(Muv_bins_vista))
         bin_centres_vista = 0.5 * (np.array(Muv_bins_vista[:-1]) + np.array(Muv_bins_vista[1:]))
@@ -749,9 +806,9 @@ if run_type == '':
 
 #Draw an up arrow at the value of M*
 if fit:
-    plt.annotate('', xy=(M_star_best, 2e-5), xytext=(M_star_best, 4e-7),
+    plt.annotate('', xy=(M_star_best, 2e-5), xytext=(M_star_best, 8e-7),
                     arrowprops=dict(facecolor='black',  lw=1), fontsize=40)
-    plt.text(M_star_best-1, 2e-7, r'$M^*=-21.13^{+0.27}_{-0.25}$', fontsize=20)
+    plt.text(M_star_best-1, 5e-7, r'$M^*=-21.14^{+0.28}_{-0.25}$', fontsize=20)
 
 
 plt.tick_params(which='major', length=10, width=3)
