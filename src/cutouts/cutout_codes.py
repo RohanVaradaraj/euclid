@@ -32,7 +32,7 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home() / 'euclid'
 cweb_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
-primer_dir = Path.home() / 'JWST'
+primer_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
 refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
 
@@ -444,6 +444,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     #cweb_tile = contained_in[0][1]
     cweb_tile = isCoordInCWEB(ra, dec)[0] # Updated version for full CWEB
 
+    cweb_tile = '5B'
+
     if cweb_tile != '0':
 
         tile_f115w = glob.glob(str(cweb_dir / f'mosaic_{cweb_tile}' / f'CWEB-F115W-{cweb_tile}_i2dnobg_small.fits'))[0]
@@ -460,6 +462,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             wcs_CWEB = WCS(hdr_CWEB)
 
             cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+
 
         #### F150W ####
         with fits.open(tile_f150w) as hdu_CWEB:
@@ -723,8 +726,9 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
         save_name = plot_title.split(',')[0]
         plt.savefig(plot_dir / f'{save_name}.png')
 
+    plt.show()
     return fig, ax
-    #plt.show()
+
     #plt.close()
     #return None
 
@@ -936,6 +940,16 @@ if __name__ == '__main__':
     # elong = t['ELONGATION']
     # fwhm = t['FWHM_IMAGE']
 
+    #! Brown dwarfs - any proper motion?
+    t = Table.read('/mnt/vardy/vardygroupshare/rohan/euclid/data/catalogues/candidates/COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_BDs_INTERLOPERS_2025_08_22_with_euclid.fits')
+    t = t[t['ID'] == 829044]
+    ra = t['RA']
+    dec = t['DEC']
+    ID = t['ID']
+
+    #! Stavrox z=6.8
+    ra = [150.1200752011961]
+    dec = [2.0898737362171156]
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
@@ -956,8 +970,9 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
         #print(class_star[i], flag[i], elong[i], fwhm[i])
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
-        #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
+        #Cutout(ra[i], dec[i], size=6., add_centre_lines=True, save_cutout=False, plot_title=ID[i])
+        Cutout(ra[i], dec[i], size=6.) #, add_centre_lines=True, save_cutout=False)
+        #Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   #
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

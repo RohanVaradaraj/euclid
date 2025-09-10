@@ -38,7 +38,7 @@ field_name = 'COSMOS' #'XMM'
 run_type = 'with_euclid' #''
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'z7'
+run_flag = 'really_good_BDs'
 
 # Only get lya if we are looking at the LBG sample
 run_lya = (run_flag == 'z7')

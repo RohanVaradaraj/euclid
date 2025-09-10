@@ -90,6 +90,12 @@ dusty_dir = zphot_dir.parents[0] / (base_det + '_dustyInterlopers')
 if not dusty_dir.exists():
     dusty_dir.mkdir(parents=True)
 
+# Print directories
+if verbose:
+    print('Visual selection directory:', zphot_dir)
+    print('Not dusty directory:', not_dusty_dir)
+    print('Dusty directory:', dusty_dir)
+
 # If overwrite is True, delete all previous files in the above
 if overwrite:
     for directory in [not_dusty_dir, dusty_dir]:
@@ -106,6 +112,8 @@ spec_files = sorted(spec_files, key=lambda x: int(x.split('/')[-1].split('Id')[-
 number_low_z = 0
 number_high_z = 0
 
+print(len(spec_files), 'files to process.')
+
 for i, spec_file in enumerate(spec_files):
 
     ID = spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0]
@@ -113,6 +121,10 @@ for i, spec_file in enumerate(spec_files):
     if verbose:
         print(f'Object {i + 1} of {len(spec_files)}')
         print('ID:', ID)
+
+    # Read spec file from dusty directory. Name is Id and 9 digits with leading zeros.
+    spec_file = original_dusty_dir / spec_file.split('/')[-1]
+    #print(i, spec_file)
 
     params = parse_spec_file(spec_file).get('model')
     params.rename_columns(params.colnames, names_param)

@@ -13,28 +13,29 @@ import shutil
 import glob
 import numpy as np
 
-dir_to_dir = False
+dir_to_dir = True
 cat_to_dir = False
-dir_to_cat = True
+dir_to_cat = False
 
 overwrite = True
+field_name = 'COSMOS'
 
 #! Original functionality of dir to dir
 if dir_to_dir:
 
     # base sed directory
-    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot'
+    base_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name
 
     #! Input directories here
 
     # The directory to copy files from
-    dir_to_copy_from = base_dir / 'det_Y_J_with_euclid_bd'
+    dir_to_copy_from = base_dir / 'best_fits' / 'det_Y_J_dustyInterlopers'
 
     # The directory which files will be matched with
-    dir_to_match_with = base_dir / 'best_fits' / 'det_Y_J_BD'
+    dir_to_match_with = base_dir / 'best_fits' / 'det_Y_J_best_highz_bad'
 
     # The directory to copy files to
-    dir_to_copy_to = base_dir / 'best_fits' / 'det_Y_J_BD_PLUS_EUCLID_PHOT'
+    dir_to_copy_to = base_dir / 'best_fits' / 'det_Y_J_dusty_but_bad'
 
     # If overwrite, empty
     if overwrite:

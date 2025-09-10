@@ -100,7 +100,7 @@ def flux_to_mag(flux):
 survey_style = {
     'y (HSC)': {'marker': 'D', 'color': 'deepskyblue', 'markeredgecolor':'black'},   
     'Y (VISTA)' : {'marker': 'D', 'color': 'orange', 'markeredgecolor':'black'},     
-    r'$Y_{\rm{E}} \ (\mathrm{Euclid})$': {'marker': 'D', 'color': 'deeppink', 'markeredgecolor':'black'},
+    r'$Y_{\rm{E}} \ (Euclid)$': {'marker': 'D', 'color': 'deeppink', 'markeredgecolor':'black'},
     'Other' : {'marker': 'o', 'color': 'black'}
 }
 
@@ -119,7 +119,7 @@ def get_survey_name(filter_name):
     if filter_name == 'Y':
         return 'Y (VISTA)'
     if filter_name == 'Ye':
-        return r'$Y_{\rm{E}} \ (\mathrm{Euclid})$'
+        return r'$Y_{\rm{E}} \ (Euclid)$'
     else:
         return 'Other'
 
@@ -383,7 +383,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             color = survey_style[survey]['color']
             
             if sigma[i] < 2:
-                ax1.scatter(central_wavelengths[i], flux[i] + 2 * error[i], marker='v', color=color, s=100, zorder=6)
+                ax1.scatter(central_wavelengths[i], flux[i] + 2 * error[i], marker=r'$\downarrow$', color=color, s=300, zorder=6)
             else:
                 ax1.errorbar(central_wavelengths[i], flux[i], yerr=error[i], fmt=marker, color=color, markersize=12, zorder=6, elinewidth=2)
 
@@ -420,9 +420,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
         ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
 
-        yticks = [1e-31, 1e-30, 1e-29]
+        yticks = [1e-32, 1e-31, 1e-30, 1e-29]
         ax1.set_yticks(yticks)
-        ax1.set_yticklabels([r"$-31$", r"$-30$", r"$-29$"])
+        ax1.set_yticklabels([r"$-32$", r"$-31$", r"$-30$", r"$-29$"])
 
         ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=fontsize) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
         ax1.set_xlabel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)

@@ -384,7 +384,7 @@ def AllCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
     plt.tight_layout()
     plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
     #plt.savefig(plot_dir / f'LAE_stamps_10arcsec.pdf')
-    #plt.show()
+    plt.show()
 
     return fig, ax
     # plt.show()
@@ -600,14 +600,29 @@ if __name__ == '__main__':
     # fwhm = t['FWHM_IMAGE']
 
     #! Rebecca's sample
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'UVISTA_REBELS_sizes.fits')
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'UVISTA_REBELS_sizes.fits')
 
-    IDs = t['ID_prev']
-    IDs = [ID.replace(' ', '_') for ID in IDs]
-    print(IDs)
+    # IDs = t['ID_prev']
+    # IDs = [ID.replace(' ', '_') for ID in IDs]
+    # print(IDs)
+
+    # ra = t['RA']
+    # dec = t['DEC']
+
+    #! Brown dwarfs - any proper motion?
+    t = Table.read('/mnt/vardy/vardygroupshare/rohan/euclid/data/catalogues/candidates/COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_really_good_BDs_INTERLOPERS_2025_08_22_with_euclid.fits')
+
+    t = t[t['ID'] == 829044]
 
     ra = t['RA']
     dec = t['DEC']
+    ID = t['ID']
+
+
+    #! Stavrox z=6.8
+    ra = [150.1200752011961]
+    dec = [2.0898737362171156]
+
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
@@ -628,8 +643,8 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
         #print(class_star[i], flag[i], elong[i], fwhm[i])
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
-        #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        AllCutout(ra[i], dec[i], size=10., plot_title=IDs[i])
+        AllCutout(ra[i], dec[i], size=6.) #, add_centre_lines=True)
+        #AllCutout(ra[i], dec[i], size=10., plot_title=ID[i], add_centre_lines=True)
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

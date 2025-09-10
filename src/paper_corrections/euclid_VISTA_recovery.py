@@ -40,12 +40,17 @@ plt.rcParams.update({
 cand_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 tUE = Table.read(cand_dir / 'Euclid_UltraVISTA_z7_sample.fits')
 
+t_common = Table.read(cand_dir / 'common_cands.fits')
+
 file_name = '/mnt/zfsusers/varadaraj/lephare/lephare_dev/test/det_Y_J_just_euclid.out'
 
 t = ascii.read(file_name, format='no_header')
-print(t)
+print(len(t))
 
-print(tUE)
+# Restrict to those that are in the common candidates
+mask = np.isin(t['col1'], t_common['ID_1'])
+t = t[mask]
+tUE = tUE[np.isin(tUE['ID'], t['col1'])]
 
 z_orig = tUE['Zphot']
 z_recovered = t['col2']
@@ -63,6 +68,11 @@ mask = np.abs(z_recovered - z_orig) / (1 + z_orig) > 0.15
 fraction_outside = np.sum(mask) / len(z_orig)
 print(f"Fraction of sources outside |zrec−zorig|/(1 + zorig) > 0.15: {fraction_outside:.2f}")
 print('Number of sources outside: ', np.sum(mask))
+
+# Fraction of sources with z_recovered > 4
+mask_high_z = z_recovered > 4
+fraction_high_z = np.sum(mask_high_z) / len(z_orig)
+print(f"Fraction of sources with z_recovered > 4: {fraction_high_z:.2f}")
 
 plt.ylim(1, 8.8)
 plt.xlim(1, 8.8)

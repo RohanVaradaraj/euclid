@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.cm as cm
 import cmasher as cmr
+import astropy.units as u
+import astropy.constants as c
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
@@ -35,6 +37,15 @@ labelsize=24
 def dpl_fit(M, phiStar, Mstar, alpha, beta):
     """ For fitting the LFs"""
     return np.log(10) * phiStar / (2.5 * (10 ** (0.4 * (alpha + 1) * (M - Mstar)) + 10 ** (0.4 * (beta + 1) * (M - Mstar))))
+
+def schechter_fit(M, phiStar, Mstar, alpha):
+    """ For fitting the LFs"""
+    coeff = np.log(10) / 2.5
+    faint = (10 ** (0.4 * (Mstar - M))) ** (alpha+1)
+    bright_exponent = -10 ** (0.4 * (Mstar - M))
+    bright = np.exp(bright_exponent)
+    phi = coeff * phiStar * faint * bright
+    return phi
 
 def sample_asym_gaussian(mean, err_minus, err_plus, size=1, rng=None):
     """Sample from an asymmetric Gaussian (split normal)."""
@@ -63,16 +74,50 @@ data_dir = Path.cwd() / 'flags_data' / 'flags_data' / 'data' / 'DistributionFunc
 # Get all files in data dir
 files = list(data_dir.glob('*.ecsv'))
 
+# Remove croc.ecsv
+files = [file for file in files if 'croc' not in file.name.lower()]
+
+# remove simba
+files = [file for file in files if 'simba' not in file.name.lower()]
+
 # Read all as tables
 tables = [Table.read(file, format='ascii.ecsv') for file in files]
 
 
 
-# Restrict all tables to where z=7.0
-tables = [table[table['z'] == 7.0] for table in tables]
+# Restrict all tables to where z > 6.5 and z < 7.5
+#tables = [table[table['z'] == 7.0] for table in tables]
+tables = [table[(table['z'] >= 6.8) & (table['z'] <= 7.2)] for table in tables]
+
+for table in tables:
+    print(table.meta['name'], np.unique(table['z']))
+    # Add a meta field with the name of the table
+    if table.meta['name'] == 'Universe Machine':
+        # # Restrict Universe Machine to z=6.905263324321333
+        # table = table[table['z'] == 6.905263324321333]
+        # # Restrict table to first 100 rows
+        # table = table[:100]
+        # Remove this table from tables
+        tables.remove(table)
+    if table.meta['name'] == 'CROC':
+        tables.remove(table)
+
+
+# # Also load Schechter stuff
+# schechter_dir = data_dir.parent / 'schechter'
+# file_names = ['fire-2.ecsv', 'mason2015.ecsv', 'tng-c.ecsv']
+# schechter_tables = [Table.read(schechter_dir / file_name, format='ascii.ecsv') for file_name in file_names]
+
+
+# # Restrict Schechter tables to where z > 6.5 and z < 7.5
+# schechter_tables = [table[(table['redshift'] == 7.0)] for table in schechter_tables]
+
+# # Append to tables
+# tables.extend(schechter_tables)
 
 # Remove empty tables
 tables = [table for table in tables if len(table) > 0]
+
 
 # Restrict tables to 'M' column and last column
 for table in tables:
@@ -81,9 +126,20 @@ for table in tables:
         table['phi'] = 10**table['log10phi']
         table.remove_column('log10phi')
     if 'log10L' in table.colnames:
-        table['M'] = -2.5* table['log10L'] +51.6
-        table.remove_column('log10L') 
-    print(table.colnames, table.meta['name'])
+        # table['M'] = -2.5* table['log10L'] +51.6
+        # f_nu = 10**(table['log10L']) / (4*np.pi * )
+        # Convert from log10L (L in erg/s/Hz) to Muv using astropy
+
+        d10 = (10 * u.pc).to(u.cm).value
+        prefactor = 4 * np.pi * d10**2
+        C = -2.5 * np.log10(1.0 / prefactor) - 48.60
+        table['M'] = -2.5 * table['log10L'] + C
+        table.remove_column('log10L')
+    # if table.meta['name'] == 'Universe Machine':
+    #     tables.remove(table)
+    # if table.meta['name'] == 'CROC':
+    #     tables.remove(table)
+    # print(table.colnames, table.meta['name'])
 
 # My LF
 Muv_bins = [-22.4, -22., -21.8,  -21.6, -21.4, -21.2, -21.0, -20.8, -20.6, -20.4, -20.2]
@@ -101,10 +157,14 @@ LF_errors = [1.28489889e-06, 3.18765338e-06, 4.01277818e-06, 5.63136911e-06,
 #plt.figure(figsize=(10, 10))
 
 # Colormap for distinct colors
-colors = colors = cmr.take_cmap_colors('cmr.guppy', N=len(tables))
+colors = cmr.take_cmap_colors('cmr.guppy', N=len(tables))
+colors = cmr.take_cmap_colors('cmr.wildfire', N=len(tables))
+colors[-1] = 'tab:olive'
+colors[0] = 'tab:green'
 
 # Cycle through line styles
 linestyles = ['-', '--', ':']
+linestyles = ['-', '--', '-.', ':']
 
 # Varadaraj+23 LF points
 v23x = [-22.175, -22.925, -23.675]#, -24.425])
@@ -125,21 +185,29 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True,
                                gridspec_kw={'height_ratios': [3, 1]})
 
 # ---- Top panel: LFs ----
+M_fit = np.linspace(-25, -18, 200)
+
 for i, (table, c) in enumerate(zip(tables, colors)):
     ls = linestyles[i % len(linestyles)]
-    ax1.plot(table['M'], table['phi'],
-             color=c, linestyle=ls, linewidth=3,
-             label=table.meta.get('name', f'Sim {i+1}'),
-             alpha=0.9)
+    if 'M' in table.colnames:
+        ax1.plot(table['M'], table['phi'],
+                color=c, linestyle=ls, linewidth=4,
+                label=table.meta.get('name', f'Sim {i+1}'),
+                alpha=0.9)
 
-M_fit = np.linspace(-25, -18, 200)
+    if 'M*' in table.colnames:
+        sch_sim = schechter_fit(M_fit, 10**table['log10phi*'][0], table['M*'][0], table['alpha'][0])
+        ax1.plot(M_fit, sch_sim, color=c, linestyle=ls, linewidth=4,
+        label=table.meta.get('name', f'Sim {i+1}'), alpha=0.9,)
+
+
 LF_fit = dpl_fit(M_fit, phi_star_best, M_star_best, alpha_best, beta_best)
-ax1.plot(M_fit, LF_fit, color='tab:red', linewidth=7,
-         label="Best-fit DPL", alpha=0.9)
+ax1.plot(M_fit, LF_fit, color='tab:red', linewidth=4, zorder=-1,
+         label="Best-fit DPL", alpha=0.7)
 
-# Your LF points
+# My LF points
 ax1.errorbar(bin_centres[:-3], LF_values[:-3], yerr=LF_errors[:-3],
-             fmt='o', color='tab:red', markersize=15, zorder=10,
+             fmt='o', color='tab:red', markersize=20, zorder=10,
              markeredgecolor='black', label='This work', elinewidth=3,)
 
 # Varadaraj+23
@@ -160,12 +228,20 @@ ax1.set_ylabel(r'$\log_{10}(\phi\,/\,\rm{mag}^{-1}\,\rm{Mpc}^{-3})$', fontsize=f
 # ---- Bottom panel: residuals ----
 for i, (table, c) in enumerate(zip(tables, colors)):
     ls = linestyles[i % len(linestyles)]
-    # Interpolate the best-fit LF onto the same M grid
-    LF_fit_interp = dpl_fit(table['M'], phi_star_best, M_star_best, alpha_best, beta_best)
-    ratio = table['phi'] / LF_fit_interp
-    ax2.plot(table['M'], ratio, color=c, linestyle=ls, linewidth=3, alpha=0.9)
 
-ax2.plot(M_fit, np.ones_like(M_fit), color='tab:red', lw=2, alpha=1, zorder=-1,)
+    # Interpolate the best-fit LF onto the same M grid
+    if 'M' in table.colnames:
+        LF_fit_interp = dpl_fit(table['M'], phi_star_best, M_star_best, alpha_best, beta_best)
+        ratio = table['phi'] / LF_fit_interp
+        ax2.plot(table['M'], ratio, color=c, linestyle=ls, linewidth=4, alpha=0.9)
+
+    if 'M*' in table.colnames:
+        LF_fit_interp = dpl_fit(M_fit,  phi_star_best, M_star_best, alpha_best, beta_best)
+        sim_sch = schechter_fit(M_fit, 10**table['log10phi*'][0], table['M*'][0], table['alpha'][0])
+        ratio = sim_sch / LF_fit_interp
+        ax2.plot(M_fit, ratio, color=c, linestyle=ls, linewidth=4, alpha=0.9)
+
+ax2.plot(M_fit, np.ones_like(M_fit), color='tab:red', lw=2, alpha=0.7, zorder=-1,)
 
 #! Shaded region for DPL uncertainties
 n_samples = 3000
@@ -192,7 +268,7 @@ LF_hi = np.percentile(LF_samples, 84, axis=0)
 
 # Plot best fit + shaded envelope
 #ax1.plot(M_fit, LF_median, color='tab:red', lw=7, label="Best-fit DPL", alpha=0.9)
-ax1.fill_between(M_fit, LF_lo, LF_hi, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
+#ax1.fill_between(M_fit, LF_lo, LF_hi, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
 
 # ax2.axhline(0, color='black', lw=2)  # reference line
 ax2.set_xlim(-24.5, -19)
@@ -200,7 +276,7 @@ ax2.set_ylabel(r'$\phi_{\rm sim} / \phi_{\rm DPL}$', fontsize=fontsize)
 ax2.set_xlabel(r'$M_{\rm UV}$', fontsize=fontsize)
 
 # Draw the LF_lo and LF_hi ratios on the bottom panel
-ax2.fill_between(M_fit, LF_lo / LF_median, LF_hi / LF_median, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
+#ax2.fill_between(M_fit, LF_lo / LF_median, LF_hi / LF_median, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
 
 plt.tight_layout()
 # plt.show()

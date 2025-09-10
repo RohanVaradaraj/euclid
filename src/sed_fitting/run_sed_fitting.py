@@ -17,8 +17,8 @@ import json
 
 #! Configuration flags. Best to run steps one at a time.
 config = {
-    "run_type": 'with_euclid',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
-    "overwrite": False,
+    "run_type": '',                 #? Options: '' (no euclid), 'with_euclid', 'just_euclid', 'CDS', 'all_filters'
+    "overwrite": True,
     "steps": {
         "selection": False,         #? Initial dropout selection. NOTE: MODIFY THE SOURCE CATALOGUE IN SELECTION.PY.
         "lephare": False,            #? Run LePhare. Converts the fits file into text, and builds the LePhare config file too.
@@ -38,17 +38,17 @@ field_name = 'COSMOS'
 run_types = ['', 'with_euclid', 'just_euclid', 'CDS', 'all_filters']
 
 #! Whether to run the masking of the data to the euclid footprint
-mask_euclid = True
+mask_euclid = False
 
 #! Whether to run Lyman-alpha selection in the final part (e.g. not needed at z=6)
-run_lya = True
+run_lya = False
 
 #! Specific combinations of flags for running A) normal SED fitting, B) brown dwarf selection, C) low-redshift dusty galaxy selection, D) Lyman-alpha emitter selection.
 flag_combinations = [
-    #(False, False, False),  #? All False = Normal SED fitting
+    (False, False, False),  #? All False = Normal SED fitting
     #(True, False, False),   #? Only run_brown_dwarfs = True
     #(False, True, False),   #? Only run_dusty = True
-    (False, False, True)    #? Only run_lya = True
+    #(False, False, True)    #? Only run_lya = True
 ]
 
 #! Run SED fitting on all ojects in a field, without outputting .spec files? Needed for getting all BDs in a field. Also give a custom name.
@@ -65,7 +65,7 @@ spitzer_five_percent = False  #? If True, will apply a 5% error floor to Spitzer
 #! IF PLOTTING:
 #? Define the type of object to plot, which goes into the SED code to name the PDF and find the correct folder
 #? E.g. in rohan/euclid/data/sed_fitting/zphot/best_fits/, if your desired folder is det_Y_J_with_euclid_z7, below is 'z7'
-plot_object_type = 'dustyInterlopers' #'z7' ' #'best_highz' # 'best_bd' # 'BD_PLUS_EUCLID_PHOT' contains the paper BDs. Make sure test=sort=False etc
+plot_object_type = 'z7' #'dustyInterlopers' ' #'best_highz' # 'best_bd' # 'BD_PLUS_EUCLID_PHOT' contains the paper BDs. Make sure test=sort=False etc
 
 #! Base filter sets for different run_types, to use in the SED fitting.
 #? Filters will be removed as required based on flag_combinations, e.g. removal of G and R for fitting brown dwarfs.

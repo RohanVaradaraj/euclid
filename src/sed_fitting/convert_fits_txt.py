@@ -43,7 +43,8 @@ spitzer_five_percent = False
 
 #???? PAPER CORRECTION: CUSTOM CATALOGUES. WANT TO RERUN U+E SAMPLE WITH ONLY EUCLID PHOTOMETRY
 custom_cat = True
-custom_cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
+#custom_cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
+custom_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_with_irac_handbook.fits'
 
 # Example usage
 if __name__ == "__main__":
@@ -98,7 +99,7 @@ if __name__ == "__main__":
             cat_name = cat_name.replace('.fits', '_5percent_IRACfloor.fits')
         if custom_cat:
             cat_name = custom_cat_name
-            cat_dir = cat_dir / 'candidates'
+            cat_dir = cat_dir #/ 'candidates'
 
         print(f'Reading catalogue: {cat_dir / cat_name}')
         t = Table.read(cat_dir / cat_name, format='fits', hdu=1)

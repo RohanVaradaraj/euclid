@@ -192,6 +192,12 @@ t = Table.read(cat_dir / cat_name)
 t = t[t['Vmax'] > 0]  #? VISTA+Euclid
 t = t[t['Muv'] < 0]
 
+# Print averages of redshift
+print('Mean zphot: ', np.mean(t['Zphot']))
+print('Median zphot: ', np.median(t['Zphot']))
+exit()
+
+
 # Remove certain IDs
 # IDs_to_remove = [345668, 488168, 605134, 729259, 796957]
 # for remove in IDs_to_remove:

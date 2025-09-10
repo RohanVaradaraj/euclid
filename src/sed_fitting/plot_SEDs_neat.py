@@ -19,10 +19,11 @@ from astropy.io import ascii
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from scipy.integrate import simps
 #plt.rcParams['text.usetex'] = True
 
 # Configure matplotlib for non-interactive backend (for queues)
-mpl.use('Agg')
+#mpl.use('Agg')
 
 # Custom imports
 cutout_path = Path.cwd().parents[0] / 'cutouts'
@@ -70,13 +71,14 @@ plt.rcParams.update({
 field_name = 'COSMOS'
 individual_sed = False
 save_indiv = True
-indiv_ID = '381772'
-indiv_pdf_name = '381772_no_euclid.pdf'  # Name of the individual SED PDF file
-test = False # Run a limited number
+indiv_ID = '887134'
+#indiv_pdf_name = '381772_with_euclid.pdf'  # Name of the individual SED PDF file
+indiv_pdf_name = '887134_BRIGHT_BD.pdf' #329431_FAINT_BD.pdf
+test = True # Run a limited number. Set to false if save_indiv = True
 N = 30
 label_crosstalk = False
-sort_by_Muv = False
-Muv_avail = False
+sort_by_Muv = True # Set to false if individual_sed = True
+Muv_avail = True
 fontsize=22
 remove_title = False
 
@@ -224,18 +226,25 @@ vista_fwhms = [
 [1.991994299052835, 2.3011976928006836]
 ]
 
+# IRAC filters and FWHMs
+irac_filters = ['ch1cds', 'ch2cds']
+irac_fwhms = [[3.551, 0.750],
+                [4.493, 1.010]]  # in microns, converted to Angstroms later
+
 # Multiply the FWHM values by 10000 to convert to Angstroms
 euclid_fwhms = [[f * 10000 for f in fwhm] for fwhm in euclid_fwhms]
 vista_fwhms = [[f * 10000 for f in fwhm] for fwhm in vista_fwhms]
+irac_fwhms = [[f * 10000 for f in fwhm] for fwhm in irac_fwhms]
 
-
-# Filter FWHMS
-
+# Read in IRAC filters, to later get model fluxes in IRAC
+irac_dir = Path.home() / 'lephare' / 'lephare_dev' / 'filt' / 'spitzer'
+irac1 = ascii.read(irac_dir / 'irac_1.pb', format='no_header')
+irac2 = ascii.read(irac_dir / 'irac_2.pb', format='no_header')
 
 # === Parent Catalogue ===
 print('Reading in parent catalogue:', generate_selection_name(field_name, filters))
-#parent_cat = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / generate_selection_name(field_name, filters), format='fits')
-parent_cat = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_5percent_IRACfloor.fits')
+parent_cat = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / generate_selection_name(field_name, filters), format='fits')
+#parent_cat = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_5percent_IRACfloor.fits')
 if label_crosstalk:
     label_ct(str(Path.cwd().parents[1] / 'data' / 'catalogues' / generate_selection_name(field_name, filters)), fieldName=field_name)
 
@@ -253,8 +262,9 @@ names_param = ['Type', 'Nline', 'Model', 'Library', 'Nband', 'Zphot', 'Zinf', 'Z
 candidate_path = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 if field_name == 'COSMOS':
     #sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits', format='fits')
+    sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise_with_irac.fits', format='fits') #? Kron piecewise applied, irac fixed
     #sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_best_bd_INTERLOPERS_2024_11_26_with_euclid.fits') #BROWN DWARFS
-    sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_dustyInterlopers_2025_08_14.fits', format='fits') # DUSTY INTERLOPERS
+    #sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_dustyInterlopers_2025_08_14.fits', format='fits') # DUSTY INTERLOPERS
 elif field_name == 'XMM':
     sample_cat = Table.read(candidate_path / 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits', format='fits')
 
@@ -318,7 +328,27 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # print(object_flux.colnames)
         # exit()
 
-        # Initialize flux and error arrays, to add 329 data.
+        #? Get IRAC fluxes
+        # irac1_flux = parent_cat[np.where(parent_cat['ID'] == int(ID))]['flux_ch1cds'][0]
+        # irac2_flux = parent_cat[np.where(parent_cat['ID'] == int(ID))]['flux_ch2cds'][0]
+        # irac1_err = parent_cat[np.where(parent_cat['ID'] == int(ID))]['err_ch1cds'][0]
+        # irac2_err = parent_cat[np.where(parent_cat['ID'] == int(ID))]['err_ch2cds'][0]
+        irac1_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch1cds'][0]
+        irac2_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch2cds'][0]
+        irac1_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch1cds'][0]
+        irac2_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch2cds'][0]
+        # print(irac1_err)
+        # print(irac2_err)
+
+        # # If err < 0, set to 5% of flux
+        if irac1_err < 0:
+            irac1_err = 0.2 * irac1_flux
+        if irac2_err < 0:
+            irac2_err = 0.2 * irac2_flux
+        print(irac1_flux, irac1_err)
+        print(irac2_flux, irac2_err)
+
+        # Initialize flux and error arrays, to add data.
         flux = []
         error = []
 
@@ -352,6 +382,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             sec_params = sec_file.get('model')
             params.rename_columns(params.colnames, names_param)
             secondary_sed = sec_file.get('sed')
+            #dusty_phot = sec_file.get('phot')
+
             if secondary_sed != None:
                 for table in secondary_sed:
                     table.rename_columns(table.colnames, names_sed)
@@ -432,6 +464,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             chi2_2 = round(dusty_out[dusty_out['col1'] == int(ID)]['col15'][0], 1)
             zphot_2 = round(params['Zphot'][1], 2)
 
+            # Get 
+
         print('GAL 2 SOLUTION: ', zphot_2, chi2_2)
 
         if int(zphot_2) == -1:
@@ -481,14 +515,40 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax2.yaxis.set_ticks_position('both')  # Enable ticks on both left and right
         ax2.tick_params(axis='y', which='both', labelright=False)
 
+        ######? GET IRAC MODEL PHOT ##########
+
+        # First interpolate SED to match IRAC filter wlen grid
+        sed_irac1_interp = np.interp(irac1['col1'], primary_wlen, primary_sed)
+        sed_irac2_interp = np.interp(irac2['col1'], primary_wlen, primary_sed)
+
+        # Filter areas
+        irac1_area = np.trapz(irac1['col2'], irac1['col1'])
+        irac2_area = np.trapz(irac2['col2'], irac2['col1'])
+
+        # Get the IRAC model fluxes by convolving SEDs with the IRAC filter curves
+        irac1_flux_model = simps((sed_irac1_interp * irac1['col2']), irac1['col1']) / irac1_area
+        irac2_flux_model = simps((sed_irac2_interp * irac2['col2']), irac2['col1']) / irac2_area
+
+        # print(irac1_flux_model, irac2_flux_model)
+        # print irac fluxes
+        # print(irac1_flux, irac2_flux)
+
+        # irac1_sec_model = np.trapz(secondary_sed * irac1['col2'], irac1['col1']) / np.trapz(irac1['col2'], irac1['col2'])
+        # irac2_sec_model = np.trapz(secondary_sed * irac2['col2'], irac2['col1']) / np.trapz(irac2['col2'], irac2['col2'])
 
         ###########! PLOT MODEL AND REAL PHOTOMETRY ##############
 
         # Model photometry
         model_photometry = mag_to_flux(phot['modelPhot'])
-        print(len(model_photometry))
-        print(len(central_wavelengths))
+
+        # print(len(model_photometry))
+        # print(len(central_wavelengths))
+
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
+
+        # Also plot IRAC model photometry
+        ax1.scatter([irac_fwhms[0][0]], [irac1_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
+        ax1.scatter([irac_fwhms[1][0]], [irac2_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Plot real photometry, styling Euclid filters separately
         for i, filt in enumerate(filter_dict):
@@ -510,10 +570,20 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
             # Plot upper limits
             if sigma[i] < 2:
-                ax1.scatter(central_wavelengths[i], flux[i] + 2 * error[i], marker='v', color=color, s=100, zorder=6)
+                ax1.scatter(central_wavelengths[i], flux[i] + 2 * error[i], marker=r'$\downarrow$', color=color, s=300, zorder=6) #, edgecolors='none')
             else:
                 ax1.errorbar(central_wavelengths[i], flux[i], yerr=error[i], fmt=marker, color=color, 
                              markersize=markersize, zorder=6, elinewidth=3, markeredgecolor='black', ecolor='black')
+
+        # Also plot IRAC
+        for i, (irac_flux, irac_err) in enumerate(zip([irac1_flux, irac2_flux], [irac1_err, irac2_err])):
+            if irac_flux/irac_err < 2:
+                ax1.scatter([irac_fwhms[i][0]], [irac_flux + 1 * irac_err], marker=r'$\downarrow$', color='black', s=300, zorder=6) #, edgecolors='none')
+                print('irac uplim at', irac_flux + 2 * irac_err)
+            else:
+                ax1.errorbar([irac_fwhms[i][0]], [irac_flux], yerr=irac_err, fmt='o', color='black', 
+                             markersize=10, zorder=6, elinewidth=3, markeredgecolor='black', ecolor='black')
+            #print(irac_fwhms[i][0], irac_flux, irac_err)
                 
         # Plot the Euclid and VISTA FWHMs as hlines with the correct colours, at 9e-30
         if run_type == 'with_euclid':
@@ -625,8 +695,10 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             ax1.set_title('')
 
         ax1.set_yscale('log')
-        ax1.legend(loc='upper right', fontsize=17)
+        ax1.legend(loc='upper right', fontsize=17, framealpha=0.5).set_zorder(7)
         ax1.set_ylim(3e-32, 1e-29)
+        ax1.set_xlim(3000, 40000)
+        ax1.set_ylim(1e-32, 1e-29)
         ax1.set_xlim(3000, 40000)
         if field_name == 'XMM' or field_name == 'CDFS':
             ax1.set_ylim(5e-32, 2e-29)
@@ -637,9 +709,9 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
 
         # Set custom y-ticks at powers of 10, and label them as log10(f_nu)
-        yticks = [1e-31, 1e-30, 1e-29]
+        yticks = [1e-32, 1e-31, 1e-30, 1e-29]
         ax1.set_yticks(yticks)
-        ax1.set_yticklabels([r"$-31$", r"$-30$", r"$-29$"])
+        ax1.set_yticklabels([r"$-32$", r"$-31$", r"$-30$", r"$-29$"])
 
         ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=fontsize) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
         ax1.set_xlabel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)
@@ -647,7 +719,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
 
-        mags = [30, 29, 28, 27, 26, 25, 24, 23, 22]
+        mags = [31, 30, 29, 28, 27, 26, 25, 24, 23, 22]
         secax.set_yticks(mags)
 
         secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
@@ -672,6 +744,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # Also save fig as its own pdf
         if save_indiv:
             plt.savefig(str(sed_dir / f'{ID}_SED_EUCLname.pdf'), bbox_inches='tight')
+
+        #plt.show()
 
         plt.close(fig)
 
