@@ -55,3 +55,5 @@
 
 # Ignore catalogues
 /src/catalogues/*.fits
+
+/src/jwst_proposal/cutouts/*
