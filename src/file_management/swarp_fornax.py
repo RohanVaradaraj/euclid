@@ -3,7 +3,7 @@
 """
 swarp.py
 
-Swarp together the Euclid tiles to make a full mosaic.
+Swarp together the Euclid tiles to make a full mosaic, resampled to VISTA and on same plate scale.
 
 Created: Thursday 21st March 2025.
 """
@@ -22,21 +22,28 @@ def get_tile_id(filename):
     return match.group(1) if match else None
 
 #! Switches/variables
-filter_names = ['Y', 'J', 'H', 'VIS'] #? Euclid filter(s) we want to resample/swarp
+filter_names = ['VIS'] #? Euclid filter(s) we want to resample/swarp
 video_tiles = ['CDFS1', 'CDFS2', 'CDFS3'] #? VIDEO tile(s) we want to match the Euclid mosaics to.
 test = False #? If true, run on three tiles only
 
 # Path to the Euclid tiles
-euclid_dir = Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax'
+#euclid_dir = Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax' #! Q1
+euclid_dir = Path.home() / 'euclid' / 'CDFS' #! DR1
 
 # Output directory
-output_dir = euclid_dir / 'tmp'
+#output_dir = euclid_dir / 'tmp #! Q1
+output_dir = euclid_dir.parent #! DR1
 
 #! Load the Euclid tile names that lie in the VIDEO footprints.
-euclid_in_video = pickle.load(open('euclid_within_video.pkl', 'rb'))
+# euclid_in_video = pickle.load(open('euclid_within_video.pkl', 'rb')) #! Q1
+euclid_in_video = pickle.load(open('euclid_DR1_within_video.pkl', 'rb')) #! DR1
 
 # Loop over VIDEO tiles
 for video_tile in video_tiles:
+
+    # update output dir
+    final_dir = output_dir / video_tile
+    print(f'Final mosaic will be in {final_dir}')
 
     # Open the VIDEO tile
     video_dir = Path.home().parents[1] / 'hoy' / 'VIDEO_FINAL'
@@ -60,8 +67,10 @@ for video_tile in video_tiles:
     for filter_name in filter_names:
 
         # Get all the fits files for the filter
-        fits_files = glob.glob(str(euclid_dir / filter_name / '*BGSUB*.fits'))
-        rms_files = glob.glob(str(euclid_dir / filter_name / '*MAP_WEIGHT*.fits'))
+        # fits_files = glob.glob(str(euclid_dir / filter_name / '*BGSUB*.fits'))    #! Q1
+        # rms_files = glob.glob(str(euclid_dir / filter_name / '*MAP_WEIGHT*.fits'))
+        fits_files = glob.glob(str(euclid_dir / '*BGSUB*.fits'))      #! DR1
+        rms_files = glob.glob(str(euclid_dir / '*MAP_WEIGHT*.fits'))
 
         # Get the tile numbers from the file names
         all_tile_numbers = [get_tile_id(file_name) for file_name in fits_files]

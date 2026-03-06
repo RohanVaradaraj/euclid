@@ -169,6 +169,13 @@ for video_tile, euclid_tile_list in euclid_within_video.items():
         ra, dec = zip(*fp)
         plt.plot(ra, dec, '-', color=color, lw=2.5, alpha=0.9)
 
+#! Plot a circle centred at 53,-28 with radius of my choosing
+radius = 2 # degrees
+center_ra = 53
+center_dec = -28
+circle = Circle((center_ra, center_dec), radius, edgecolor='purple', facecolor='none', lw=2, alpha=0.8)
+ax.add_patch(circle)
+
 # Dummy labels
 plt.plot([], [], color='black', lw=3, alpha=1, label='VIDEO')
 plt.plot([], [], color='green', lw=2, alpha=0.6, label='Euclid Q1')
@@ -180,6 +187,8 @@ plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)
 plt.legend()
 plt.tight_layout()
+# equal aspect ratio
+plt.axis('equal')
 plt.show()
 
 # Save the dictionary of euclid_within_video to a file

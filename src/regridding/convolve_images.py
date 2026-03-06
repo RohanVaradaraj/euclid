@@ -19,74 +19,155 @@ from datetime import datetime, timedelta
 
 
 telescope = 'euclid'
-field_name = 'CDFS'
+field_name = 'COSMOS'
 
 if field_name == 'COSMOS':
-    euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'images'
+    #euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'images' #! Q1
+    euclid_dir = Path.home() / 'euclid' / 'COSMOS'
     save_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
 if field_name == 'CDFS':
     euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax' / 'tmp'
     save_dir = Path.cwd().parents[3] / 'data'
 
 
-filter_names = ['Y', 'J', 'H', 'VIS']
-filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
+filter_names = ['Y']
+# filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
+
+cdfs_filter_dict = {'YE': 'Y', 'JE': 'J', 'HE': 'H', 'VIS': 'VIS'}
 
 if telescope == 'euclid':
     for filter_name in filter_names:
 
-        #! Science layer
-        print(f'Convolving {filter_name} image with VISTA PSF kernel')
+        if field_name == 'CDFS':
+            image_dir = Path.home().parents[1] / 'extraspace' / 'varadaraj' / 'euclid'
+            kernel_dir = Path.cwd().parents[1] / 'data' /'psf'
 
-        with fits.open(euclid_dir /f'COSMOS_{filter_name}_resamp.fits') as hdu:
-            image = hdu[0].data
-            hdr = hdu[0].header
+            for field in ['CDFS1', 'CDFS2', 'CDFS3']:
 
-        hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
-        kernel = hdu[0].data
+                tile_dir = image_dir / field
 
-        print('Opened image. Now convolving...')
+                #! Science layer
+                print(f'Convolving {filter_name} image with VISTA PSF kernel')
+                with fits.open(tile_dir / f'{field}_{cdfs_filter_dict[filter_name]}_MOSAIC.fits') as hdu:
+                    image = hdu[0].data
+                    hdr = hdu[0].header
 
-        # Start a clock
-        start = time.time()
-        start_time = datetime.now()
-        print('Convolution started at: ', start_time.strftime('%Y-%m-%d %H:%M:%S'))
+                hdu = fits.open(kernel_dir / field / 'kernel' / f'{filter_name}_to_VISTA_kernel_Q1.fits')
+                kernel = hdu[0].data
 
-        psf_homo = convolve(image, kernel)
+                print('Opened image. Now convolving...')
 
-        # Print the time the convolution started and finished, and how long it took.
-        end = time.time()
-        end_time = datetime.now()
-        duration = end - start
-        duration_hours = duration / 3600
+                # Start a clock
+                start = time.time()
+                start_time = datetime.now()
+                print('Convolution started at: ', start_time.strftime('%Y-%m-%d %H:%M:%S'))
 
-        print('Convolution finished at: ', end_time.strftime('%Y-%m-%d %H:%M:%S'))
-        print(f'Total convolution time: {duration_hours:.2f} hours')
+                psf_homo = convolve(image, kernel)
 
-        hdu = fits.PrimaryHDU(psf_homo, header=hdr)
-        hdu.writeto(save_dir / f'Euclid_{filter_name}_vista_matched.fits', overwrite=True)
+                # Print the time the convolution started and finished, and how long it took.
+                end = time.time()
+                end_time = datetime.now()
+                duration = end - start
+                duration_hours = duration / 3600
 
-        print(f'PSF homogenised image written to', save_dir / f'Euclid_{filter_name}_vista_matched.fits')
+                print('Convolution finished at: ', end_time.strftime('%Y-%m-%d %H:%M:%S'))
+                print(f'Total convolution time: {duration_hours:.2f} hours')
 
-        #! Weight layer
-        print('Now doing weight layer.')
+                hdu = fits.PrimaryHDU(psf_homo, header=hdr)
+                output_name = image_dir / field / f'{field}_Euclid_{filter_name}_Q1_psfhom.fits'
+                hdu.writeto(output_name)
 
-        with fits.open(euclid_dir /f'COSMOS_{filter_name}_resamp_wht.fits') as hdu:
-            image = hdu[0].data
-            hdr = hdu[0].header
+                print(f'PSF homogenized file for {filter_name} {tile} written to ', output_name)
 
-        hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
-        kernel = hdu[0].data
+                #! Weight layer
+                print('Now doing weight layer.')
 
-        print('Opened weight image. Now convolving...')
+                with fits.open(tile_dir / f'{field}_{cdfs_filter_dict[filter_name]}_MOSAIC_WHT.fits') as hdu:
+                    image = hdu[0].data
+                    hdr = hdu[0].header
 
-        psf_homo = convolve(image, kernel)
+                hdu = fits.open(kernel_dir / field / 'kernel' / f'{filter_name}_to_VISTA_kernel_Q1.fits')
+                kernel = hdu[0].data
 
-        hdu = fits.PrimaryHDU(psf_homo, header=hdr)
-        hdu.writeto(save_dir / f'Euclid_{filter_name}_vista_matched_WHT.fits', overwrite=True)
+                print('Opened weight image. Now convolving...')
 
-        print(f'PSF homogenised weight written to', save_dir / f'Euclid_{filter_name}_vista_matched_wht.fits')
-        print(f'Finished running on filter {filter_name}')
+                # Start a clock
+                start = time.time()
+                start_time = datetime.now()
+                print('Convolution started at: ', start_time.strftime('%Y-%m-%d %H:%M:%S'))
+
+                psf_homo = convolve(image, kernel)
+
+                # Print the time the convolution started and finished, and how long it took.
+                end = time.time()
+                end_time = datetime.now()
+                duration = end - start
+                duration_hours = duration / 3600
+
+                print('Convolution finished at: ', end_time.strftime('%Y-%m-%d %H:%M:%S'))
+                print(f'Total convolution time: {duration_hours:.2f} hours')
+
+                hdu = fits.PrimaryHDU(psf_homo, header=hdr)
+                output_name = image_dir / field / f'{field}_Euclid_{filter_name}_Q1_psfhom_WHT.fits'
+                hdu.writeto(output_name)
+
+                print(f'PSF homogenized file for {filter_name} {tile} written to ', output_name)
+
+
+        if field_name == 'COSMOS':
+            #! Science layer
+            print(f'Convolving {filter_name} image with VISTA PSF kernel')
+
+            # with fits.open(euclid_dir /f'COSMOS_{filter_name}_resamp.fits') as hdu:
+            with fits.open(euclid_dir /f'COSMOS_{filter_name}_DR1_resamp.fits') as hdu:
+                image = hdu[0].data
+                hdr = hdu[0].header
+
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}e_to_VISTA_kernel_DR1.fits')
+            kernel = hdu[0].data
+
+            print('Opened image. Now convolving...')
+
+            # Start a clock
+            start = time.time()
+            start_time = datetime.now()
+            print('Convolution started at: ', start_time.strftime('%Y-%m-%d %H:%M:%S'))
+
+            psf_homo = convolve(image, kernel)
+
+            # Print the time the convolution started and finished, and how long it took.
+            end = time.time()
+            end_time = datetime.now()
+            duration = end - start
+            duration_hours = duration / 3600
+
+            print('Convolution finished at: ', end_time.strftime('%Y-%m-%d %H:%M:%S'))
+            print(f'Total convolution time: {duration_hours:.2f} hours')
+
+            hdu = fits.PrimaryHDU(psf_homo, header=hdr)
+            hdu.writeto(save_dir / f'Euclid_{filter_name}_psfhom_DR1.fits', overwrite=True)
+
+            print(f'PSF homogenised image written to', save_dir / f'Euclid_{filter_name}_psfhom_DR1.fits')
+
+            #! Weight layer
+            print('Now doing weight layer.')
+
+            with fits.open(euclid_dir /f'COSMOS_{filter_name}_WHT_DR1_resamp.fits') as hdu:
+                image = hdu[0].data
+                hdr = hdu[0].header
+
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}e_to_VISTA_kernel_DR1.fits')
+            kernel = hdu[0].data
+
+            print('Opened weight image. Now convolving...')
+
+            psf_homo = convolve(image, kernel)
+
+            hdu = fits.PrimaryHDU(psf_homo, header=hdr)
+            hdu.writeto(save_dir / f'Euclid_{filter_name}_psfhom_DR1_WHT.fits', overwrite=True)
+
+            print(f'PSF homogenised weight written to', save_dir / f'Euclid_{filter_name}_psfhom_DR1_WHT.fits')
+            print(f'Finished running on filter {filter_name}')
 
 if telescope == 'jwst':
     jwst_dir = Path.cwd().parents[3] / 'data' / 'CWEB'
