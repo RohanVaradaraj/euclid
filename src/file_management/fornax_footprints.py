@@ -65,10 +65,11 @@ euclid_files = glob.glob(pattern)
 # Get the tile names
 #tile_names = [file_name.split('-')[3].split('VIS_TILE')[1] for file_name in euclid_files]
 tile_names = [file_name.split('-')[2].split('VIS_TILE')[1] for file_name in euclid_files]
+
 print(tile_names)
 footprints = []
 
-for i, file in enumerate(euclid_files):
+for i, file in enumerate(euclid_files[1:2]):
     print(f"file {i} of {len(euclid_files)}")
     print(file.split('/')[-1])
 
@@ -80,6 +81,23 @@ for i, file in enumerate(euclid_files):
 
     # Append footprint
     footprints.append(footprint)
+
+
+#! LSST footprints
+lsst_dir = Path.home().parents[1] / 'extraspace' / 'varadaraj' / 'lsst' / 'y'
+lsst_files = glob.glob(str(lsst_dir / '*SCI.fits'))
+lsst_tilenames = [file_name.split('LSST_dp1_')[-1].split('_y_SCI.fits')[0] for file_name in lsst_files]
+lsst_footprints = []
+
+for i, file in enumerate(lsst_files):
+    print(f"LSST file {i} of {len(lsst_files)}")
+    with fits.open(file) as hdu:
+        print(hdu.info())
+        wcs = WCS(hdu[0].header)
+        print(wcs)
+
+    footprint = wcs.calc_footprint()
+    lsst_footprints.append(footprint)
 
 
 
@@ -100,7 +118,7 @@ def plot_footprints(footprints, close_polygons=True, color='blue', lw=2, alpha=0
     plt.title("Euclid Deep Field Fornax")
 
 #! Euclid pointings
-plot_footprints(footprints, color='green', lw=2, alpha=0.6, tilename=False)
+# plot_footprints(footprints, color='green', lw=2, alpha=0.6, tilename=False)
 
 # ! VIDEO pointings
 vista_footprints = []
@@ -113,6 +131,9 @@ for i, tile in enumerate(tiles):
     vista_footprints.append(footprint)
 
 plot_footprints(vista_footprints, color='black', lw=4, alpha=1, zorder=10)
+
+#! LSST pointings
+plot_footprints(lsst_footprints, color='deepskyblue', lw=2, alpha=0.8, tilename=False)
 
 
 #! FIND WHICH EUCLID TILES LIE IN VIDEO
@@ -146,6 +167,23 @@ video_colors = {
     'CDFS3': 'yellow'
 }
 
+#! FIND WHICH LSST TILES LIE IN VIDEO
+lsst_polygons = [Polygon(fp) for fp in lsst_footprints]
+lsst_within_video = {}
+
+
+for j, video_poly in enumerate(video_polygons):
+    video_tile_name = tiles[j]
+    lsst_within_video[video_tile_name] = []
+    
+    for i, lsst_poly in enumerate(lsst_polygons):
+        if lsst_poly.intersects(video_poly):
+            lsst_within_video[video_tile_name].append(lsst_tilenames[i])
+
+with open('lsst_DR1_within_video.pkl', 'wb') as f:
+    pickle.dump(lsst_within_video, f)
+
+print(lsst_within_video)
 print(euclid_within_video)
 
 #! Plotting the Eucid pointings that lie within the VIDEO tiles, one VIDEO tile at a time
@@ -160,21 +198,30 @@ print(euclid_within_video)
 #     plt.plot(ra, dec, '-', color=color, lw=2, alpha=0.9)#, label=video_tile)
 
 #! Plotting all the Euclid tiles inside VIDEO, coloured by VIDEO tile
-for video_tile, euclid_tile_list in euclid_within_video.items():
+# for video_tile, euclid_tile_list in euclid_within_video.items():
+#     color = video_colors[video_tile]
+#     for tile in euclid_tile_list:
+#         idx = tile_names.index(tile)  # Get index of this tile in original footprints list
+#         fp = footprints[idx].tolist()
+#         fp.append(fp[0])  # Close polygon
+#         ra, dec = zip(*fp)
+#         plt.plot(ra, dec, '-', color=color, lw=2.5, alpha=0.9)
+
+#! Plotting all the LSST tiles inside VIDEO, coloured by VIDEO tile
+for video_tile, lsst_tile_indices in lsst_within_video.items():
     color = video_colors[video_tile]
-    for tile in euclid_tile_list:
-        idx = tile_names.index(tile)  # Get index of this tile in original footprints list
-        fp = footprints[idx].tolist()
+    for idx in lsst_tile_indices:
+        fp = lsst_footprints[idx].tolist()
         fp.append(fp[0])  # Close polygon
         ra, dec = zip(*fp)
-        plt.plot(ra, dec, '-', color=color, lw=2.5, alpha=0.9)
+        plt.plot(ra, dec, '-', color=color, lw=1.5, alpha=0.8)
 
 #! Plot a circle centred at 53,-28 with radius of my choosing
-radius = 2 # degrees
-center_ra = 53
-center_dec = -28
-circle = Circle((center_ra, center_dec), radius, edgecolor='purple', facecolor='none', lw=2, alpha=0.8)
-ax.add_patch(circle)
+# radius = 2 # degrees
+# center_ra = 53
+# center_dec = -28
+# circle = Circle((center_ra, center_dec), radius, edgecolor='purple', facecolor='none', lw=2, alpha=0.8)
+# ax.add_patch(circle)
 
 # Dummy labels
 plt.plot([], [], color='black', lw=3, alpha=1, label='VIDEO')
@@ -194,6 +241,7 @@ plt.show()
 # Save the dictionary of euclid_within_video to a file
 with open('euclid_DR1_within_video.pkl', 'wb') as f:
     pickle.dump(euclid_within_video, f)
+
 
 
 
