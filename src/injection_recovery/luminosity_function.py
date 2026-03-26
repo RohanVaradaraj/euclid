@@ -20,18 +20,39 @@ class LuminosityFunction:
         self.Muv_range = params['Muv_range']
         self.n_samples = params['n_samples']
         self.dMuv = params['dMuv']
+        self.type = params['type']
 
 
     def phi(self, M):
         """
         Compute the value of the luminosity function at M.
         """
-        const = np.log(10) * self.phi_star / 2.5
-        alpha_cpt = 10 ** ( 0.4*(self.alpha+1) * (M-self.M_star))
-        beta_cpt = 10 ** ( 0.4*(self.beta+1) * (M-self.M_star))
 
-        denominator = alpha_cpt + beta_cpt
-        return const / denominator
+        if self.type.lower() == 'dpl':
+
+            const = np.log(10) * self.phi_star / 2.5
+            alpha_cpt = 10 ** ( 0.4*(self.alpha+1) * (M-self.M_star))
+            beta_cpt = 10 ** ( 0.4*(self.beta+1) * (M-self.M_star))
+
+            denominator = alpha_cpt + beta_cpt
+            phi = const / denominator
+
+        if self.type.lower() == 'schechter':
+
+            coeff = np.log(10) / 2.5
+
+            faint = (10 ** (0.4 * (self.M_star - M))) ** (self.alpha+1)
+            bright_exponent = -10 ** (0.4 * (self.M_star - M))
+            bright = np.exp(bright_exponent)
+            phi = coeff * self.phi_star * faint * bright
+        
+        return phi
+
+
+    def phi(self, M):
+        """
+        Schechter function
+        """
 
 
 

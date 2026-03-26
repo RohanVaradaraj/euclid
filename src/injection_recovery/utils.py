@@ -17,7 +17,7 @@ from astropy.coordinates import SkyCoord
 import struct
 from scipy.io import FortranFile
 
-data_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
+data_dir = Path.cwd().parents[3] / 'data'
 
 def load_config(config_file):
     """
@@ -64,11 +64,14 @@ def filter_files():
 
 
 
-def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrite=False):
+def cutout_subimage(field, image, image_size, pix_scale, n_images, random=True, x=0, y=0, overwrite=False):
     """
     Extract a subimage from a larger image.
 
+    :param field: The VISTA tile name (e.g., 'COSMOS', 'XMM1', 'CDFS2').
     :param image: The image to extract the subimage from.
+    :param image_size: The size of the subimage, in arcmin.
+    :param pix_scale: The pixel scale of the image, in arcsec/pix.
     :param x: The x-coordinate of the subimage center.
     :param y: The y-coordinate of the subimage center.
     :param size: The size of the subimage, in arcmin
@@ -86,7 +89,7 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
         for file in weight_path.glob('*.fits'):
             file.unlink()
 
-    image_dir = data_dir / image
+    image_dir = data_dir / field / image
     weight_dir = data_dir / (image.split('.fits')[0] + '_wht.fits')
 
     with fits.open(image_dir) as hdu:
@@ -99,7 +102,7 @@ def cutout_subimage(image, image_size, n_images, random=True, x=0, y=0, overwrit
         weight_header = hdu_w[0].header
         wcs_weight = WCS(weight_header)
 
-    pix_size = 0.15 # arcsec / pix
+    pix_size = pix_scale
 
     image_size = image_size * 60 / pix_size # convert to pixels
 

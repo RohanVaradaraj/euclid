@@ -110,7 +110,7 @@ class SourceExtractor:
                 shell_file = self.run_se(filter_name, image_name, apDiametersAS, overwrite)
                 if shell_file:
                     shell_files.append(shell_file)
-                    os.system(f'addqueue -c {image_name} -m 2 -q {queue} -d ./{shell_file}')
+                    os.system(f'addqueue -c {image_name} -m 2 -q {queue} ./{shell_file}')
 
             # Wait for all catalogs in the batch to be created
             print(f"Waiting for batch {batch_num + 1} to complete...")

@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import physical_constants
 from pathlib import Path
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from photutils.aperture import CircularAperture
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -134,7 +134,7 @@ class SourceInjector:
         filter_mask = (sed_wavelengths >= 1450 * (1 + z[:, None])) & (sed_wavelengths <= 1550 * (1 + z[:, None]))
         tophat_filter[filter_mask] = 1
         # Area of filter
-        tophat_area = simps(tophat_filter, sed_wavelengths, axis=1)
+        tophat_area = simpson(tophat_filter, sed_wavelengths, axis=1)
 
         # Flux in the tophat filter
         flux_tophat = np.trapz(sed_fluxes * tophat_filter, sed_wavelengths, axis=1) / tophat_area # Width of the filter
@@ -177,8 +177,8 @@ class SourceInjector:
                                         for i in range(len(sed_fluxes))])
 
             # Calculate fluxes in the filter for all samples
-            filter_area = simps(filter_trans, filter_wlen)
-            flux = np.array([simps(interpolated_seds[i, :] * filter_trans, filter_wlen) / filter_area
+            filter_area = simpson(filter_trans, filter_wlen)
+            flux = np.array([simpson(interpolated_seds[i, :] * filter_trans, filter_wlen) / filter_area
                             for i in range(len(interpolated_seds))])
 
             fluxes[filter_name] = flux
@@ -196,7 +196,7 @@ class SourceInjector:
 
 
 
-    def generate_random_positions(self, image_size):
+    def generate_random_positions(self, image_size, pix_scale):
         """
         Generate random positions for the sources within the image.
         
@@ -205,7 +205,7 @@ class SourceInjector:
         """
 
         # Convert image size from arcmin to pixels
-        image_size = image_size * 60 / 0.15
+        image_size = image_size * 60 / pix_scale
 
         # Buffer for PSF size, plus some extra pixels
         psf_buffer = (75 // 2) + 20
@@ -232,10 +232,10 @@ class SourceInjector:
 
 
 
-    def measure_psf_flux(self, plot=False):
+    def measure_psf_flux(self, pix_scale, plot=False):
 
         # Place 1.8 arcsec diameter aperture at centre of image
-        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=0.9 / 0.15)
+        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=0.9 / pix_scale)
 
         # Measure the flux in the aperture
         flux, _ = aperture.do_photometry(self.psf)
@@ -250,7 +250,7 @@ class SourceInjector:
 
     
     
-    def scale_psf_to_Muv(self, fluxes, Muv, z):
+    def scale_psf_to_Muv(self, fluxes, Muv, z, pix_scale):
         """
         Scale the N = len(samples) psfs we will inject into the image to the desired Y+J band magnitude.
 
@@ -259,7 +259,7 @@ class SourceInjector:
         """
 
         # Get the PSF flux, to be scaled
-        flux_count = self.measure_psf_flux()
+        flux_count = self.measure_psf_flux(pix_scale)
 
         # Check if there exists a combined filter
         if self.combined_filter is None:

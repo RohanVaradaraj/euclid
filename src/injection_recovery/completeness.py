@@ -8,13 +8,19 @@ from pathlib import Path
 import astropy.units as u
 from tqdm import tqdm
 from scipy.spatial import cKDTree
+from utils import load_config
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 3
 plt.rcParams['figure.dpi'] = 100
 
+#! Load tile name
+config = load_config("config.yaml")
+field_info = config['field']
+field_name = field_info['name']
+
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
-cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2024_11_20.fits'
+cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits'
 t = Table.read(cat_dir / cat_name)
 
 # if there isnt a completeness column in table, make it
@@ -104,17 +110,21 @@ def main():
     output_cat_dir = Path.cwd() / 'catalogues' / 'output'
     
     # Define Muv and z bins
-    Muv_bins = np.arange(-23, -20, 0.1)
-    z_bins = np.arange(6.5, 7.5, 0.05)
+    Muv_bins = np.arange(-23.5, -19.5, 0.1)
+    z_bins = np.arange(5.5, 6.5, 0.05)
     
     # Compute completeness
-    #completeness_matrix = crossmatch_and_compute_completeness(input_cat_dir, output_cat_dir, Muv_bins, z_bins)
+    completeness_matrix = crossmatch_and_compute_completeness(input_cat_dir, output_cat_dir, Muv_bins, z_bins)
 
     # Read in completeness matrix
-    completeness_matrix = np.load('completeness_matrix_2.npy')
+    # completeness_matrix = np.load('completeness_matrix_z6.npy')
+
+    print(f'Completeness matrix shape: {completeness_matrix.shape}')
+    plt.hist(completeness_matrix.flatten(), bins=20)
+    plt.show()
 
     # Flip matrix in Muv direction
-    #completeness_matrix = np.flip(completeness_matrix, axis=0)
+    # completeness_matrix = np.flip(completeness_matrix, axis=0)
 
     # for i, obj in enumerate(t):
 
@@ -126,16 +136,16 @@ def main():
     #     Muv_bin = np.digitize([Muv], Muv_bins)[0] - 1
     #     z_bin = np.digitize([z], z_bins)[0] - 1
 
-    #     # If z>7.49 and z<7.5, set z_bin to 18
-    #     if z_bin >18:
-    #         z_bin = 18
+    #     # # If z>7.49 and z<7.5, set z_bin to 18
+    #     # if z_bin >18:
+    #     #     z_bin = 18
 
     #     print(f'Muv bin: {Muv_bin}, z bin: {z_bin}')
 
-    #     if z > 7.495:
-    #         completeness = 0
-    #     else:
-    #         completeness = completeness_matrix[z_bin, Muv_bin]
+    #     # if z > 7.495:
+    #     #     completeness = 0
+    #     # else:
+    #     completeness = completeness_matrix[z_bin, Muv_bin]
     #     print(f'Completeness: {completeness}')
 
     #     t['completeness'][i] = completeness
@@ -146,12 +156,12 @@ def main():
     plot_completeness(completeness_matrix, Muv_bins, z_bins)
 
     # Save the completeness matrix as npy file
-    #np.save('completeness_matrix_2.npy', completeness_matrix)
+    np.save(f'completeness_matrix_z6_{field_name}.npy', completeness_matrix)
 
 
 if __name__ == "__main__":
     main()
     plot_dir = Path.cwd().parents[1] / 'plots' / 'completeness'
-    #plot_dir.mkdir(exist_ok=True)
-    #plt.savefig(plot_dir / 'completeness_heatmap_2.pdf')
+    plot_dir.mkdir(exist_ok=True)
+    plt.savefig(plot_dir / f'completeness_heatmap_z6_{field_name}.pdf')
     plt.show()
