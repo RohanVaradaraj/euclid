@@ -89,11 +89,7 @@ def cutout_subimage(field, image, image_size, pix_scale, n_images, random=True, 
         for file in weight_path.glob('*.fits'):
             file.unlink()
 
-    print(data_dir)
-    print(field)
-    print(image)
     image_dir = data_dir / field / image
-    exit()
     weight_dir = data_dir / (image.split('.fits')[0] + '_wht.fits')
 
     with fits.open(image_dir) as hdu:
