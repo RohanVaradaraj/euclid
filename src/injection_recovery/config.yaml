@@ -51,5 +51,5 @@ source_extraction:
   batch_size: 50
 
 field:
-  name: 'XMM1'
+  name: "XMM1"
   pix_scale: 0.2

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Combines all components into one high-level workflow.
+Combines all components of the injection-recovery sims into one high-level file.
 
 Created: Wednesday 4th December 2024.
 """
@@ -28,9 +28,9 @@ overwrite_cats = True
 overwrite_images = True
 
 #! Run in steps
-make_cutouts = False
+make_cutouts = True
 inject_sources = False
-run_se = True
+run_se = False
 
 def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
 
@@ -40,8 +40,12 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
     injection_config = config['source_injection'] #? Input UV continuum distribution, redshift range and delta, filters, image details
     n_images = injection_config['n_images']
     image_size = injection_config['image_size_arcmin']
-    se_config = config['source_extraction'] #? Just the number of batches
-    batch_size = se_config['batch_size']
+    se_config = config['source_extraction'] #? Just the number of batches. Will run number of batches, then wait to complete, then start next batch.
+    batch_size = se_config['batch_size']    #? This is to prevent queuing of hundreds of jobs at once on glamdring.
+
+    field_config = config['field'] #? Which VISTA tile are we running boss?
+    field_name = field_config['name']
+    pix_scale = field_config['pix_scale']
 
     injected_dir = Path.cwd() / 'images' / 'injected'
     image_dir = Path.cwd() / 'images' / 'cutouts'
@@ -52,7 +56,7 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
     if make_cutouts:
 
         print('Generating cutouts of base image')
-        cutout_subimage(base_image, image_size, n_images, random=True, overwrite=overwrite)
+        cutout_subimage(field_name, base_image, image_size, pix_scale, n_images, random=True, overwrite=overwrite)
 
     #! Start injection
     if inject_sources:
@@ -88,11 +92,11 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
             filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
 
             #? Get random positions
-            x, y = source_injector.generate_random_positions(image_size)
+            x, y = source_injector.generate_random_positions(image_size, pix_scale)
 
             #? Get PSF fluxes corresponding to input Muv
             source_injector.get_psf()
-            scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
+            scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z, pix_scale)
 
             #? Inject sources
             wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs)
@@ -101,9 +105,9 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
             ra, dec = wcs.all_pix2world(x, y, 0)
 
             #? Save the input values as an astropy table
-            t = Table([x, y, ra, dec, Muv_sample, z, beta, filter_fluxes['YJ']], names=('x', 'y', 'RA', 'DEC', 'Muv', 'z', 'beta_slope', 'flux_YJ'))
+            t = Table([x, y, ra, dec, Muv_sample, z, beta, filter_fluxes['HSC-Z_DR3']], names=('x', 'y', 'RA', 'DEC', 'Muv', 'z', 'beta_slope', 'flux_HSC-Z_DR3'))
             table_name = image_name.replace('.fits', '_input_values.fits')
-            t.write(str(cat_dir / table_name), overwrite=overwrite)
+            t.write(str(input_cat_dir / table_name), overwrite=overwrite)
 
     #! Run Source Extractor to recover injected sources
     if run_se:
@@ -120,7 +124,7 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
         batches = source_extractor.batch_image_list(batch_size)
 
         #? Run SE batches on queue!
-        source_extractor.execute_se_batches(batch_size,'YJ', 1.8, queue='normal', overwrite=True, check_interval=15)
+        source_extractor.execute_se_batches(batch_size,'HSC-Z_DR3', 2.0, queue='cmb', overwrite=True, check_interval=15)
 
 
     
