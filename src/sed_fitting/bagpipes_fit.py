@@ -30,7 +30,7 @@ indiv = False
 table = False
 
 
-catDir = Path.cwd().parents[1] / 'data' / 'catalogues'
+catDir = Path.cwd().parents[1] / 'data' / 'catalogues' #/ 'candidates'
 outdir = Path.cwd() / 'pipes'
 tableDir = Path.cwd() / 'pipes' / 'tables'
 if not os.path.exists(outdir):
@@ -38,12 +38,13 @@ if not os.path.exists(outdir):
 if not os.path.exists(tableDir):
     os.makedirs(tableDir)
 
-catName = 'LAE.fits'
+#catName = 'LAE.fits'
+catName = 'Euclid_UltraVISTA_z7_sample_kron_piecewise.fits'
+catName = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_with_irac_handbook.fits'
 
 filtFile = 'filt_list.txt'
 
-filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'VIS', 'Ye', 'Je', 'He', 'f115w', 'f150w', 'f277w', 'f444w']
-
+filters = ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks', 'VIS', 'Ye', 'Je', 'He', 'f115w', 'f150w', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
 
 def load_obj(ID):
 
@@ -52,12 +53,17 @@ def load_obj(ID):
     # Open catalogue
     cat = Table.read(catDir / catName)
 
+    # Convert ID column values to strings
+    cat['ID'] = cat['ID'].astype(int)
+
     # Extract object with ID
     #cat['ID'].format
 
     # BAGPIPES ID is just the row number
-    ID = 178396
-    cat = cat[:][cat['ID'] == ID]
+    #ID = 178396
+    #cat_here = cat[cat['ID'] == ID]
+    cat = cat[cat['ID'] == int(ID)]
+    print(cat)
 
     # # But also print our ID for this object.
     # print('########## OBJECT ID: ' + str(cat['ID']) + '##############')
@@ -75,6 +81,7 @@ def load_obj(ID):
         # Append flux error name
         fluxerr = fluxerr + ['err_{0}'.format(filterName)]
 
+    # Extract fluxes and errors
     # Now get the flux
     flux = cat[fluxes][0][:]
     flux = np.array(flux)
@@ -84,20 +91,32 @@ def load_obj(ID):
 
 
     # print the ch1 and ch2 magnitudes
-    mag_ch1 = -2.5*np.log10(cat['flux_ch1cds'][0]) - 48.6
-    mag_ch2 = -2.5*np.log10(cat['flux_ch2cds'][0]) - 48.6
-    print('ch1 mag: ', mag_ch1)
-    print('ch2 mag: ', mag_ch2)
+    # mag_ch1 = -2.5*np.log10(cat['flux_ch1cds'][0]) - 48.6
+    # mag_ch2 = -2.5*np.log10(cat['flux_ch2cds'][0]) - 48.6
+    # print('ch1 mag: ', mag_ch1)
+    # print('ch2 mag: ', mag_ch2)
 
     # Convert to microJanskys
     flux = flux * 1e29 #* 3.631 * 10**28.44
     error = error * 1e29 #* 3.631 * 10**28.44
 
+    # If flux or error is nan, blow up the error
+    # for i, flux in enumerate(fluxes):
+    #     if np.isnan(flux) or np.isnan(errors[i]):
+    #         fluxes[i] = 0
+    #         errors[i] = 9.9e99
+
+    # blow up the errors associated with any missing fluxes.
+    for i, f in enumerate(flux):
+        if (f == -99.) or (error[i] == -99.) or (error[i] < 0):
+            flux[i] = 0
+            error[i] = 9.9e99
+
     # Replace fluxes for ch1 and ch2 with tractor values from COSMOS2020
-    flux[-1] = 0.39101
-    error[-1] = 0.00924
-    flux[-2] = 0.2084
-    error[-2] = 0.00958
+    # flux[-1] = 0.39101
+    # error[-1] = 0.00924
+    # flux[-2] = 0.2084
+    # error[-2] = 0.00958
 
 
     # Turn these into a 2D array
@@ -105,46 +124,8 @@ def load_obj(ID):
 
     return photometry
 
-# def cat_ID(ID):
 
-#     """ get lephare ID. """
-
-#     # Open catalogue
-#     cat = Table.read(catDir / catName, hdu=1)
-
-#     # Extract object with ID
-#     cat['ID'].format
-
-#     # BAGPIPES ID is just the row number
-#     ID = int(ID)
-#     print(ID)
-#     cat = cat[:][ID]
-
-#     return str(cat['ID'])
-
-# def cat_z(ID, field):
-
-#     """ get lephare redshift. """
-
-#     # Open catalogue
-#     if field =='XMM':
-#         cat = Table.read('vmax/vmax_DR3_XMM.txt', format='ascii.commented_header')
-#     if field =='CDFS':
-#         cat = Table.read('vmax/vmax_vis_check2_CDFS.txt', format='ascii.commented_header')
-#     # Extract object with ID
-
-#     cat['ID'].format
-
-#     # BAGPIPES ID is just the row number
-#     ID = int(ID)
-#     cat = cat[:][ID]
-
-#     return cat['z']
-
-
-lae_z = 7.19309
-lae_dz_sup = 7.30626
-lae_dz_inf = 7.03676
+############# DEFINE FITTING INSTRUCTIONS ##############
 
 # Load filter list
 filt_lis = np.loadtxt(filtFile, dtype='str')
@@ -156,15 +137,16 @@ exp["age"] = (0.01, 15.)                   # Vary age between 10 Myr and 15 Gyr.
 
 exp["tau"] = (0.05, 10.)                   # Vary tau between 300 Myr and 10 Gyr
 exp["massformed"] = (5., 15.)             # vary log_10(M*/M_solar) between 1 and 15
-exp["metallicity"] = 0.2                  # vary Z between 0 and 1.0 Z_oldsolar
+exp["metallicity"] = (0.1, 3)                  # vary Z between 0 and 1.0 Z_oldsolar
 
 dust = {}                                 # Dust component
 dust["type"] = "Calzetti"                 # Define the shape of the attenuation curve
 #dust["Av"] = (0., 4.)                     # Vary Av between 0 and 4 magnitudes to allow for very dusty low-z interlopers.
-dust["Av"] = (0., 2)                     # Vary Av between 0 and 0.5 magnitudes to avoid dust-age degeneracy.
+dust["Av"] = (0., 7)                     # Vary Av between 0 and 0.5 magnitudes to avoid dust-age degeneracy.
 
 fit_instructions = {}                     # The fit instructions dictionary
-fit_instructions["redshift"] = lae_z
+#fit_instructions["redshift"] = lae_z
+fit_instructions["redshift"] = (0, 10)
 fit_instructions["dust"] = dust
 
 # Add a constant SFH option.
@@ -177,7 +159,7 @@ constant["age_min"] = 0.
 delayed = {}                         # Delayed Tau model t*e^-(t/tau)
 delayed["age"] = (0.01, 13.8)           # Time since SF began: Gyr
 delayed["tau"] = (0.3, 10)           # Timescale of decrease: Gyr
-delayed["metallicity"] = 0.2
+delayed["metallicity"] = (0.1, 3)
 delayed["massformed"] = (0., 15.)
 
 # And bursty option
@@ -211,105 +193,41 @@ fit_instructions["nebular"] = nebular
 
 
 
-############ TABLE OF POSTERIORS ###############
-
-# Save outputs to a LaTeX table. Exits before we get to the actual BAGPIPES fitting below.
-# if table:
-
-#     bagDir = '/mnt/vardy/vardygroupshare/HSC_SSP_DR3/codes/pipes/sed/{0}/low_Av/'.format(field)
-
-#     if field == 'XMM':
-#         IDs = np.arange(0, 21)
-# #        IDs = np.arange(0, 5) # lya
-
-#     if field == 'CDFS':
-#         IDs = np.arange(0, 10)
-
-#     ids = []
-#     extinc = []
-#     z = []
-#     M = []
-#     z_phots = []
-#     z_photsBP = []
-
-
-#     for i, id in enumerate(IDs):
-
-#         lephareID = cat_ID(id)
-#         print(lephareID)
-
-#         z_phot = cat_z(id, field)
-#         z_phots = np.append(z_phots, z_phot)
-
-#         ids = np.append(ids, lephareID)
-
-#         ### Redshift ###
-#         bagPz = Table.read(bagDir + '{0}_Pz.fits'.format(lephareID))
-#         redshifts = np.percentile(bagPz['z_phot'], (16, 50, 84), axis=0).T
-
-#         # Get errors
-#         z_ = round(redshifts[1], 2)
-#         zU = str(round(redshifts[2]-redshifts[1], 2))
-#         zL = str(round(redshifts[1]-redshifts[0], 2))
-
-#         # Make table entry
-#         z = np.append(z, '$' + str(z_) + '^{+' + zU + '}' + '_{-' + zL + '}$')
-#         z_photsBP = np.append(z_photsBP, z_)
-
-#         ### DUST ###
-#         dust = Table.read(bagDir + '{0}_Av.fits'.format(lephareID))
-#         Av = np.percentile(dust['Av'], (16, 50, 84), axis=0).T
-
-#          # Erors
-#         Av_ =  round(Av[1], 2)
-#         AvU = str(round(Av[2]-Av[1], 2))
-#         AvL = str(round(Av[1]-Av[0], 2))
-
-#         # Table entry
-#         extinc = np.append(extinc, '$' + str(Av_) + '^{+' + AvU + '}' + '_{-' + AvL + '}$')
-
-#         ### Stellar Mass ###
-#         stellarMass = Table.read(bagDir + '{0}_stellarMass.fits'.format(lephareID))
-#         mass = np.percentile(stellarMass['M'], (16, 50, 84), axis=0).T
-
-#         # Errors
-#         mass_ = round(mass[1], 2)
-#         massU = str(round(mass[2]-mass[1], 2))
-#         massL = str(round(mass[1]-mass[0], 2))
-
-#         # Mass
-#         M = np.append(M, '$' + str(mass_) + '^{+' + massU + '}' + '_{-' + massL + '}$')
-
-#     data = {'ID':ids, 'z':z, 'Av':extinc, 'stellar mass':M}
-
-#     os.chdir(tableDir)
-#     ascii.write(data, 'bagpipes_{0}_low_Av.txt'.format(field), format='latex', overwrite=True)
-
-# #    plt.scatter(z_phots, z_photsBP)
-# #    plt.xlabel('LePhare')
-# #    plt.ylabel('BAGPIPES')
-# #    plt.show()
-
-#     print(np.mean(Av_))
-
-#     exit()
-
 
 ############ FITTING OBJECTS BY LOOPING ###########
-IDs = [1]
 
-for i, id in enumerate(IDs):
+# Load catalogue
+t = Table.read(catDir / catName)
 
-    lephareID = 178396
-    print(lephareID)
+# Restrict to sample for LBG proposal
+# IDs = [387777, 615679, 878786]
+# z_grism = [6.7614, 6.8484, 7.0975]  
 
-    galaxy = pipes.galaxy(str(id), load_obj, spectrum_exists=False, filt_list=filt_lis)
+#? The extra component to the south of the very clumpy one...
+IDs = [879369]
+z_grism = [7.0975]
+
+t = t[[id in IDs for id in t['ID']]]
+
+
+
+# print(load_obj(IDs[0]))
+# exit()
+
+for i, ID in enumerate(IDs):
+
+    lephareID = IDs[i]
+
+    galaxy = pipes.galaxy(str(ID), load_obj, spectrum_exists=False, filt_list=filt_lis)
+
+    # Update the redshift prior to the lephare zphot
+    fit_instructions["redshift"] = (z_grism[i]-0.2, z_grism[i]+0.2)
 
     # fig = galaxy.plot()
     # exit()
 
-    fit = pipes.fit(galaxy, fit_instructions, run='LAE')
-    fit.fit(verbose=True)
+    fit = pipes.fit(galaxy, fit_instructions, run='LBG_proposal')
+    fit.fit(verbose=True) 
     
     fig = fit.plot_spectrum_posterior(save=True, show=False)
     fig = fit.plot_sfh_posterior(save=True, show=False)
@@ -318,9 +236,9 @@ for i, id in enumerate(IDs):
     list(fit.posterior.samples)
 
     # Get best fit redshift
-    redshift = lae_z
-    #redshift = np.percentile(fit.posterior.samples["redshift"], (50))
-    #print(np.mean(redshift))
+    # redshift = lae_z
+    redshift = np.percentile(fit.posterior.samples["redshift"], (50))
+    print(np.mean(redshift))
 
     # Get spectrum
     spec_post = fit.posterior.samples["spectrum_full"]
@@ -453,6 +371,127 @@ for i, id in enumerate(IDs):
     EW_obs = Oiii_Hb_flux / cont_level  # Correct formula
 
     # Convert to rest-frame equivalent width
-    EW_rest = EW_obs / (1 + lae_z)
+    #EW_rest = EW_obs / (1 + lae_z)
+    EW_rest = EW_obs / (1 + z_grism[i])
 
     print('Equivalent width of Oiii+Hbeta (rest-frame):', EW_rest)
+
+
+############ TABLE OF POSTERIORS ###############
+
+# Save outputs to a LaTeX table. Exits before we get to the actual BAGPIPES fitting below.
+# if table:
+
+#     bagDir = '/mnt/vardy/vardygroupshare/HSC_SSP_DR3/codes/pipes/sed/{0}/low_Av/'.format(field)
+
+#     if field == 'XMM':
+#         IDs = np.arange(0, 21)
+# #        IDs = np.arange(0, 5) # lya
+
+#     if field == 'CDFS':
+#         IDs = np.arange(0, 10)
+
+#     ids = []
+#     extinc = []
+#     z = []
+#     M = []
+#     z_phots = []
+#     z_photsBP = []
+
+
+#     for i, id in enumerate(IDs):
+
+#         lephareID = cat_ID(id)
+#         print(lephareID)
+
+#         z_phot = cat_z(id, field)
+#         z_phots = np.append(z_phots, z_phot)
+
+#         ids = np.append(ids, lephareID)
+
+#         ### Redshift ###
+#         bagPz = Table.read(bagDir + '{0}_Pz.fits'.format(lephareID))
+#         redshifts = np.percentile(bagPz['z_phot'], (16, 50, 84), axis=0).T
+
+#         # Get errors
+#         z_ = round(redshifts[1], 2)
+#         zU = str(round(redshifts[2]-redshifts[1], 2))
+#         zL = str(round(redshifts[1]-redshifts[0], 2))
+
+#         # Make table entry
+#         z = np.append(z, '$' + str(z_) + '^{+' + zU + '}' + '_{-' + zL + '}$')
+#         z_photsBP = np.append(z_photsBP, z_)
+
+#         ### DUST ###
+#         dust = Table.read(bagDir + '{0}_Av.fits'.format(lephareID))
+#         Av = np.percentile(dust['Av'], (16, 50, 84), axis=0).T
+
+#          # Erors
+#         Av_ =  round(Av[1], 2)
+#         AvU = str(round(Av[2]-Av[1], 2))
+#         AvL = str(round(Av[1]-Av[0], 2))
+
+#         # Table entry
+#         extinc = np.append(extinc, '$' + str(Av_) + '^{+' + AvU + '}' + '_{-' + AvL + '}$')
+
+#         ### Stellar Mass ###
+#         stellarMass = Table.read(bagDir + '{0}_stellarMass.fits'.format(lephareID))
+#         mass = np.percentile(stellarMass['M'], (16, 50, 84), axis=0).T
+
+#         # Errors
+#         mass_ = round(mass[1], 2)
+#         massU = str(round(mass[2]-mass[1], 2))
+#         massL = str(round(mass[1]-mass[0], 2))
+
+#         # Mass
+#         M = np.append(M, '$' + str(mass_) + '^{+' + massU + '}' + '_{-' + massL + '}$')
+
+#     data = {'ID':ids, 'z':z, 'Av':extinc, 'stellar mass':M}
+
+#     os.chdir(tableDir)
+#     ascii.write(data, 'bagpipes_{0}_low_Av.txt'.format(field), format='latex', overwrite=True)
+
+# #    plt.scatter(z_phots, z_photsBP)
+# #    plt.xlabel('LePhare')
+# #    plt.ylabel('BAGPIPES')
+# #    plt.show()
+
+#     print(np.mean(Av_))
+
+#     exit()
+
+# def cat_ID(ID):
+
+#     """ get lephare ID. """
+
+#     # Open catalogue
+#     cat = Table.read(catDir / catName, hdu=1)
+
+#     # Extract object with ID
+#     cat['ID'].format
+
+#     # BAGPIPES ID is just the row number
+#     ID = int(ID)
+#     print(ID)
+#     cat = cat[:][ID]
+
+#     return str(cat['ID'])
+
+# def cat_z(ID, field):
+
+#     """ get lephare redshift. """
+
+#     # Open catalogue
+#     if field =='XMM':
+#         cat = Table.read('vmax/vmax_DR3_XMM.txt', format='ascii.commented_header')
+#     if field =='CDFS':
+#         cat = Table.read('vmax/vmax_vis_check2_CDFS.txt', format='ascii.commented_header')
+#     # Extract object with ID
+
+#     cat['ID'].format
+
+#     # BAGPIPES ID is just the row number
+#     ID = int(ID)
+#     cat = cat[:][ID]
+
+#     return cat['z']

@@ -17,6 +17,6 @@
 /mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/JWST/f150w_angstroms.txt
 /mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/JWST/f277w_angstroms.txt
 /mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/JWST/f444w_angstroms.txt
-#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch1.txt
-#/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch2.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch1.txt
+/mnt/zfsusers/varadaraj/lephare/lephare_dev/filt/myfilters/SPITZER/irac_ch2.txt
 

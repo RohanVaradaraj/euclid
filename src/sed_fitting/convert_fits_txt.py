@@ -42,7 +42,7 @@ if len(sys.argv) > 1:
 spitzer_five_percent = False
 
 #???? PAPER CORRECTION: CUSTOM CATALOGUES. WANT TO RERUN U+E SAMPLE WITH ONLY EUCLID PHOTOMETRY
-custom_cat = True
+custom_cat = False
 #custom_cat_name = 'Euclid_UltraVISTA_z7_sample.fits'
 custom_cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_with_irac_handbook.fits'
 
@@ -77,6 +77,9 @@ if __name__ == "__main__":
     if bools[0] == True:
         filters_to_remove = ['HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
         all_filters = remove_items(all_filters, filters_to_remove)
+        if field_name == 'CDFS':
+            filters_to_remove = ['HSC-G', 'HSC-R', 'u', 'g', 'r']
+            all_filters = remove_items(all_filters, filters_to_remove)
         print('Running brown dwarfs: blue filters and long-wavelength filters removed in input catalogue.')
 
     # Delete reddest filters if we are NOT running dusty galaxies

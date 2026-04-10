@@ -41,7 +41,7 @@ def apply_filters(table, filters):
             print(f"{threshold['value']}sigma non-detection in {filter_name}: ", len(table))
         elif threshold['type'] == 'stacked-detection':
             stack_filters = filter_name.split('+')
-            stacked_flux = table[f'flux_{stack_filters[0]}'] + table[f'flux_{stack_filters[1]}']
+            stacked_flux = (table[f'flux_{stack_filters[0]}'] + table[f'flux_{stack_filters[1]}'])
             stacked_err = np.sqrt(table[f'err_{stack_filters[0]}']**2 + table[f'err_{stack_filters[1]}']**2)
             table = table[stacked_flux/stacked_err > threshold['value']]
             print(f"{threshold['value']}sigma stacked detection in {stack_filters}: ", len(table))
@@ -115,13 +115,14 @@ def main(input_cat_dir, input_cat_name, output_save_dir, base_output_name, filte
 if __name__ == "__main__":
 
     #! COSMOS
-    input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
+    input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCDFS' / 'other'
     #input_cat_name = "COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_07_12.fits"
     #input_cat_name = 'COSMOS_detYJH_masked_1.8as_Euclid_CWEB_2024_10_07.fits' # Newest with JWST
     #input_cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits' # VISTA-Selected
-    input_cat_name = 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits' #! HSC-Z selected
+    # input_cat_name = 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits' #! HSC-Z selected
+    input_cat_name = 'CDFSFULL_DR3_MASKVISTADET_HSC-Z_2026_04_08_2.0as_IRAC_2.8as_ALL.fits' #! CDFS HSC-Z selected
     output_save_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-    base_output_name = "COSMOS"
+    base_output_name = "CDFS"
 
     #! XMM
     # input_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'XMMFULL'

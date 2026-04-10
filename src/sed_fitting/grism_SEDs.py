@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 """
-Plot the outputs of the LePhare fitting.
-Created: Friday 12th July 2024.
+A modification of plot_SEDs_neat.py, adding the COSMOS-3D grism data on top for visualisation purposes.
+
+Created: Friday 10th October 2025.
 """
 
 import sys
@@ -19,7 +20,9 @@ from astropy.io import ascii
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from scipy.integrate import simpson
+from scipy.integrate import simpson as simps
+from scipy.ndimage import gaussian_filter1d
+from matplotlib.gridspec import GridSpec
 #plt.rcParams['text.usetex'] = True
 
 # Configure matplotlib for non-interactive backend (for queues)
@@ -42,7 +45,6 @@ from cutout_codes import *
 from vista_cutouts import *
 from all_cutouts import AllCutout
 from xmm_cutouts import XMMCutout
-from cdfs_cutouts import CDFSCutout
 from full_catalogue_codes import label_ct
 from sed_fitting_codes import parse_spec_file
 
@@ -68,19 +70,61 @@ plt.rcParams.update({
     'xtick.minor.width': 1.5, 'ytick.minor.width': 1.5,
 })
 
+#################################! Grizli stuff ################################
+from grizli.aws import db
+from grizli import utils, grismconf
+from grizli.aws import sky_wfss
+import pickle
+
+grism_dir = Path.cwd().parents[1] / 'data' / 'grism'
+
+prefix = 'dja-grism'
+kwargs = {}
+
+with open(grism_dir / 'mb_ID_387777.pkl', 'rb') as openfile:
+  while True:
+        try:
+            mb = pickle.load(openfile)
+        except EOFError:
+            break
+
+spec_1d = mb.oned_spectrum(tfit=None, get_contam=True, get_background=False, masked_model=None, **kwargs)
+
+b2d, zres = sky_wfss.combine_beams_2d(
+    mb,
+    step=0.5, pixfrac=0.75,
+    ymax=12.5,
+    profile_sigma=1.5, profile_offset=-0.5, profile_type="gaussian",     # Gaussian cross-dispersion model
+    # profile_type="grizli",                                   # Use the direct image thumbnail
+    bkg_percentile=None,
+    cont_spline=31*1, zfit_nspline=-1,
+    zfit_kwargs=None,
+)
+
+print('####################')
+print(b2d['F444W']['spec']['flux'])
+
+grism_wlen = b2d['F444W']['spec']['wave']
+grism_flux = b2d['F444W']['spec']['flux']
+
+# plt.figure(figsize=(10,6))
+# plt.plot(b2d['F444W']['spec']['wave'], b2d['F444W']['spec']['flux'])
+# plt.show()
+# exit()
+
 # === Configuration ===
-field_name = 'CDFS'
-individual_sed = False
-save_indiv = False
-indiv_ID = '887134'
+field_name = 'COSMOS'
+individual_sed = True
+save_indiv = True
+indiv_ID = '387777'
 #indiv_pdf_name = '381772_with_euclid.pdf'  # Name of the individual SED PDF file
-indiv_pdf_name = '887134_BRIGHT_BD.pdf' #329431_FAINT_BD.pdf
+indiv_pdf_name = '387777_grism.pdf' #329431_FAINT_BD.pdf
 test = False # Run a limited number. Set to false if save_indiv = True
-N = 1
+N = 30
 label_crosstalk = False
 sort_by_Muv = False # Set to false if individual_sed = True
-Muv_avail = False
-fontsize=22
+Muv_avail = True
+fontsize=16
 remove_title = True
 
 # === Handle command-line arguments ===
@@ -205,35 +249,12 @@ if field_name == 'XMM':
 if bools[1]:
     filter_dict.pop('f444w')
 
-if field_name == 'CDFS':
-    filter_dict.pop('HSC-NB0816_DR3')
-    filter_dict.pop('HSC-NB0921_DR3')
-    filter_dict.pop('HSC-Y_DR3')
-    filter_dict.pop('f115w')
-    filter_dict.pop('f150w')
-    filter_dict.pop('f277w')    
-    # Rename HSC-Z_DR3 to HSC-Z, etc
-    filter_dict['HSC-Z'] = filter_dict.pop('HSC-Z_DR3', None)
-    filter_dict['HSC-G'] = filter_dict.pop('HSC-G_DR3', None)
-    filter_dict['HSC-R'] = filter_dict.pop('HSC-R_DR3', None)
-    filter_dict['HSC-I'] = filter_dict.pop('HSC-I_DR3', None)
-    # Rename VIS, Ye, Je, He to VIS_Q1, YE_Q1, JE_Q1, HE_Q1
-    filter_dict['VIS_Q1'] = filter_dict.pop('VIS', None)
-    filter_dict['YE_Q1'] = filter_dict.pop('Ye', None)
-    filter_dict['JE_Q1'] = filter_dict.pop('Je', None)
-    filter_dict['HE_Q1'] = filter_dict.pop('He', None)
-
 n_in = len(filter_dict) * 2
 print(filter_dict)
 print('Number of input filters:', n_in)
 
-# if CDFS, rearrange filter_dict as u, g, r, i, HSC-G, HSC-R, HSC-I, HSC-Z, Y, J, H, Ks, VIS_Q1, YE_Q1, JE_Q1, HE_Q1
-if field_name == 'CDFS':
-    filter_dict = {k: filter_dict[k] for k in ['u', 'g', 'r', 'i', 'HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'Y', 'J', 'H', 'Ks', 'VIS_Q1', 'YE_Q1', 'JE_Q1', 'HE_Q1'] if k in filter_dict}
-
 # Define Euclid filters and their colors
 euclid_filters = ['VIS', 'Ye', 'Je', 'He']
-euclid_filters = ['VIS_Q1', 'YE_Q1', 'JE_Q1', 'HE_Q1']
 euclid_colors = ['tab:purple', 'tab:blue', 'tab:green', 'tab:red']
 euclid_fwhms = [[0.5413062969825945, 0.9111926674843263],
                 [0.9496834246372521, 1.2122804577368327],
@@ -289,11 +310,8 @@ if field_name == 'COSMOS':
     sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise_with_irac.fits', format='fits') #? Kron piecewise applied, irac fixed
     #sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_best_bd_INTERLOPERS_2024_11_26_with_euclid.fits') #BROWN DWARFS
     #sample_cat = Table.read(candidate_path / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_dustyInterlopers_2025_08_14.fits', format='fits') # DUSTY INTERLOPERS
-if field_name == 'XMM':
+elif field_name == 'XMM':
     sample_cat = Table.read(candidate_path / 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits', format='fits')
-if field_name == 'CDFS':
-    sample_cat = Table.read(candidate_path / 'CDFS_5sig_HSC_Z_nonDet_HSC_G_nonDet_r_candidates_2026_04_08_with_euclid.fits', format='fits')
-
 
 if sort_by_Muv:
     sample_cat.sort('Muv')
@@ -360,20 +378,20 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         # irac2_flux = parent_cat[np.where(parent_cat['ID'] == int(ID))]['flux_ch2cds'][0]
         # irac1_err = parent_cat[np.where(parent_cat['ID'] == int(ID))]['err_ch1cds'][0]
         # irac2_err = parent_cat[np.where(parent_cat['ID'] == int(ID))]['err_ch2cds'][0]
-        # irac1_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch1cds'][0]
-        # irac2_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch2cds'][0]
-        # irac1_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch1cds'][0]
-        # irac2_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch2cds'][0]
-        # # print(irac1_err)
-        # # print(irac2_err)
+        irac1_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch1cds'][0]
+        irac2_flux = sample_cat[np.where(sample_cat['ID'] == int(ID))]['flux_ch2cds'][0]
+        irac1_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch1cds'][0]
+        irac2_err = sample_cat[np.where(sample_cat['ID'] == int(ID))]['err_ch2cds'][0]
+        # print(irac1_err)
+        # print(irac2_err)
 
-        # # # If err < 0, set to 5% of flux
-        # if irac1_err < 0:
-        #     irac1_err = 0.2 * irac1_flux
-        # if irac2_err < 0:
-        #     irac2_err = 0.2 * irac2_flux
-        # print(irac1_flux, irac1_err)
-        # print(irac2_flux, irac2_err)
+        # # If err < 0, set to 5% of flux
+        if irac1_err < 0:
+            irac1_err = 0.2 * irac1_flux
+        if irac2_err < 0:
+            irac2_err = 0.2 * irac2_flux
+        print(irac1_flux, irac1_err)
+        print(irac2_flux, irac2_err)
 
         # Initialize flux and error arrays, to add data.
         flux = []
@@ -508,11 +526,19 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #! Sigma array
         sigma = flux / error
 
-        # Create figure with multiple axes
-        fig = plt.figure(figsize=(10, 6))
-        ax1 = fig.add_subplot(111)
-        left, bottom, width, height = [0.67, 0.26, 0.2, 0.2]
-        ax2 = fig.add_axes([left, bottom, width, height])
+
+
+        # # Create figure with multiple axes
+        # fig = plt.figure(figsize=(10, 3))
+        # ax1 = fig.add_subplot(111)
+        # left, bottom, width, height = [0.67, 0.3, 0.2, 0.2]
+        # ax2 = fig.add_axes([left, bottom, width, height])
+
+            # --- Create figure with 2 stacked panels ---
+        fig = plt.figure(figsize=(10, 8))
+        gs = GridSpec(2, 1, height_ratios=[3, 1], hspace=0.05)
+        ax1 = fig.add_subplot(gs[0])  # top: SED + photometry
+        ax2 = fig.add_subplot(gs[1], sharex=ax1)  # bottom: grism
 
         ############! PLOT RESULTS OF FITTING #############
         # Plot best model
@@ -528,15 +554,15 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         ax2.plot(zpdf['z'], zpdf['P'], color='black', linewidth=2)
         ax2.set_xlim(0, 10)
-        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=23)
-        ax2.set_ylabel(r'$P(z)$', fontsize=23)
+        ax2.set_xlabel(r'$z_{\mathrm{phot}}$', fontsize=fontsize)
+        ax2.set_ylabel(r'$P(z)$', fontsize=fontsize)
         
         # Make tick labels larger
-        ax2.tick_params(axis='both', which='major', labelsize=23)
+        ax2.tick_params(axis='both', which='major', labelsize=fontsize)
 
         # ticks on x at 0, 3, 5, 7, 9
         ax2.set_xticks([1, 3, 5, 7, 9])
-        ax2.set_yticks([0, 0.5, 1])
+        ax2.set_yticks([0, 1])
 
         # Show left-side ticks without labels
         ax2.yaxis.set_ticks_position('both')  # Enable ticks on both left and right
@@ -545,16 +571,16 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ######? GET IRAC MODEL PHOT ##########
 
         # First interpolate SED to match IRAC filter wlen grid
-        # sed_irac1_interp = np.interp(irac1['col1'], primary_wlen, primary_sed)
-        # sed_irac2_interp = np.interp(irac2['col1'], primary_wlen, primary_sed)
+        sed_irac1_interp = np.interp(irac1['col1'], primary_wlen, primary_sed)
+        sed_irac2_interp = np.interp(irac2['col1'], primary_wlen, primary_sed)
 
         # Filter areas
-        # irac1_area = np.trapz(irac1['col2'], irac1['col1'])
-        # irac2_area = np.trapz(irac2['col2'], irac2['col1'])
+        irac1_area = np.trapz(irac1['col2'], irac1['col1'])
+        irac2_area = np.trapz(irac2['col2'], irac2['col1'])
 
         # Get the IRAC model fluxes by convolving SEDs with the IRAC filter curves
-        # irac1_flux_model = simpson((sed_irac1_interp * irac1['col2']), irac1['col1']) / irac1_area
-        # irac2_flux_model = simpson((sed_irac2_interp * irac2['col2']), irac2['col1']) / irac2_area
+        irac1_flux_model = simps((sed_irac1_interp * irac1['col2']), irac1['col1']) / irac1_area
+        irac2_flux_model = simps((sed_irac2_interp * irac2['col2']), irac2['col1']) / irac2_area
 
         # print(irac1_flux_model, irac2_flux_model)
         # print irac fluxes
@@ -574,8 +600,8 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.scatter(central_wavelengths, model_photometry, marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Also plot IRAC model photometry
-        # ax1.scatter([irac_fwhms[0][0]], [irac1_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
-        # ax1.scatter([irac_fwhms[1][0]], [irac2_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
+        ax1.scatter([irac_fwhms[0][0]], [irac1_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
+        ax1.scatter([irac_fwhms[1][0]], [irac2_flux_model], marker='o', s=100, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2)
 
         # Plot real photometry, styling Euclid filters separately
         for i, filt in enumerate(filter_dict):
@@ -603,31 +629,43 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
                              markersize=markersize, zorder=6, elinewidth=3, markeredgecolor='black', ecolor='black')
 
         # Also plot IRAC
-        # for i, (irac_flux, irac_err) in enumerate(zip([irac1_flux, irac2_flux], [irac1_err, irac2_err])):
-        #     if irac_flux/irac_err < 2:
-        #         ax1.scatter([irac_fwhms[i][0]], [irac_flux + 1 * irac_err], marker=r'$\downarrow$', color='black', s=300, zorder=6) #, edgecolors='none')
-        #         print('irac uplim at', irac_flux + 2 * irac_err)
-        #     else:
-        #         ax1.errorbar([irac_fwhms[i][0]], [irac_flux], yerr=irac_err, fmt='o', color='black', 
-        #                      markersize=10, zorder=6, elinewidth=3, markeredgecolor='black', ecolor='black')
+        for i, (irac_flux, irac_err) in enumerate(zip([irac1_flux, irac2_flux], [irac1_err, irac2_err])):
+            if irac_flux/irac_err < 2:
+                ax1.scatter([irac_fwhms[i][0]], [irac_flux + 1 * irac_err], marker=r'$\downarrow$', color='black', s=300, zorder=6) #, edgecolors='none')
+                print('irac uplim at', irac_flux + 2 * irac_err)
+            else:
+                ax1.errorbar([irac_fwhms[i][0]], [irac_flux], yerr=irac_err, fmt='o', color='black', 
+                             markersize=10, zorder=6, elinewidth=3, markeredgecolor='black', ecolor='black')
             #print(irac_fwhms[i][0], irac_flux, irac_err)
                 
         # Plot the Euclid and VISTA FWHMs as hlines with the correct colours, at 9e-30
-        if field_name == 'CDFS':
-            eucl_height = 8e-29
-            vista_height = 9.2e-29
-        else:
-            eucl_height = 8e-30
-            vista_height = 8.5e-30
-
         if run_type == 'with_euclid':
             bump = [0, 0, 0.5e-30, 1e-30]
             for i, (fwhm, color) in enumerate(zip(euclid_fwhms, euclid_colors)):
-                ax1.hlines(eucl_height-bump[i], fwhm[0], fwhm[1], colors=color, linewidth=3.5)
+                ax1.hlines(8e-30-bump[i], fwhm[0], fwhm[1], colors=color, linewidth=3.5)
 
         for i, (fwhm, color) in enumerate(zip(vista_fwhms, vista_colors)):
-            ax1.hlines(vista_height, fwhm[0], fwhm[1], colors=color, linewidth=3.5)
+            ax1.hlines(8.5e-30, fwhm[0], fwhm[1], colors=color, linewidth=3.5)
 
+
+        ############! PLOT GRISM ON TOP OF SED ################3
+        # target_start = 2.81e-20  # where to anchor the first point
+        # grism_flux_norm = grism_flux #- np.nanmin(grism_flux)  # remove baseline
+        # grism_flux_norm /= np.nanmax(grism_flux_norm)  # normalize 0–1
+        # grism_flux_shifted = grism_flux_norm * (target_start * 0.3) + target_start
+
+        # # Move up by 2
+        # grism_flux_shifted *=1000
+        # # the *0.3 keeps dynamic range reasonable — tweak if needed
+
+        # # Plot on a linear y-axis (not log)
+        # ax3 = ax1.twinx()
+        # ax3.set_yscale('linear')
+        # ax3.plot(grism_wlen * 1e4, grism_flux_shifted, color='purple', lw=2, alpha=0.8)
+
+        # # Hide the extra axis labels
+        # ax3.set_yticks([])
+        # ax3.spines['right'].set_visible(False)
 
         ############! CROSSMATCH WITH EXISTING SOURCES ############
         # Get the RA and DEC of the object from the parent catalog
@@ -729,18 +767,16 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
             ax1.set_title('')
 
         ax1.set_yscale('log')
-        if field_name != 'CDFS':
-            ax1.legend(loc='upper right', fontsize=17, framealpha=0.5).set_zorder(7)
-        else:
-            ax1.legend(loc='lower left', fontsize=13, framealpha=0.5).set_zorder(7)
-        ax1.set_ylim(3e-32, 1e-29)
-        ax1.set_xlim(3000, 40000)
-        ax1.set_ylim(1e-32, 1e-29)
-        ax1.set_xlim(3000, 51000)
+        #ax1.legend(loc='upper right', fontsize=17, framealpha=0.5).set_zorder(7)
+        ax1.set_ylim(8e-32, 1e-29)
+        ax1.set_xlim(4400, 25000)
+        if field_name == 'XMM' or field_name == 'CDFS':
+            ax1.set_ylim(5e-32, 2e-29)
+            ax1.set_xlim(3000, 20000)
 
         # Convert the x axis into microns by dividing by 10000
-        ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000])
-        ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5])
+        ax1.set_xticks([5000, 10000, 15000, 20000, 25000])
+        ax1.set_xticklabels([0.5, 1, 1.5, 2, 2.5])
 
         # Set custom y-ticks at powers of 10, and label them as log10(f_nu)
         yticks = [1e-32, 1e-31, 1e-30, 1e-29]
@@ -748,18 +784,16 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_yticklabels([r"$-32$", r"$-31$", r"$-30$", r"$-29$"])
 
         ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=fontsize) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
+        ax1.set_ylabel(r'$\log_{10}(f_{\nu})$', fontsize=fontsize)
         ax1.set_xlabel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)
 
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
 
-        mags = [31, 30, 29, 28, 27, 26, 25, 24, 23, 22]
+        mags = [31, 30, 29, 28, 27, 26, 25, 24] #, 23, 22]
+        mags = [30, 28, 26, 24, 22]
         secax.set_yticks(mags)
-
-        if field_name == 'XMM' or field_name == 'CDFS':
-            ax1.set_ylim(1e-32, 2e-28)
-            ax1.set_xlim(2500, 32000)
-
+        secax.minorticks_off()
 
         secax.yaxis.set_major_formatter(mticker.ScalarFormatter())
 
@@ -767,7 +801,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.tick_params(axis='both', which='minor', length=4, width=3)
 
         secax.tick_params(which='major', length=7, width=4)
-        secax.tick_params(axis='both', which='minor', length=5, width=3)
+        #secax.tick_params(axis='both', which='minor', length=5, width=3)
 
         secax.set_ylabel(r'$\mathrm{m_{AB}}$', fontsize=fontsize)
 
@@ -784,39 +818,37 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         if save_indiv:
             plt.savefig(str(sed_dir / f'{ID}_SED_EUCLname.pdf'), bbox_inches='tight')
 
-        #plt.show()
+        plt.show()
 
         plt.close(fig)
 
         ############! CUTOUT ##############
-        if individual_sed == False:
-            # Get ra, dec of object from parent catalogue
-            obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
-            ra = obj['RA'][0]
-            dec = obj['DEC'][0]
+        # if individual_sed == False:
+        #     # Get ra, dec of object from parent catalogue
+        #     obj = parent_cat[np.where(parent_cat['ID'] == int(ID))]
+        #     ra = obj['RA'][0]
+        #     dec = obj['DEC'][0]
 
-            contained_in = isCoordInSurveyFootprints(ra, dec)
-            if field_name == 'COSMOS':
-                print(contained_in)
+        #     contained_in = isCoordInSurveyFootprints(ra, dec)
+        #     if field_name == 'COSMOS':
+        #         print(contained_in)
 
-            # Use smaller cutout size for visual inspection
-            cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
+        #     # Use smaller cutout size for visual inspection
+        #     cutout_size = 6. if det_list == ['Y', 'J'] else 10. # arcsec
 
-            # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
-            if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0') or (det_list == ['HSC-Z_DR3'] and euclid_blind):
-                print('Doing Vista cutout')
-                cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
-                #cutout_fig, cutout_axs = AllCutout(ra, dec, size=cutout_size, save_cutout=False)
-            if field_name == 'XMM':
-                cutout_fig, cutout_axs = XMMCutout(ra, dec, size=cutout_size, save_cutout=False)
-            if not euclid_blind and field_name == 'COSMOS':
-                print('Doing all cutouts')
-                cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
-            if field_name == 'CDFS':
-                cutout_fig, cutout_axs = CDFSCutout(ra, dec, size=cutout_size, save_cutout=False)
-                #cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
+        #     # If det_list is ['Y', 'J'] and euclid_blind is True, use VistaCutout
+        #     if det_list == ['Y', 'J'] and euclid_blind or (det_list == ['Y', 'J'] and contained_in[0][0] == '0') or (det_list == ['HSC-Z_DR3'] and euclid_blind):
+        #         print('Doing Vista cutout')
+        #         cutout_fig, cutout_axs = VistaCutout(ra, dec, size=cutout_size, save_cutout=False)
+        #         #cutout_fig, cutout_axs = AllCutout(ra, dec, size=cutout_size, save_cutout=False)
+        #     if field_name == 'XMM':
+        #         cutout_fig, cutout_axs = XMMCutout(ra, dec, size=cutout_size, save_cutout=False)
+        #     if not euclid_blind:
+        #         print('Doing all cutouts')
+        #         cutout_fig, cutout_axs = AllCutout(ra, dec, size=6., save_cutout=False)
+        #         #cutout_fig, cutout_axs = Cutout(ra, dec, size=6., save_cutout=False)
 
-            pdf.savefig(cutout_fig)
-            plt.close(cutout_fig)
+        #     pdf.savefig(cutout_fig)
+        #     plt.close(cutout_fig)
 
 

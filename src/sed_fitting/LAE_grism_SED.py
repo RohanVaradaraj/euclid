@@ -17,6 +17,7 @@ import sys
 from matplotlib.backends.backend_pdf import PdfPages
 #from make_comparison_tables import stellar_type
 import matplotlib.ticker as mticker
+from matplotlib.gridspec import GridSpec
 
 plt.rcParams.update({
     # Ticks on all sides, pointing inwards
@@ -32,6 +33,44 @@ plt.rcParams.update({
     'xtick.minor.size': 3, 'ytick.minor.size': 3,
     'xtick.minor.width': 1.5, 'ytick.minor.width': 1.5,
 })
+
+#################################! Grizli stuff ################################
+from grizli.aws import db
+from grizli import utils, grismconf
+from grizli.aws import sky_wfss
+import pickle
+
+grism_dir = Path.cwd().parents[1] / 'data' / 'grism'
+
+prefix = 'dja-grism'
+kwargs = {}
+
+with open(grism_dir / 'mb_ID_178396.pkl', 'rb') as openfile:
+  while True:
+        try:
+            mb = pickle.load(openfile)
+        except EOFError:
+            break
+
+spec_1d = mb.oned_spectrum(tfit=None, get_contam=True, get_background=False, masked_model=None, **kwargs)
+
+b2d, zres = sky_wfss.combine_beams_2d(
+    mb,
+    step=0.5, pixfrac=0.75,
+    ymax=12.5,
+    profile_sigma=1.5, profile_offset=-0.5, profile_type="gaussian",     # Gaussian cross-dispersion model
+    # profile_type="grizli",                                   # Use the direct image thumbnail
+    bkg_percentile=None,
+    cont_spline=31*1, zfit_nspline=-1,
+    zfit_kwargs=None,
+)
+
+print('####################')
+print(b2d['F444W']['spec']['flux'])
+plt.close()
+
+grism_wlen = b2d['F444W']['spec']['wave']
+grism_flux = b2d['F444W']['spec']['flux']
 
 
 
@@ -148,12 +187,7 @@ def get_survey_name(filter_name):
 
 #! Output PDF file
 output_dir = Path.cwd().parents[1] / 'plots' / 'seds'
-output_pdf = 'LAE_SED_fit.pdf'
-output_pdf = 'LAE_SED_XSHOOTER.pdf'
-#output_pdf = 'LAE_STAMP.pdf'
-#output_pdf = 'det_NB0921_Ye.pdf'
-#output_pdf = 'test.pdf'
-
+output_pdf = 'LAE_SED_grism_ESO.pdf'
 # Set up directories
 #zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'test_euclid'
 zphot_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / 'det_Ye_y_LAE'
@@ -358,14 +392,19 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         sigma = flux / error
 
         # Create figure with multiple axes
-        fig = plt.figure(figsize=(10, 6))
-        ax1 = fig.add_subplot(111)
+        # fig = plt.figure(figsize=(10, 3))
+        # ax1 = fig.add_subplot(111)
         # left, bottom, width, height = [0.70, 0.23, 0.18, 0.18]
         # left, bottom, width, height = [0.67, 0.5, 0.2, 0.2]
         # ax2 = fig.add_axes([left, bottom, width, height])
-        left, bottom, width, height = [0.58, 0.55, 0.3, 0.3]
+        # left, bottom, width, height = [0.58, 0.55, 0.3, 0.3]
         #ax2 = fig.add_axes([left, bottom, width, height])
 
+        # --- Create figure with 2 stacked panels ---
+        fig = plt.figure(figsize=(14, 6))
+        gs = GridSpec(2, 1, height_ratios=[3, 1], hspace=0.18)
+        ax1 = fig.add_subplot(gs[0])  # top: SED + photometry
+        ax2 = fig.add_subplot(gs[1]) #, sharex=ax1)  # bottom: grism
 
         ############! PLOT RESULTS OF FITTING #############
         # Plot best model
@@ -406,7 +445,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         # Model photometry
         model_photometry = mag_to_flux(phot['modelPhot'])
-        ax1.scatter(central_wavelengths, model_photometry, marker='o', s=300, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2, label='LAE model photometry')
+        ax1.scatter(central_wavelengths, model_photometry, marker='o', s=300, alpha=0.6, zorder=5, edgecolor='black', facecolor='none', linewidth=2, label='LAE model phot.')
         
         # Real photometry with upper limits for sigma < 2
         for i in range(len(flux)):
@@ -422,15 +461,15 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
 
         # dummy Label for other photometry
-        ax1.scatter([], [], marker='o', color='black', s=300, label='Photometry')
-        ax1.scatter([], [], marker='$\downarrow$', color='black', s=300, label=r'$2\sigma$ upper limit')
+        ax1.scatter([], [], marker='o', color='black', s=200, label='Photometry')
+        ax1.scatter([], [], marker='$\downarrow$', color='black', s=200, label=r'$2\sigma$ upper limit')
 
         # Add legend for photometry points
         for survey, style in survey_style.items():
             if survey == 'Other':
                 ax1.scatter([], [], marker=style['marker'], color=style['color'])
             else:
-                ax1.scatter([], [], marker=style['marker'], color=style['color'], label=survey, edgecolor='black', s=200)
+                ax1.scatter([], [], marker=style['marker'], color=style['color'], label=survey, edgecolor='black', s=150)
 
 
         ############! CHECK IF THIS IS AN EXISTING OBJECT ############
@@ -447,7 +486,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         #     ax1.set_title(f'ID {ID}')
 
         ax1.set_yscale('log')
-        ax1.legend(loc='lower right', fontsize=15.5, ncol=2)
+        ax1.legend(loc='lower right', fontsize=17, ncol=3)
         #ax1.legend(loc='upper right', fontsize=12, ncol=2)
         #ax1.set_ylim(1e-32, 1e-29)
         #ax1.set_xlim(3000, 35000)
@@ -455,7 +494,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
 
 
-        fontsize = 21
+        fontsize = 25
 
         # Convert the x axis into microns by dividing by 10000
         # ax1.set_xticks([5000, 10000, 15000, 20000, 25000, 30000, 35000])
@@ -471,8 +510,10 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.set_yticks(yticks)
         ax1.set_yticklabels([r"$-32$", r"$-31$", r"$-30$", r"$-29$"])
 
-        ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=fontsize) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
-        ax1.set_xlabel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)
+        #ax1.set_ylabel(r'$\log_{10}(f_{\nu}\,/\,\rm{erg}\,\rm{s}^{-1}\,\rm{cm}^{-2}\,\rm{Hz}^{-1})$', fontsize=20) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
+        ax1.set_ylabel(r'$\log_{10}(f_{\nu}\, [\,\rm{erg}\,/\rm{s}\,/\rm{cm}^{2}\,/\rm{Hz}])$', fontsize=20) #[erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]
+        #ax1.set_ylabel(r'$\log_{10}(f_{\nu})$', fontsize=fontsize)
+        #bel(r'$\lambda \, [\rm{\mu m}]$', fontsize=fontsize)
 
         # Add magnitude axis
         secax = ax1.secondary_yaxis('right', functions=(flux_to_mag, mag_to_flux))
@@ -486,7 +527,7 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
         ax1.tick_params(axis='both', which='minor', length=4, width=3)
 
         secax.tick_params(which='major', length=7, width=4)
-        secax.tick_params(axis='both', which='minor', length=5, width=3)
+        #secax.tick_params(axis='both', which='minor', length=5, width=3)
 
         secax.set_ylabel(r'$\mathrm{m_{AB}}$', fontsize=fontsize)
 
@@ -496,22 +537,69 @@ with PdfPages(str(output_dir/output_pdf)) as pdf:
 
         ax1.minorticks_on()
 
+        ax1.text(13000, 3.4e-30, r'$\mathbf{z_{\rm phot}=7.19^{+0.12}_{-0.15}, \, z_{\rm spec}=7.1105}$', fontsize=25, color='tab:red')
+
         # XSHOOTER proposal
         ax1.set_xlim(8000, 20000)
-        ax1.set_ylim(1e-31, 5e-30)
+
+        ax1.set_ylim(2e-31, 5e-30)
         ax1.set_xticks([8000, 10000, 12000, 14000, 16000, 18000, 20000])
         ax1.set_xticklabels([0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0])
-        mags = [28.5, 28, 27.5, 27, 26.5, 26, 25.5, 25]
+        mags = [29, 28, 27, 26, 25, 24]
         secax.set_yticks(mags)
+        secax.minorticks_off()
 
-  
+        # SAME AS OTHER GRISM PLOTS
+        #ax1.set_xlim(4400, 25000)
+        #ax1.set_ylim(8e-32, 1e-29)
+
+        #!!!!!!!!!!! GRISM
+        # --- Plot GRISM spectrum on bottom panel ---
+        # Measure standard deviation of grism flux
+        std_flux = np.std(grism_flux)
+
+        # Plot grism flux as multiples of the standard deviation
+        grism_flux = grism_flux / std_flux
+        ax2.plot(grism_wlen, grism_flux, color='black', lw=3)
+
+        #ax2.plot(grism_wlen, grism_flux, color='tab:red', lw=1)
 
 
 
-        ax1.plot(hsc_y['col1'], 2.5e-30+hsc_y['col2'], color='deepskyblue', linewidth=4, zorder=10, alpha=0.8)
-        ax1.plot(vista_Y['col1'], 2.5e-30+vista_Y['col2'], color='orange', linewidth=4, zorder=10, alpha=0.8)
-        ax1.plot(euclid_Y['col1'], 2.5e-30+euclid_Y['col2'], color='deeppink', linewidth=4, zorder=10, alpha=0.8)
+        # Now plot horizontal lines at 1, 3, 5
 
+        ax2.set_xlabel(r"$\lambda \rm \, [\mu m]$", fontsize=fontsize)
+        ax2.set_ylabel(r"$\sigma$", fontsize=fontsize)
+        #ax2.set_xscale('log')
+        #ax2.set_xlim(ax1.get_xlim())
+        ax2.set_xlim(3.8200, 5.0770)
+
+        #Vertical lines at 4959, 5007, times 1+7.11, converted to microns, between y=-1 and y=7
+        ax2.axvline(0.4959 * (1 + 7.1105), color='red', linestyle='--', lw=3, alpha=0.7)
+        ax2.axvline(0.5007 * (1 + 7.1105), color='red', linestyle='--', lw=3, label=r'$\mathrm{[OIII]} \, \lambda\lambda \, 4959,5007$', alpha=0.7)
+
+        # Also Hbeta
+        ax2.axvline(0.4861 * (1 + 7.1105), color='blue', linestyle='--', lw=3, label=r'$\mathrm{H}\beta \, \lambda \, 4861$', alpha=0.7)
+
+        ax2.set_ylim(-2, 8)
+        
+        # Set ax2 tick markers o fontisze
+        ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+
+        # Horizontal solid gray line at zero
+        ax2.axhline(0, color='gray', lw=3, zorder=-1)
+
+        # Legend
+        ax2.legend(loc='upper right', fontsize=18)
+
+
+
+
+        height_factor = 1
+        ax1.plot(hsc_y['col1'], 2.5e-30+hsc_y['col2']*height_factor, color='deepskyblue', linewidth=4, zorder=10, alpha=0.8)
+        ax1.plot(vista_Y['col1'], 2.5e-30+vista_Y['col2']*height_factor, color='orange', linewidth=4, zorder=10, alpha=0.8)
+        ax1.plot(euclid_Y['col1'], 2.5e-30+euclid_Y['col2']*height_factor, color='deeppink', linewidth=4, zorder=10, alpha=0.8)
+        plt.tight_layout()
 
         pdf.savefig(fig, bbox_inches='tight')
         plt.show()

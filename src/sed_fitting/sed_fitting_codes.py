@@ -348,6 +348,10 @@ def filter_widths():
     """
 
     filt_dict = {
+        'u': (0.3783, 0.0704),
+        'g': (0.4858, 0.1440),
+        'r': (0.6253, 0.1219),
+        'i': (0.7696, 0.1368),
         'HSC-G_DR3': (0.4816, 0.1386),
         'HSC-R_DR3': (0.6234, 0.1504),
         'HSC-I_DR3': (0.7741, 0.1552),
@@ -373,17 +377,16 @@ def filter_widths():
 
     return filt_dict
 
-
-
-def filter_files():
+def filter_files(CDFS=False):
     """ 
     Returns the location of filter transmission curve files for input into the lephare config file.
     """
     filt_files = {
-        # 'CFHT-u':'cfht/megacam/up.pb',
-        # 'CFHT-g':'cfht/megacam/gp.pb',
-        # 'CFHT-r':'cfht/megacam/rp.pb',
-        # 'CFHT-z':'cfht/megacam/zp.pb',
+        'u':'cfht/megacam/up.pb',
+        'g':'cfht/megacam/gp.pb',
+        'r':'cfht/megacam/rp.pb',
+        'i':'cfht/megacam/ip.pb',
+        'z':'cfht/megacam/zp.pb',
         'HSC-G_DR3':'myfilters/HSC/g_HSC.txt',
         'HSC-R_DR3':'myfilters/HSC/r_HSC.txt',
         'HSC-I_DR3':'myfilters/HSC/i_HSC.txt',
@@ -395,10 +398,10 @@ def filter_files():
         'J':'myfilters/VISTA/VISTA_J.txt',
         'H':'myfilters/VISTA/VISTA_H.txt',
         'Ks':'myfilters/VISTA/VISTA_Ks.txt',
-        'f115w':'myfilters/JWST/f115w_angstroms.txt',
-        'f150w':'myfilters/JWST/f150w_angstroms.txt',
-        'f277w':'myfilters/JWST/f277w_angstroms.txt',
-        'f444w':'myfilters/JWST/f444w_angstroms.txt',
+        # 'f115w':'myfilters/JWST/f115w_angstroms.txt',
+        # 'f150w':'myfilters/JWST/f150w_angstroms.txt',
+        # 'f277w':'myfilters/JWST/f277w_angstroms.txt',
+        # 'f444w':'myfilters/JWST/f444w_angstroms.txt',
         'VIS':'myfilters/Euclid/Euclid_VIS.txt',  
         'Ye':'myfilters/Euclid/Euclid_Y.txt',
         'Je':'myfilters/Euclid/Euclid_J.txt',
@@ -407,8 +410,29 @@ def filter_files():
         'ch2cds':'myfilters/SPITZER/irac_ch2.txt',
     }
 
-    return filt_files
+    if CDFS:
+        new_filt_files = {}
 
+        for k, v in filt_files.items():
+            # Remove _DR3 from HSC filters
+            if k.startswith('HSC') and k.endswith('_DR3'):
+                k = k.replace('_DR3', '')
+
+            # Rename Euclid filters
+            if k == 'VIS':
+                k = 'VIS_Q1'
+            elif k == 'Ye':
+                k = 'YE_Q1'
+            elif k == 'Je':
+                k = 'JE_Q1'
+            elif k == 'He':
+                k = 'HE_Q1'
+
+            new_filt_files[k] = v
+
+        filt_files = new_filt_files
+
+    return filt_files
 
 
 def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_type: str, run_brown_dwarfs: bool, run_dusty: bool, run_lya: bool,
@@ -489,6 +513,10 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
             filters_to_remove = ['HSC-G_DR3', 'HSC-R_DR3', 'f277w', 'f444w', 'ch1cds', 'ch2cds']
             filter_names = remove_items(filter_names, filters_to_remove)
             print('Running brown dwarfs: blue filters and long-wavelength filters removed in config file.')
+            if field_name == 'CDFS':
+                filters_to_remove = ['HSC-G', 'HSC-R', 'u', 'g', 'r']
+                filter_names = remove_items(filter_names, filters_to_remove)
+                print('Running brown dwarfs: blue filters removed in config file in CDFS.')
 
         if run_dusty == False:
             if field_name != 'XMM':
@@ -502,11 +530,25 @@ def GenerateLePhareConfig(field_name, all_filters: list, det_filters: list, run_
         if field_name == 'XMM':
             filter_dict['ch1servs'] = filter_dict.pop('ch1cds')
             filter_dict['ch2servs'] = filter_dict.pop('ch2cds')
-            
+        if field_name == 'CDFS':
+            # Change HSC-{}_DR3 to HSC-{}
+            for key in list(filter_dict.keys()):
+                if key.startswith('HSC-') and key.endswith('_DR3'):
+                    new_key = key.replace('_DR3', '')
+                    filter_dict[new_key] = filter_dict.pop(key)
+            # Change VIS, Ye, Je, He to VIS_Q1, YE_Q1, JE_Q1, HE_Q1
+            filter_dict['VIS_Q1'] = filter_dict.pop('VIS')
+            filter_dict['YE_Q1'] = filter_dict.pop('Ye')
+            filter_dict['JE_Q1'] = filter_dict.pop('Je')
+            filter_dict['HE_Q1'] = filter_dict.pop('He')
+
         filter_list = 'FILTER_LIST '
         for filter_name in filter_names:
             filter_list += f'{filter_dict[filter_name]},'
         filter_list = filter_list[:-1] # remove last comma
+
+
+
 
         f.write(filter_list + '\n')
         f.write('					# (in $LEPHAREDIR/filt/*)\n')
