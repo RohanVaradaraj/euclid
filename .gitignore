@@ -6,6 +6,9 @@
 /src/regridding/*.xml
 /src/regridding/*.tmp
 
+# Ignore ALL fits files in src
+/src/*/*.fits
+
 # Ignore temporary .sh files 
 /src/*/tmp_*
 /src/*/myfile.sh*
