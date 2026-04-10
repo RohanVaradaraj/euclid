@@ -1,16 +1,13 @@
 """
 The code that computes the LF! Beautiful.
 
-Created: Thursday 14th November 2024.
+Modified from the z=7 version for z=6 to experiment with different zbin cuts, bit cleaner too.
 """
 
 import numpy as np
-from astropy.table import Table, vstack, Column
+from astropy.table import Table
 import matplotlib.pyplot as plt
 from pathlib import Path
-from scipy.optimize import curve_fit
-import emcee
-import corner
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
@@ -19,10 +16,8 @@ plt.rcParams['figure.dpi'] = 100
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
 
 #! Switches
-run_type = ''
-#run_type = 'with_euclid'   
 
-field_name = 'COSMOS'
+field_name = 'CDFS'
 
 do_completeness = False
 
@@ -79,7 +74,7 @@ def schechter_fit(M, phiStar, Mstar, alpha):
 
 def concatenate_arrays(*arrays):
     """
-    Concatenates multiple sets of (x, y, dy) arrays.
+    Concatenates multiple sets of (x, y, dy) arrays, to combine LF data I pass in.
     """
     if len(arrays) < 2:
         raise ValueError("At least two sets of (x, y, dy) arrays are required for concatenation.")
@@ -100,44 +95,95 @@ if field_name == 'XMM':
     cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
 if field_name == 'COSMOS':
     cat_name = 'COSMOS_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_06_06.fits'
+if field_name == 'CDFS':
+    cat_name = 'CDFS_5sig_HSC_Z_nonDet_HSC_G_nonDet_r_candidates_2026_04_08_with_euclid.fits'
 
 
 t = Table.read(cat_dir / cat_name)
-print(len(t))
+print(len(t) , 'objects in catalogue')
+# print(t.colnames)
+# exit()
 
-# Remove the Lya emitters which have z>7.5 with no emission line.
+# Remove errant objects
 t = t[t['Vmax'] > 0]
 t = t[t['Muv'] < 0]
 
-t = t[t['Zphot'] > 5.7]
-t = t[t['Zphot'] < 6.3]
+# In CDFS, remove VOICEless data
+if field_name == 'CDFS':
+    t = t[t['err_r'] > 0]
+    print('In CDFS, ', len(t), ' objects after removing VOICEless')
+# Restrict redshift range
+# t = t[t['Zphot'] > 5.7]
+# t = t[t['Zphot'] < 6.3]
+# print('In CDFS, ', len(t), ' objects after restricting to 5.7<z<6.3')
+
+# In CDFS, restrict to z=5.5-6.5
+if field_name == 'CDFS':
+    t = t[t['Zphot'] > 5.5]
+    t = t[t['Zphot'] < 6.5]
+    print('In CDFS, ', len(t), ' objects after restricting to 5.5<z<6.5')
+    
+
+# Restrict CDFS to > 8sigma in HSC-Z
+# mask = (t['flux_HSC-Z'] / t['err_HSC-Z'] > 8)
+# t = t[mask]
+# print('In CDFS, ', len(t), ' objects after restricting to 8sigma')
+
+# plt.hist(t['Muv'], bins=np.arange(-24, -19, 0.1))
+# plt.show()
+# exit()
 
 # plt.scatter(t['Muv'], t['Vmax'], c=t['Zphot'], cmap='viridis', s=10)    
 # plt.show()
 # exit()
 
-# Restrict to Muv < -20.5
-# print('Number of galaxies before Muv cut: ', len(t))
-# #t = t[t['Muv'] < -20.95]
-# print('Number of galaxies after Muv cut: ', len(t))
-
 # Read in completeness matrix
-completeness_dir = Path.cwd().parent / 'injection_recovery'
-completeness_name = 'completeness_matrix_2.npy'
-completeness_matrix = np.load(completeness_dir / completeness_name)
+if do_completeness:
+    if field_name == 'COSMOS':
+        completeness_dir = Path.cwd().parent / 'injection_recovery'
+        completeness_name = f'completeness_matrix_z6_COSMOS.npy'
+        completeness_matrix = np.load(completeness_dir / completeness_name)
 
-# Flip in y-axis to get correct Muv ordering
-completeness_matrix = np.flip(completeness_matrix, axis=0)
+        # Flip in y-axis to get correct Muv ordering
+        completeness_matrix = np.flip(completeness_matrix, axis=0)
 
-# Bins to snap galaxy zphot and Muv to
-Muv_completeness_bins = np.arange(-23, -20., 0.1)
-z_completeness_bins = np.arange(6.5, 7.5, 0.05)
+    # XMM compeletness matrices split into XMM1,2,3
+    if field_name == 'XMM':
+        completeness_dir = Path.cwd().parent / 'injection_recovery'
+        completeness_name1 = f'completeness_matrix_z6_XMM1.npy'
+        completeness_name2 = f'completeness_matrix_z6_XMM2.npy'
+        completeness_name3 = f'completeness_matrix_z6_XMM3.npy'
+
+        completeness_matrix1 = np.load(completeness_dir / completeness_name1)
+        completeness_matrix2 = np.load(completeness_dir / completeness_name2)
+        completeness_matrix3 = np.load(completeness_dir / completeness_name3)
+
+        # Flip in y-axis to get correct Muv ordering
+        completeness_matrix1 = np.flip(completeness_matrix1, axis=0)
+        completeness_matrix2 = np.flip(completeness_matrix2, axis=0)
+        completeness_matrix3 = np.flip(completeness_matrix3, axis=0)
+
+        # Make a dict to store the matrices for each XMM subfield
+        completeness_matrices = {
+            'XMM1': completeness_matrix1,
+            'XMM2': completeness_matrix2,
+            'XMM3': completeness_matrix3
+        }
+
+    # Bins to snap galaxy zphot and Muv to
+    Muv_completeness_bins = np.arange(-23, -20., 0.1)
+    z_completeness_bins = np.arange(5.5, 6.5, 0.05)
 
 #! ################## Muv BINNING ####################
 
 Muv_bins = [-23., -22.5, -22.25, -22., -21.75, -21.5, -21.25, -21., -20.75, -20.5, -20.25, -20., -19.75, -19.5]
 bin_widths = np.abs(np.diff(Muv_bins))
 bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
+
+if field_name == 'CDFS':
+    Muv_bins = [-24, -23.5, -23, -22.5, -22., -21.5, -21.]
+    bin_widths = np.abs(np.diff(Muv_bins))
+    bin_centres = 0.5 * (np.array(Muv_bins[:-1]) + np.array(Muv_bins[1:]))
 
 
 print(f'Muv bins: {np.round(Muv_bins, 2)}')
@@ -174,16 +220,29 @@ for i, sub_table in enumerate(binned_tables):
         z = obj['Zphot']
         Muv = obj['Muv']
         
-        # Find completeness for this Muv,z
-        Muv_bin = np.digitize(['Muv'], Muv_completeness_bins)[0] - 1
-        z_bin = np.digitize([z], z_completeness_bins)[0] - 1
+        if do_completeness:
+            # Find completeness for this Muv,z
+            Muv_bin = np.digitize(['Muv'], Muv_completeness_bins)[0] - 1
+            z_bin = np.digitize([z], z_completeness_bins)[0] - 1
 
-        # Ensure indices stay within bounds
-        z_bin = max(0, min(z_bin, completeness_matrix.shape[1] - 1))
-        Muv_bin = max(0, min(Muv_bin, completeness_matrix.shape[0] - 1))
-    
+            #? COSMOS case
+            if field_name == 'COSMOS':
+                # Ensure indices stay within bounds
+                z_bin = max(0, min(z_bin, completeness_matrix.shape[1] - 1))
+                Muv_bin = max(0, min(Muv_bin, completeness_matrix.shape[0] - 1))
+                completeness = completeness_matrix[Muv_bin, z_bin]
+                print('Completeness at Muv: ', Muv, ' z: ', z, ' is: ', completeness)
 
-        completeness = completeness_matrix[Muv_bin, z_bin]
+            #? XMM case
+            if field_name == 'XMM':
+                # Determine which XMM subfield the object is in based on its ID
+                video_tile = obj['VISTA_tile_used']
+                completeness_matrix = completeness_matrices[video_tile]
+                # Ensure indices stay within bounds
+                z_bin = max(0, min(z_bin, completeness_matrix.shape[1] - 1))
+                Muv_bin = max(0, min(Muv_bin, completeness_matrix.shape[0] - 1))
+                completeness = completeness_matrix[Muv_bin, z_bin]
+                print('Completeness at Muv: ', Muv, ' z: ', z, ' is: ', completeness, 'in tile: ', video_tile)
 
         # Summand
         if do_completeness:
@@ -193,9 +252,12 @@ for i, sub_table in enumerate(binned_tables):
         phi[i] += summand
 
         # Compute error term
-        err_summand = 1 / Vmax ** 2
-        delta_phi[i] += err_summand
-
+        if do_completeness:
+            err_summand = 1 / (Vmax * completeness) ** 2
+            delta_phi[i] += err_summand
+        else:
+            err_summand = 1 / Vmax ** 2
+            delta_phi[i] += err_summand
 
 
 ##############################! ERROR, INCLUDING COSMIC VARIANCE ##############################
@@ -219,14 +281,20 @@ bowler15_M = [-22.625, -22.125, -21.75, -21.5, -21.25]
 bowler15_phi = [1.16e-6, 5.98e-6, 1.9e-5, 3.92e-5, 9.14e-5]
 bowler15_dphi = [0.67e-6, 1.64e-6, 0.41e-5, 0.7e-5, 1.39e-5]
 
-#? MY VALUES IN XMM, VARIOUS CUTS
-if field_name == 'XMM':
-    sample_chi2_10_cut_LF = [1.33157075e-07, 1.18241778e-06, 2.52909446e-06, 9.08111135e-06, 
-                            1.65676294e-05, 2.97647415e-05, 3.56246948e-05, 3.88829869e-05,
-                            2.74801812e-05, 1.70064150e-05, 1.04995291e-05]
-    sample_chi2_10_cut_LF_err = [9.41586427e-08, 4.18552119e-07, 6.35377120e-07, 1.24680926e-06,
-                                1.79523078e-06, 2.52202978e-06, 2.70418308e-06, 3.84325176e-06,
-                                3.62746107e-06, 2.65738666e-06, 3.28051799e-06]
+#! JT Schindler QSO LF z=6
+schindler22_qso = dpl(M, -26.38, 1.778e-9, -1.70, -3.84)
+
+#? MY VALUES IN XMM, WITH COMPLETENESS CORRECTION APPLIED.
+xmm_LF = [1.52232581e-07, 2.27746489e-06, 4.13161771e-06, 1.83714466e-05,
+ 3.90277980e-05, 7.45208718e-05, 1.02450728e-04, 1.14245945e-04,
+ 1.52522595e-04, 6.64156917e-05, 3.47985444e-05, 8.52913347e-07,
+ 0.00000000e+00]
+ 
+xmm_LF_err = [1.07651737e-07, 8.63741352e-07, 1.13299825e-06, 2.64674604e-06,
+ 4.11314503e-06, 6.27607487e-06, 7.49907283e-06, 9.27034989e-06,
+ 5.61527856e-05, 9.48876798e-06, 1.04010892e-05, 8.52913347e-07,
+ 0.00000000e+00]
+
 
 if field_name == 'COSMOS':
     full_zspan_LF = [3.18107849e-06, 7.72650799e-06, 1.65541048e-05, 3.33368956e-05, 7.87426461e-05, 1.21480570e-04, 
@@ -235,16 +303,61 @@ if field_name == 'COSMOS':
     full_zspan_LF_err = [1.06290027e-06, 1.69434097e-06, 2.53083832e-06, 3.80276015e-06, 6.08074184e-06, 7.82026245e-06, 
                          1.17891825e-05, 1.83488356e-05, 2.59915168e-05, 2.75335959e-04, 8.89131186e-06]
 
+#? Harikane+23, GOLDRUSH, HSC-only
+Muv_h23 = np.array([
+    -25.02, -24.52, -24.02, -23.52, -23.12, -22.82,
+    -22.52, -22.22, -21.92, -21.62, -21.32, -21.02
+])
+
+LF_h23 = np.array([
+    1.05e-8, 2.13e-8, 2.77e-8, 8.51e-8, 3.34e-7, 1.24e-6,
+    2.67e-6, 4.48e-6, 1.10e-5, 3.69e-5, 7.35e-5, 1.77e-4
+])
+
+LFerrlo_h23 = np.array([
+    1.05e-8, 2.13e-8, 2.23e-8, 2.85e-8, 0.72e-7, 0.14e-6,
+    0.39e-6, 0.53e-6, 0.09e-5, 0.48e-5, 0.85e-5, 0.21e-4
+])
+
+LFerrup_h23 = np.array([
+    4.11e-8, 4.21e-8, 4.19e-8, 5.38e-8, 0.72e-7, 0.15e-6,
+    0.39e-6, 0.53e-6, 0.09e-5, 0.48e-5, 0.85e-5, 0.21e-4
+])
+
+#? Bouwens+21, CANDELS
+Muv_b21 = np.array([
+    -22.52, -22.02, -21.52, -21.02, -20.52,
+    -20.02, -19.52, -18.77, -17.77, -16.77
+])
+
+# Shift Muv to right by 0.02 mag
+Muv_b21 += 0.05
+
+LF_b21 = np.array([
+    2.0e-6, 1.4e-5, 5.1e-5, 1.69e-4, 3.17e-4,
+    7.24e-4, 1.147e-3, 2.82e-3, 8.36e-3, 1.71e-2
+])
+
+LFerr_b21 = np.array([
+    2.0e-6, 5.0e-6, 1.1e-5, 2.4e-5, 4.1e-5,
+    8.7e-5, 1.57e-4, 4.40e-4, 1.66e-3, 5.26e-3
+])
 
 #############! PLOT MY DATA ###############
 plt.figure(figsize=(10, 10))
 
 label= field_name + r', ($\chi^2_{\mathrm{BD}} < \chi^2_{\mathrm{high-}z}$)'
-label = r'COSMOS, $6.7 < z < 7.3$'
+label = f'{field_name}' + r', $6.5 < z < 7.5$'
+label = f'{field_name}'
 
 plt.errorbar(bin_centres, phi, yerr=delta_phi, fmt='o', color='red', 
              markersize=14, label=label, 
-             elinewidth=3, markeredgecolor='black')
+             elinewidth=3, markeredgecolor='black', zorder=10)
+
+if field_name == 'COSMOS':
+    # Also plot XMM
+    plt.errorbar(bin_centres-0.05, xmm_LF, yerr=xmm_LF_err, fmt='s', color='orange',
+                 markersize=14, label='XMM-LSS', elinewidth=3, markeredgecolor='black', zorder=10)
 
 # plot my sample_chi2_10 data with offset in M
 # sample_chi2_10_cut_LF = np.array(sample_chi2_10_cut_LF)
@@ -256,9 +369,9 @@ plt.errorbar(bin_centres, phi, yerr=delta_phi, fmt='o', color='red',
 #              marker='h')
 
 #? PLOTTING DIFFERENT REDSHIFT RANGES IN COSMOS
-plt.errorbar(bin_centres[2:] + 0.07, full_zspan_LF, yerr=full_zspan_LF_err, fmt='o', color='orange',
-             markersize=12, label=r'COSMOS, $6.5 < z < 7.5$', elinewidth=3, markeredgecolor='black',
-             marker='h')
+# plt.errorbar(bin_centres[2:] + 0.07, full_zspan_LF, yerr=full_zspan_LF_err, fmt='o', color='orange',
+#              markersize=12, label=r'COSMOS, $6.5 < z < 7.5$', elinewidth=3, markeredgecolor='black',
+#              marker='h')
 
 
 ###############! PLOT LITERATURE DATA ###############
@@ -267,6 +380,14 @@ plt.plot(M, bowler15_z6_dpl, color='blue', label='Bowler+15, DPL', linestyle='--
 
 plt.errorbar(bowler15_M_weighted, bowler15_phi, yerr=bowler15_dphi, fmt='o', color='blue',
              markersize=10, label=r'Bowler+15, $5.7<z<6.3$', elinewidth=2)
+
+plt.errorbar(Muv_h23, LF_h23, yerr=[LFerrlo_h23, LFerrup_h23], fmt='h', color='green',
+                markersize=10, label='Harikane+23', elinewidth=2, alpha=0.8)
+
+plt.errorbar(Muv_b21, LF_b21, yerr=LFerr_b21, fmt='d', color='purple',
+                markersize=10, label='Bouwens+21', elinewidth=2, alpha=0.8)
+
+plt.plot(M, schindler22_qso, color='gray', label='Schindler+22, QSO', linestyle=':')
 
 plt.tick_params(which='major', length=10, width=3)
 plt.tick_params(axis='both', which='minor', length=5, width=2)
@@ -279,11 +400,13 @@ plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 
 
-plt.ylim([1e-7, 1e-3])
-plt.xlim(-23.5, -19)
+plt.ylim([1e-8, 1e-2])
+if field_name == 'XMM':
+    plt.ylim([1e-8, 1e-3])
+plt.xlim(-24, -19)
 
 
-plt.legend(loc='lower right', fontsize=17)
+plt.legend(loc='upper left', fontsize=17)
 
 
 plt.tight_layout()  # Leaves extra space at the bottom

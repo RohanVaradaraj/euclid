@@ -10,9 +10,8 @@ import os
 from astropy.io import fits
 from astropy.cosmology import FlatLambdaCDM
 from astropy.table import Table, Column
-import matplotlib.pyplot as plt
 from astropy.constants import c
-from scipy.integrate import simps, romb
+from scipy.integrate import simpson
 from pathlib import Path
 from astropy.wcs import WCS
 import glob
@@ -27,12 +26,6 @@ depth_path = Path.cwd().parents[0] / 'depths'
 sys.path.append(str(depth_path))
 from new_depth_codes import grid_depths
 
-plt.rcParams.update({'font.size': 15})
-plt.rcParams['axes.linewidth'] = 4
-plt.rcParams['figure.dpi'] = 100
-
-
-
 def mag_to_flux(m):
 	'''Convert mags to flux'''
 	flux = 10**(-0.4*(m+48.6))
@@ -46,7 +39,7 @@ def flux_to_mag(flux):
 	return mag
 
 #! Run with Kron-derived Muv?
-kron = True
+kron = False
 
 # Define the cosmology
 H = 70
@@ -55,42 +48,52 @@ omegaV = 0.7
 cosmo = FlatLambdaCDM(H0=H, Om0=omegaM)
 
 #! Field name
-field_name = 'COSMOS'
+field_name = 'CDFS'
 
 #! Det/non-det filters
+if field_name != 'CDFS':
+    filters = {
+        'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+        'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+        'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    }
+else:
+    filters = {
+        'HSC-Z': {'type': 'detection', 'value': 5},
+        'HSC-G': {'type': 'non-detection', 'value': 2},
+        'r': {'type': 'non-detection', 'value': 2},
+    }  
+
 # filters = {
-#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'Y+J': {'type': 'stacked-detection', 'value': 5},
 #     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
 #     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 # }
-
-filters = {
-    'Y+J': {'type': 'stacked-detection', 'value': 5},
-    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-}
 
 
 #! Run type
-run_type = ''
+run_type = 'with_euclid'
 
 #! Redshifting parameters
 dz = 0.01
-zmin = 6.5
-zmax = 7.5
+zmin = 5.5
+zmax = 6.5
 
 #! Vmax parameters
 if field_name == 'COSMOS':
     field_area = 1.7201431257141546 # COSMOS
-    field_area = 0.6536 # Euclid COSMOS
+    #field_area = 0.6536 # Euclid COSMOS
 if field_name == 'XMM':
     field_area = 4.335562874179884 # XMM
+if field_name == 'CDFS':
+    field_area = 3.715234277211171
+    field_area = 3.89
 covering_fraction = 0.8
 field_area *= covering_fraction
 
 #! Photometry params
-aperture_size = 1.8 # arcsec
+aperture_size = 2.0 # arcsec
 
 #! SED Fitting folder
 # Generate name of the directory we want to use to make the catalogue
@@ -123,6 +126,9 @@ if field_name == 'COSMOS':
 if field_name == 'XMM': 
     #cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits'
     cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits'
+
+if field_name == 'CDFS':
+    cat_name = 'CDFS_5sig_HSC_Z_nonDet_HSC_G_nonDet_r_candidates_2026_04_08_with_euclid.fits'
 
 #! Read in catalogue of candidates
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
@@ -192,8 +198,9 @@ tile_to_index = {'XMM1': 0, 'XMM2': 1, 'XMM3': 2, 'CDFS1': 0, 'CDFS2': 1, 'CDFS3
 
 #! Get the filter transmission curves
 filter_dir = Path.home() / 'lephare' / 'lephare_dev' / 'filt'
-filt_files = filter_files() 
 
+cdfs_switch = (field_name == 'CDFS')
+filt_files = filter_files(CDFS = cdfs_switch) 
 
 # Remove filters not in the field
 if field_name == 'XMM':
@@ -201,6 +208,17 @@ if field_name == 'XMM':
     filt_files.pop('CFHT-g')
     filt_files.pop('CFHT-r')
     filt_files.pop('CFHT-z')
+    # filt_files.pop('f115w')
+    # filt_files.pop('f150w')
+    # filt_files.pop('f277w')
+    # filt_files.pop('f444w')
+    filt_files.pop('VIS')
+    filt_files.pop('Ye')
+    filt_files.pop('Je')
+    filt_files.pop('He')
+    filt_files.pop('ch1cds')
+    filt_files.pop('ch2cds')
+if (run_type == '') and (field_name == 'COSMOS'):
     filt_files.pop('f115w')
     filt_files.pop('f150w')
     filt_files.pop('f277w')
@@ -211,15 +229,11 @@ if field_name == 'XMM':
     filt_files.pop('He')
     filt_files.pop('ch1cds')
     filt_files.pop('ch2cds')
-if run_type == '':
-    filt_files.pop('f115w')
-    filt_files.pop('f150w')
-    filt_files.pop('f277w')
-    filt_files.pop('f444w')
-    filt_files.pop('VIS')
-    filt_files.pop('Ye')
-    filt_files.pop('Je')
-    filt_files.pop('He')
+if field_name == 'CDFS':
+    filt_files.pop('z')
+    filt_files.pop('HSC-NB0921')
+    filt_files.pop('HSC-NB0816')
+    filt_files.pop('HSC-Y')
     filt_files.pop('ch1cds')
     filt_files.pop('ch2cds')
 
@@ -237,7 +251,7 @@ det_filter_trans = det_filter_curve[:, 1]
 det_filter_trans /= np.max(det_filter_curve)
 
 # Compute filter area
-det_filter_area = simps(det_filter_trans, det_filter_wlen)
+det_filter_area = simpson(det_filter_trans, det_filter_wlen)
 
 # Now loop through the candidates
 for i, ID in enumerate(IDs):
@@ -273,15 +287,17 @@ for i, ID in enumerate(IDs):
     dec = t['DEC'][row_index]
 
     # Get Muv
-    Muv = t['Muv_kron'][row_index]
+    Muv = t['Muv'][row_index]
     print('Muv =', round(Muv[0], 2))
 
     # Get the redshift
     zphot = t['Zphot'][row_index]
 
     # Get the tile
-    if field_name == 'XMM' or field_name == 'CDFS':
+    if field_name == 'XMM':
         tile = t['video_tile'][row_index][0]
+    if field_name == 'CDFS':
+        tile = t['VISTA_tile_used'][row_index][0]
     else:
         tile = 'COSMOS'
 
@@ -312,7 +328,7 @@ for i, ID in enumerate(IDs):
     det_interpol = np.interp(det_filter_wlen, wlen, sed)
 
     # Compute initial flux
-    det_flux_init = simps((det_interpol * det_filter_trans), det_filter_wlen) / det_filter_area
+    det_flux_init = simpson((det_interpol * det_filter_trans), det_filter_wlen) / det_filter_area
 
     # get initial magnitude
     det_mag_init = flux_to_mag(det_flux_init)
@@ -346,7 +362,7 @@ for i, ID in enumerate(IDs):
         sed_interpol = np.interp(det_filter_wlen, wlen_shift, sed_shift)
 
         # Compute the flux
-        det_flux = simps((sed_interpol * det_filter_trans), det_filter_wlen) / det_filter_area
+        det_flux = simpson((sed_interpol * det_filter_trans), det_filter_wlen) / det_filter_area
 
         # Convert to magnitude
         det_mag = flux_to_mag(det_flux)
@@ -356,6 +372,15 @@ for i, ID in enumerate(IDs):
     t['zmax'][row_index] = z
 
     #! Compute Vmax
+    if field_name == 'XMM':
+        circle = t[row_index]['HSC_circle']
+        if (circle == '1') | (circle == '2U'):
+            field_area = 1.79
+        if (circle == '2L') | (circle == '3') | (circle == '2L3') | (circle == '2U3'):
+            field_area = 4.33
+        field_area *= covering_fraction
+
+    print('Field area is', round(field_area, 2), 'deg^2')
 
     # Convert field area into steradians
     field_area_ster = field_area * (np.pi / 180)**2
@@ -370,5 +395,5 @@ for i, ID in enumerate(IDs):
     print('Maximum Vmax =', maximum_V)
 
 print(t)
-#t.write(cat_dir / cat_name, overwrite=True)
+t.write(cat_dir / cat_name, overwrite=True)
 print(f'Saved catalogue to {cat_dir / cat_name}')
