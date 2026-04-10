@@ -87,11 +87,15 @@ def grid_depths(gridTable, x, y, faster = True, verbose = False, nearby = False)
 #vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
 #vista_file = 'COSMOSFULL_DR3_UNMASKED_Ks_2024_11_06_2.0as_IRAC_2.8as_ALL.fits'
 
-vista_dir = Path.cwd().parents[1] / 'data' / 'catalogues' #/ 'candidates'
-#vista_file = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise.fits'
-vista_file = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
+# vista_dir = Path.cwd().parents[1] / 'data' / 'catalogues' #/ 'candidates'
+# #vista_file = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid_kron_piecewise.fits'
+# vista_file = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I.fits'
 
 #vista_file = 'COSMOSFULL_DR3_MASKVISTADET_HSC-Z_DR3_2025_06_05_1.8as_IRAC_2.8as_ALL.fits' # HSC-Z selected
+
+#? CDFS z=6
+vista_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCDFS' / 'other'
+vista_file = 'CDFSFULL_DR3_MASKVISTADET_HSC-Z_2026_04_08_2.0as_IRAC_2.8as_ALL.fits'
 
 vista_cat = Table.read(vista_dir / vista_file)
 
@@ -105,8 +109,11 @@ print(vista_cat.colnames)
 
 if crossmatch:
     # Read in the Ks catalogue
-    cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS'
-    k_cat = Table.read(cat_dir / 'COSMOSFULL_DR3_UNMASKED_Ks_2023_03_11_2.0as_IRAC_2.8as_ALL.fits')
+    # cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS'
+    # k_cat = Table.read(cat_dir / 'COSMOSFULL_DR3_UNMASKED_Ks_2023_03_11_2.0as_IRAC_2.8as_ALL.fits')
+
+    cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCDFS'
+    k_cat = 'CDFSFULL_DR3_UNMASKED_Ks_2022_11_30_2.0as_IRAC_2.8as_ALL.fits'
 
     print(k_cat.colnames)
 

@@ -28,9 +28,9 @@ overwrite_cats = True
 overwrite_images = True
 
 #! Run in steps
-make_cutouts = True
+make_cutouts = False
 inject_sources = False
-run_se = False
+run_se = True
 
 def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
 
@@ -55,6 +55,12 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
     #! Make cutouts of base image to inject into. Saves it to disk.
     if make_cutouts:
 
+        if overwrite_images:
+            for file in glob.glob(str(image_dir / '*.fits')):
+                os.remove(file)
+            for file in glob.glob(str(image_dir / 'weights' / '*.fits')):
+                os.remove(file)
+
         print('Generating cutouts of base image')
         cutout_subimage(field_name, base_image, image_size, pix_scale, n_images, random=True, overwrite=overwrite)
 
@@ -70,6 +76,8 @@ def RunFullInjectionRecoveryPipeline(base_image, overwrite=True):
                 os.remove(file)
         if overwrite_images:
             for file in glob.glob(str(injected_dir / '*.fits')):
+                os.remove(file)
+            for file in glob.glob(str(injected_dir / 'weights' / '*.fits')):
                 os.remove(file)
 
         #? Go through each image and inject sources

@@ -473,6 +473,9 @@ if __name__ == '__main__':
     ra = t['RA']
     dec = t['DEC']
     ID = t['ID']
+    print(ra)
+    print(dec)
+    exit()
 
 
     ############! GET CUTOUTS ############

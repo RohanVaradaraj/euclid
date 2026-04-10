@@ -163,6 +163,18 @@ finkelstein15_alpha = np.array([-1.56, -1.67, -2.02, -2.03, -2.36])
 finkelstein15_alpha_err_up = np.array([0.06, 0.05, 0.10, 0.21, 0.54])
 finkelstein15_alpha_err_lo = np.array([0.05, 0.06, 0.10, 0.20, 0.40])
 
+# For Finkelstein+15, restrict to z=7.05
+finkelstein15_z = np.array([7.05])
+finkelstein15_phi = np.array([1.57e-4])
+finkelstein15_phi_err_up = np.array([1.49e-4])
+finkelstein15_phi_err_lo = np.array([0.95e-4])
+finkelstein15_M_star = np.array([-21.03])
+finkelstein15_M_star_err_up = np.array([0.37])
+finkelstein15_M_star_err_lo = np.array([0.50])
+finkelstein15_alpha = np.array([-2.03])
+finkelstein15_alpha_err_up = np.array([0.21])
+finkelstein15_alpha_err_lo = np.array([0.20])
+
 # Bouwens+21
 bouwens21_z = np.array([2.1, 2.9, 3.8, 4.9, 5.9, 6.8, 7.9, 8.9])
 bouwens21_phi = np.array([4e-3, 2.1e-3, 1.69e-3, 0.79e-3, 0.51e-3, 0.19e-3, 0.09e-3, 0.021e-3])
@@ -174,6 +186,17 @@ bouwens21_M_star_err = np.array([0.09, 0.09, 0.08, 0.11, 0.09, 0.13, 0.28, 0.0])
 
 bouwens21_alpha = np.array([-1.52, -1.61, -1.69, -1.74, -1.93, -2.06, -2.23, -2.33])
 bouwens21_alpha_err = np.array([0.03, 0.03, 0.03, 0.06, 0.08, 0.11, 0.20, 0.19])
+
+# For Bouwens+21, restrict to z=6.8
+bouwens21_z = np.array([6.8])
+bouwens21_phi = np.array([0.19e-3])
+bouwens21_phi_err_up = np.array([0.08e-3])
+bouwens21_phi_err_lo = np.array([0.06e-3])
+bouwens21_M_star = np.array([-21.15])
+bouwens21_M_star_err = np.array([0.13])
+bouwens21_alpha = np.array([-2.06])
+bouwens21_alpha_err = np.array([0.11])
+
 
 # Bowler+17
 bowler17_z = np.array([7.1])
@@ -337,6 +360,9 @@ mcleod24_phi = np.log10(mcleod24_phi)
 whitler25_phi = np.log10(whitler25_phi)
 perez23_phi = np.log10(perez23_phi)
 
+# Bouwens+21
+
+
 
 # Create figure and axes
 fig, axs = plt.subplots(2, 2, figsize=(20, 12))
@@ -357,8 +383,8 @@ styles = {
     "bowler20":    {"color": "orange",   "marker": "d",  "ms": 10,  "elinewidth": 3},
     "bowler15":    {"color": "purple",   "marker": "v",  "ms": 10,  "elinewidth": 3},
     "adams23":     {"color": "gray",    "marker": "p",  "ms": 10,  "elinewidth": 3},
-    "finkelstein15":{"color": "deepskyblue",    "marker": "*",  "ms": 10, "elinewidth": 3},
-    "bouwens21":   {"color": "pink",     "marker": "X",  "ms": 10,  "elinewidth": 3},
+    "finkelstein15":{"color": "deepskyblue",    "marker": "*",  "ms": 16, "elinewidth": 3},
+    "bouwens21":   {"color": "pink",     "marker": "X",  "ms": 12,  "elinewidth": 3},
     "bowler17":    {"color": "magenta",     "marker": "h",  "ms": 10,  "elinewidth": 3},
     "harikane24":  {"color": "black",    "marker": "H",  "ms": 10,  "elinewidth": 3},
     "mcleod24":    {"color": "coral",    "marker": ">",  "ms": 10,  "elinewidth": 3},
@@ -368,6 +394,9 @@ styles = {
     "Perez-Gonzalez23": {"color": "dodgerblue", "marker":"<", "ms": 10, "elinewidth": 3}
 }
 
+# zorder for finkelstein + bouwens
+zorder_fb = 9
+
 #! Plot Phi*
 plot_data(axs[0, 0], my_z, my_phi, [my_phi_err_lo, my_phi_err_up], "This work", styles["my"], zorder=10)
 plot_data(axs[0, 0], donnan23_z, donnan23_phi, donnan23_phi_err, "Donnan+23", styles["donnan23"], zorder=zorder)
@@ -375,20 +404,29 @@ plot_data(axs[0, 0], donnan24_z, donnan24_phi, donnan24_phi_err, "Donnan+24", st
 plot_data(axs[0, 0], bowler20_z, bowler20_phi, bowler20_phi_err, "Bowler+20", styles["bowler20"], zorder=zorder)
 plot_data(axs[0, 0], bowler15_z, bowler15_phi, [bowler15_phi_err_lo, bowler15_phi_err_up], "Bowler+15", styles["bowler15"], zorder=zorder)
 plot_data(axs[0, 0], adams23_z, adams23_phi, adams23_phi_err, "Adams+23", styles["adams23"], zorder=zorder)
-#plot_data(axs[0, 0], finkelstein15_z, finkelstein15_phi, [finkelstein15_phi_err_lo, finkelstein15_phi_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder)
-#plot_data(axs[0, 0], bouwens21_z, bouwens21_phi, [bouwens21_phi_err_lo, bouwens21_phi_err_up], "Bouwens+21", styles["bouwens21"], zorder=zorder)
+plot_data(axs[0, 0], finkelstein15_z, finkelstein15_phi, [finkelstein15_phi_err_lo, finkelstein15_phi_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder_fb)
+plot_data(axs[0, 0], bouwens21_z, bouwens21_phi, [bouwens21_phi_err_lo, bouwens21_phi_err_up], "Bouwens+21", styles["bouwens21"], zorder=zorder_fb)
 plot_data(axs[0, 0], bowler17_z, bowler17_phi, [bowler17_phi_err_lo, bowler17_phi_err_up], "Bowler+17", styles["bowler17"], zorder=zorder)
-plot_data(axs[0, 0], harikane24_z, harikane24_phi, [harikane24_phi_err_lo, harikane24_phi_err_up], "Harikane+24", styles["harikane24"], zorder=zorder)
+plot_data(axs[0, 0], harikane24_z, harikane24_phi, [harikane24_phi_err_lo, harikane24_phi_err_up], "Harikane+25", styles["harikane24"], zorder=zorder)
 plot_data(axs[0, 0], mcleod24_z, mcleod24_phi, mcleod24_phi_err, "McLeod+24", styles["mcleod24"], zorder=zorder)
 plot_data(axs[0, 0], chemerynska24_z, chemerynska24_phi, chemerynska24_phi_err, "Chemerynska+24", styles["chemerynska24"], zorder=zorder)
 plot_data(axs[0, 0], whitler25_z, whitler25_phi, [whitler25_phi_err_lo, whitler25_phi_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[0, 0], adams24_z, adams24_phi, [adams24_phi_err_lo, adams24_phi_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[0, 0], perez23_z, perez23_phi, [perez23_phi_err_lo, perez23_phi_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
 
+
+# # Plot bouwens as open square
+# axs[0, 0].errorbar(bouwens21_z, bouwens21_phi, yerr=[bouwens21_phi_err_lo, bouwens21_phi_err_up], fmt='s', label="Bouwens+21", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+
+# # Plot finkelstein as open circle
+# axs[0, 0].errorbar(finkelstein15_z, finkelstein15_phi, yerr=[finkelstein15_phi_err_lo, finkelstein15_phi_err_up], fmt='o', label="Finkelstein+15", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+
+
 axs[0, 0].set_xlabel('z', fontsize=30)
 axs[0, 0].set_ylabel(r'$\log_{10}(\phi^{*}\,/\,\rm{mag}^{-1}\,\rm{Mpc}^{-3})$')
 axs[0, 0].set_xlim(5.5, 13)
 axs[0, 0].set_ylim(-6., -2.7)
+
 
 
 
@@ -399,15 +437,21 @@ plot_data(axs[0, 1], donnan24_z, donnan24_M_star, donnan24_M_star_err, "Donnan+2
 plot_data(axs[0, 1], bowler20_z, bowler20_M_star, bowler20_M_star_err, "Bowler+20", styles["bowler20"], zorder=zorder)
 plot_data(axs[0, 1], bowler15_z, bowler15_M_star, bowler15_M_star_err, "Bowler+15", styles["bowler15"], zorder=zorder)
 plot_data(axs[0, 1], adams23_z, adams23_M_star, adams23_M_star_err, "Adams+23", styles["adams23"], zorder=zorder)
-#plot_data(axs[0, 1], finkelstein15_z, finkelstein15_M_star, [finkelstein15_M_star_err_lo, finkelstein15_M_star_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder)
-#plot_data(axs[0, 1], bouwens21_z, bouwens21_M_star, bouwens21_M_star_err, "Bouwens+21", styles["bouwens21"], zorder=zorder)
+plot_data(axs[0, 1], finkelstein15_z, finkelstein15_M_star, [finkelstein15_M_star_err_lo, finkelstein15_M_star_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder_fb)
+plot_data(axs[0, 1], bouwens21_z, bouwens21_M_star, bouwens21_M_star_err, "Bouwens+21", styles["bouwens21"], zorder=zorder_fb)
 plot_data(axs[0, 1], bowler17_z, bowler17_M_star, [bowler17_M_star_err_lo, bowler17_M_star_err_up], "Bowler+17", styles["bowler17"], zorder=zorder)
-plot_data(axs[0, 1], harikane24_z, harikane24_M_star, [harikane24_M_star_err_lo, harikane24_M_star_err_up], "Harikane+24", styles["harikane24"], zorder=zorder)
+plot_data(axs[0, 1], harikane24_z, harikane24_M_star, [harikane24_M_star_err_lo, harikane24_M_star_err_up], "Harikane+25", styles["harikane24"], zorder=zorder)
 plot_data(axs[0, 1], mcleod24_z, mcleod24_M_star, mcleod24_M_star_err, "McLeod+24", styles["mcleod24"], zorder=zorder)
 plot_data(axs[0, 1], chemerynska24_z, chemerynska24_M_star, chemerynska24_M_star_err, "Chemerynska+24", styles["chemerynska24"], zorder=zorder)
 plot_data(axs[0, 1], whitler25_z, whitler25_M_star, [whitler25_M_star_err_lo, whitler25_M_star_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[0, 1], adams24_z, adams24_M_star, [adams24_M_star_err_lo, adams24_M_star_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[0, 1], perez23_z, perez23_M_star, [perez23_M_star_err_lo, perez23_M_star_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
+
+# # Plot bouwens as open square
+# axs[0, 1].errorbar(bouwens21_z, bouwens21_M_star, yerr=bouwens21_M_star_err, fmt='s', label="Bouwens+21", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+# # Plot finkelstein as open circle
+# axs[0, 1].errorbar(finkelstein15_z, finkelstein15_M_star, yerr=[finkelstein15_M_star_err_lo, finkelstein15_M_star_err_up], fmt='o', label="Finkelstein+15", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+
 axs[0, 1].set_xlabel('z', fontsize=30)
 axs[0, 1].set_ylabel(r'$M^{*}$')
 axs[0, 1].set_xlim(5.5, 13)
@@ -420,15 +464,21 @@ plot_data(axs[1, 0], donnan24_z, donnan24_alpha, donnan24_alpha_err, "Donnan+24"
 plot_data(axs[1, 0], bowler20_z, bowler20_alpha, bowler20_alpha_err, "Bowler+20", styles["bowler20"], zorder=zorder)
 plot_data(axs[1, 0], bowler15_z, bowler15_alpha, [bowler15_alpha_err_lo, bowler15_alpha_err_up], "Bowler+15", styles["bowler15"], zorder=zorder)
 plot_data(axs[1, 0], adams23_z, adams23_alpha, adams23_alpha_err, "Adams+23", styles["adams23"], zorder=zorder)
-#plot_data(axs[1, 0], finkelstein15_z, finkelstein15_alpha, [finkelstein15_alpha_err_lo, finkelstein15_alpha_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder)
-#plot_data(axs[1, 0], bouwens21_z, bouwens21_alpha, bouwens21_alpha_err, "Bouwens+21", styles["bouwens21"], zorder=zorder)
+plot_data(axs[1, 0], finkelstein15_z, finkelstein15_alpha, [finkelstein15_alpha_err_lo, finkelstein15_alpha_err_up], "Finkelstein+15", styles["finkelstein15"], zorder=zorder_fb)
+plot_data(axs[1, 0], bouwens21_z, bouwens21_alpha, bouwens21_alpha_err, "Bouwens+21", styles["bouwens21"], zorder=zorder_fb)
 plot_data(axs[1, 0], bowler17_z, bowler17_alpha, [bowler17_alpha_err_lo, bowler17_alpha_err_up], "Bowler+17", styles["bowler17"], zorder=zorder)
-plot_data(axs[1, 0], harikane24_z, harikane24_alpha, [harikane24_alpha_err_lo, harikane24_alpha_err_up], "Harikane+24", styles["harikane24"], zorder=zorder)
+plot_data(axs[1, 0], harikane24_z, harikane24_alpha, [harikane24_alpha_err_lo, harikane24_alpha_err_up], "Harikane+25", styles["harikane24"], zorder=zorder)
 plot_data(axs[1, 0], mcleod24_z, mcleod24_alpha, mcleod24_alpha_err, "McLeod+24", styles["mcleod24"], zorder=zorder)
 plot_data(axs[1, 0], chemerynska24_z, chemerynska24_alpha, chemerynska24_alpha_err, "Chemerynska+24", styles["chemerynska24"], zorder=zorder)
 plot_data(axs[1, 0], whitler25_z, whitler25_alpha, [whitler25_alpha_err_lo, whitler25_alpha_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
 plot_data(axs[1, 0], adams24_z, adams24_alpha, [adams24_alpha_err_lo, adams24_alpha_err_up], "Adams+24", styles["Adams24"], zorder=zorder)
 #plot_data(axs[1, 0], perez23_z, perez23_alpha, [perez23_alpha_err_lo, perez23_alpha_err_up], "Perez-Gonzalez+23", styles["Perez-Gonzalez23"], zorder=zorder)
+
+# Plot Bouwens as open square
+# axs[1, 0].errorbar(bouwens21_z, bouwens21_alpha, yerr=bouwens21_alpha_err, fmt='s', label="Bouwens+21", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+# # Plot Finkelstein as open circle
+# axs[1, 0].errorbar(finkelstein15_z, finkelstein15_alpha, yerr=[finkelstein15_alpha_err_lo, finkelstein15_alpha_err_up], fmt='o', label="Finkelstein+15", markersize=10, markeredgecolor='black', elinewidth=3, color='none', zorder=zorder)
+
 axs[1, 0].set_xlabel('z', fontsize=30)
 axs[1, 0].set_xlim(5.5, 13)
 axs[1, 0].set_ylabel(r'$\alpha$')
@@ -444,7 +494,7 @@ plot_data(axs[1, 1], bowler20_z, bowler20_beta, bowler20_beta_err, "Bowler+20", 
 plot_data(axs[1, 1], bowler15_z, bowler15_beta, [bowler15_beta_err_lo, bowler15_beta_err_up], "Bowler+15", styles["bowler15"], zorder=zorder)
 plot_data(axs[1, 1], adams23_z, adams23_beta, [adams23_beta_err_lo, adams23_beta_err_up], "Adams+23", styles["adams23"], zorder=zorder)
 plot_data(axs[1, 1], bowler17_z, bowler17_beta, [bowler17_beta_err_lo, bowler17_beta_err_up], "Bowler+17", styles["bowler17"], zorder=zorder)
-plot_data(axs[1, 1], harikane24_z, harikane24_beta, [harikane24_beta_err_lo, harikane24_beta_err_up], "Harikane+24", styles["harikane24"], zorder=zorder)
+plot_data(axs[1, 1], harikane24_z, harikane24_beta, [harikane24_beta_err_lo, harikane24_beta_err_up], "Harikane+25", styles["harikane24"], zorder=zorder)
 #plot_data(axs[1, 1], mcleod24_z, mcleod24_beta, mcleod24_beta_err, "McLeod+24", styles["mcleod24"], zorder=zorder)
 plot_data(axs[1, 1], chemerynska24_z, chemerynska24_beta, chemerynska24_beta_err, "Chemerynska+24", styles["chemerynska24"], zorder=zorder)
 #plot_data(axs[1, 1], whitler25_z, whitler25_beta, [whitler25_beta_err_lo, whitler25_beta_err_up], "Whitler+25", styles["whitler25"], zorder=zorder)
@@ -661,9 +711,9 @@ axs[0, 1].minorticks_on()
 axs[1, 0].minorticks_on()
 axs[1, 1].minorticks_on()
 
-fig.subplots_adjust(bottom=0.25)
+fig.subplots_adjust(bottom=0.7)
 
-fig.tight_layout(rect=[0, 0.12, 1, 1])
+fig.tight_layout(rect=[0, 0.16, 1, 1])
 
 #plt.tight_layout()
-plt.savefig(plot_dir / 'LF_param_evolution.pdf')
+plt.savefig(plot_dir / 'LF_param_evolution_with_FB.pdf')

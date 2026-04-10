@@ -145,7 +145,8 @@ plt.tight_layout()
 plot_dir = Path.cwd().parents[1] / 'plots' / 'seds'
 plt.savefig(plot_dir / '178396_BAGPIPES_CWEB_fit.pdf')
 plt.show()
-exit()
+plt.close()
+#exit()
 
 # Load wavelength and flux data (replace with your SED data)
 wave = sed['wave']  # Wavelengths in Angstroms

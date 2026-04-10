@@ -32,7 +32,7 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 # plt.rcParams['figure.dpi'] = 100
 
 ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
-plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
+plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts' / 'z4'
 refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
 video_dir = Path.home().parents[1] / 'hoy' / 'VIDEO_FINAL'
 
@@ -70,6 +70,13 @@ def findPlotLimits(data: np.ndarray) -> tuple:
     # Recalculate mean and std_dev
     mean = np.mean(data)
     std_dev = np.std(data)
+
+    # # Sigma clip the data
+    # data = data[(data < mean + 3 * std_dev)]
+
+    # # Recalculate mean and std_dev
+    # mean = np.mean(data)
+    # std_dev = np.std(data)
 
     lower = mean - 2 * std_dev
     upper = mean + 5 * std_dev
@@ -298,6 +305,12 @@ def XMMCutout(ra: float, dec:float, contained_in: Optional[np.array] = None, siz
     # Remove unused subplot (16th subplot)
     fig.delaxes(ax[1, 7])
 
+    plt.tight_layout()
+
+    # Save fig
+    if save_cutout:
+        plt.savefig(save_dir / f'XMM_ID_{plot_title}.pdf', dpi=300)
+
     return fig, ax
     #plt.show()
     #plt.close()
@@ -489,27 +502,40 @@ if __name__ == '__main__':
     # ID = [178396]
 
     #! Stars
-    t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
+    # t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
 
-    # Sort by class_star
-    t.sort('CLASS_STAR', reverse=True)
-    print(len(t))
+    # # Sort by class_star
+    # t.sort('CLASS_STAR', reverse=True)
+    # print(len(t))
 
-    t = t[t['CLASS_STAR'] < 0.99]
+    # t = t[t['CLASS_STAR'] < 0.99]
 
-    STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
-    t = t[STARS]
+    # STARS = (t['FLAGS'] < 2) & (t['ELONGATION'] < 1.5) & (t['FWHM_IMAGE'] < 6) & (t['FWHM_IMAGE'] > 5) & (t['CLASS_STAR'] < 0.99) & (t['CLASS_STAR'] > 0.8)
+    # t = t[STARS]
 
-    print(len(t))
+    # print(len(t))
 
-    #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
+    # #t = t[(t['FWHM_IMAGE'] > 5.5) & (t['FWHM_IMAGE'] < 7)]
 
+    # ra = t['RA']
+    # dec = t['DEC']
+    # class_star = t['CLASS_STAR']
+    # flag = t['FLAGS']
+    # elong = t['ELONGATION']
+    # fwhm = t['FWHM_IMAGE']
+
+    #! Nathan z=5 XMM sample
+    # radio_dir = Path.home() / 'highz_rgs' / 'data' / 'catalogues'
+    # t = Table.read(radio_dir / 'combined_z5_matches_nospecz.fits')
+
+    #! Nathan z=4 XMM sample
+    radio_dir = Path.home() / 'highz_rgs' / 'data' / 'catalogues'
+    t = Table.read(radio_dir / 'Nathan_z4_XMM_Xmatch.fits')
+
+    #t = t[t['RA'] < 140]
     ra = t['RA']
     dec = t['DEC']
-    class_star = t['CLASS_STAR']
-    flag = t['FLAGS']
-    elong = t['ELONGATION']
-    fwhm = t['FWHM_IMAGE']
+    ID = t['UID']
 
 
     ############! GET CUTOUTS ############
@@ -529,10 +555,10 @@ if __name__ == '__main__':
         #print(muv[i])
 
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
-        print(class_star[i], flag[i], elong[i], fwhm[i])
-        Cutout(ra[i], dec[i], size=6., save_cutout=False)
+        #print(class_star[i], flag[i], elong[i], fwhm[i])
+        #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True)
-        #Cutout(ra[i], dec[i], size=4., plot_title=ID[i])
+        XMMCutout(ra[i], dec[i], size=10., plot_title=ID[i], save_cutout=True, save_dir=plot_dir)
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 

@@ -15,12 +15,13 @@ import os
 from pathlib import Path
 
 ######################### Set-up ####################################
-fields = ['CDFS1']
+fields = ['COSMOS']
 
-reqFilters = ['f150w', 'f277w', 'f444w']
+#reqFilters = ['f150w', 'f277w', 'f444w']
+reqFilters = ['VIS', 'Y', 'J', 'H']
 
 # enter the prefered queue.
-queue = 'cmb'
+queue = 'normal'
 overwrite = True # this is the default anyway
 
 # to run the first stage for each filter, set to true

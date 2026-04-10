@@ -74,6 +74,23 @@ def findPlotLimits(data: np.ndarray) -> tuple:
 
     return lower, upper
 
+def findPlotLimits2(data: np.ndarray) -> tuple:
+
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    # Sigma clip the data
+    data = data[(data < mean + 4 * std_dev)]
+
+    # Recalculate mean and std_dev
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    lower = mean - 2 * std_dev
+    upper = mean + 6 * std_dev
+
+    return lower, upper
+
 
 
 def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
@@ -451,7 +468,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     #! Plot
     cutouts = [ cutout_euVIS, cutout_grI, cutout_grY, cutout_euY, cutout_euJ, cutout_euH, cutout_f115w_cweb, cutout_f150w_cweb, cutout_f277w_cweb, cutout_f444w_cweb]
-    cutout_titles = [r'$I_{\rm{E}}$', r'HSC $y$', r'VISTA $Y$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$F115W$',  r'$F150W$', r'$F277W$', r'$F444W$']
+    cutout_titles = [r'$I_{\rm{E}}$', r'HSC $y$', r'VISTA $Y$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$\rm F115W$',  r'$\rm F150W$', r'$\rm F277W$', r'$\rm F444W$']
 
     fig, ax = plt.subplots(2, 5, figsize=(20, 12))
 
@@ -461,6 +478,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     for i, cutout in enumerate(cutouts):
             
         vmin, vmax = findPlotLimits(cutout.data)
+        if i > 5:
+            vmin, vmax = findPlotLimits(cutout.data)
         ax[i//5, i%5].imshow(cutout.data, origin='lower', cmap='gist_yarg', vmin=vmin, vmax=vmax)
         ax[i//5, i%5].set_title(cutout.wcs.wcs.ctype[0])
         ax[i//5, i%5].set_xticks([])
@@ -708,7 +727,7 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   #
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))
 
-        plt.savefig(plot_dir / f'LAE_STAMP.pdf', bbox_inches='tight')
+        plt.savefig(plot_dir / f'LAE_STAMP_FINAL.pdf', bbox_inches='tight')
         plt.show()
 
     

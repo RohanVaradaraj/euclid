@@ -11,7 +11,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 from astropy.io import ascii, fits
-from scipy.integrate import simps
+# from scipy.integrate import simps
 from astropy.cosmology import FlatLambdaCDM
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -45,26 +45,33 @@ sys.path.append(str(sed_path))
 from sed_fitting_codes import parse_spec_file
 
 #! Paper correction: run Kron correction?
-kron_corr = True
+kron_corr = False
 #? If true, are we doing a full correction or piecewise, ignoring kron/aper < 1?
-piecewise = True
+piecewise = False
 
 #! Field name
-field_name = 'COSMOS'
+field_name = 'CDFS'
 
-#! Det/non-det filters
+#! Det/non-det filters. Needed to find correct folder containing LePhare SEDs.
+if field_name != 'CDFS':
+    filters = {
+        'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+        'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+        'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+    }
+else:
+    filters = {
+        'HSC-Z': {'type': 'detection', 'value': 5},
+        'HSC-G': {'type': 'non-detection', 'value': 2},
+        'r': {'type': 'non-detection', 'value': 2},
+    }  
+
 # filters = {
-#     'HSC-Z_DR3': {'type': 'detection', 'value': 5},
+#     'Y+J': {'type': 'stacked-detection', 'value': 5},
 #     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
 #     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
 # }
-
-filters = {
-    'Y+J': {'type': 'stacked-detection', 'value': 5},
-    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
-}
 
 #! Run type
 run_type = 'with_euclid'
@@ -122,6 +129,9 @@ if run_type != '':
 else:
     folder = f'det_{det_filter_str}_z7'
 
+if field_name == 'CDFS':
+    folder = f'det_{det_filter_str}_with_euclid_best_highz'
+
 print(f'Folder name: {folder}')
 
 # Get the list of objects that made it through the SED fitting
@@ -139,6 +149,7 @@ if field_name == 'COSMOS':
     if run_type == 'with_euclid':
         #cat_name = 'Euclid_UltraVISTA_z7_sample.fits' #? with euclid
         cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_08_19_with_euclid.fits' #? with euclid
+        cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_09_17_with_euclid.fits' #? incl. LAE, 591643
         ref_cat = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits'
     if run_type == '':
         cat_name = 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14.fits' #?just vista
@@ -149,14 +160,15 @@ if field_name == 'XMM':
     #cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_13.fits' # Initial 5sigma selection, following bowler+15, 838 galaxies!
     cat_name = 'XMM_5sig_HSC_Z_nonDet_HSC_G_nonDet_HSC_R_candidates_2025_05_14.fits' # chi2_star < chi2_gal to remove BDs, instead of chi2_star < 10
 
+#? CDFS
+if field_name == 'CDFS':
+    cat_name = 'CDFS_5sig_HSC_Z_nonDet_HSC_G_nonDet_r_candidates_2026_04_08_with_euclid.fits'
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates'
 t = Table.read(cat_dir / cat_name)
-print(t.colnames)
-
-if run_type == 'with_euclid':
-    t_ref = Table.read(cat_dir / ref_cat)
+# if run_type == 'with_euclid':
+#     t_ref = Table.read(cat_dir / ref_cat)
 
 #! Add a column for UV mags if it doesnt exist already
 if 'Muv' not in t.colnames:
@@ -221,10 +233,11 @@ if compute_Muv:
             
 
         #* Plotting the Kron-scaled SED
-        # plt.plot(wlen, sed, alpha=0.7, color='tab:blue', label='Old')
-        # plt.plot(wlen, sed_new, alpha=0.7, color='tab:orange', label='New')
-        # plt.yscale('log')
-        # plt.show()
+        if ID == 591643:
+            plt.plot(wlen, sed, alpha=0.7, color='tab:blue', label='Old')
+            #plt.plot(wlen, sed_new, alpha=0.7, color='tab:orange', label='New')
+            plt.yscale('log')
+            plt.show()
 
         # Place tophat filter, rest 1500A, width 100A, in the observed frame
         filter_obs = np.zeros(len(wlen))
@@ -271,6 +284,12 @@ if compute_Muv:
     t.write(cat_dir / cat_name, format='fits', overwrite=True)
     print(f'Wrote catalogue to {cat_dir / cat_name}')
 
+# Histogram of Muv
+plt.hist(t['Muv'], bins=np.arange(-24, -19, 0.1))
+plt.show()
+exit()
+
+
 # Save the redshift and Muv values to a numpy file
 output_file = f'z_Muv_sample_{run_type}.npy'
 np.save(output_file, np.array([t['Zphot'], t['Muv']]))
@@ -283,6 +302,7 @@ z_Muv_with_euclid = np.load('z_Muv_sample_with_euclid.npy')
 t_lya = t[t['Lyman_alpha_EW'] > 0]
 print(len(t_lya))
 print(t['Muv'])
+
 
 # Plot Muv vs redshift
 # plt.figure(figsize=(12, 8))

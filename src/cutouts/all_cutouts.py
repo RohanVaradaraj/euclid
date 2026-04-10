@@ -623,6 +623,15 @@ if __name__ == '__main__':
     ra = [150.1200752011961]
     dec = [2.0898737362171156]
 
+    #! Charlotte z=7 candidate
+    ra = [150.6525914016524]
+    dec = [2.7949620730349847]
+
+
+    #! Nathan's z=5 candidates in COSMOS
+    # ra = [ 150.0646487736565, 150.2970171829096, 150.0015577303966, 149.93031878361805, 149.55790768581574, 149.81976533364988, 150.67691341136822, 150.37025906264196, 149.9179524404775, 150.41129219687292, 149.6785624899251, 150.02803178397048, 150.4029315800968, 150.31595510191195]
+    # dec = [2.1240832246701857, 2.488110301538341, 2.6952885516554907, 1.7686795080791051, 1.790581039771246, 1.9773914886177946, 2.22463751680825, 2.3805154948508487, 2.392064687286876, 2.4150960438461673, 2.5690418786852987, 2.6098005600763656, 2.760439230110506, 2.3366573607029992]
+
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
@@ -643,7 +652,7 @@ if __name__ == '__main__':
         #Cutout(ra[i], dec[i], size=10., plot_title=str(ID[i]) + ', z=' + str(z[i]), save_cutout=False)
         #print(class_star[i], flag[i], elong[i], fwhm[i])
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
-        AllCutout(ra[i], dec[i], size=6.) #, add_centre_lines=True)
+        AllCutout(ra[i], dec[i], size=10.) #, add_centre_lines=True)
         #AllCutout(ra[i], dec[i], size=10., plot_title=ID[i], add_centre_lines=True)
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))

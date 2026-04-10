@@ -212,11 +212,12 @@ plt.scatter([], [], color='red', marker='*', s=270, alpha=0.9, label='UCD')
 # Gray dotted line
 plt.axhline(0.51, color='black', linestyle='dotted', linewidth=3, alpha=0.9, zorder=1, label=r'$J_{\rm{E}}$ PSF FWHM')
 
-
-
+# plt.axhline(0.495, color='black', linestyle='dotted', linewidth=3, alpha=0.9, zorder=1, label=r'$J_{\rm{E}}$ PSF FWHM')
+# plt.axhline(0.477, color='black', linestyle='dotted', linewidth=3, alpha=0.3, zorder=1)
+# plt.axhline(0.525, color='black', linestyle='dotted', linewidth=3, alpha=0.3, zorder=1)
 
 plt.legend(ncols=2, frameon=False, loc='upper left', alignment='left')
 plt.tight_layout()
-plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag_bowler.pdf')
+plt.savefig(Path.cwd().parents[1] / 'plots' / 'sizes' / 'euclid_fwhm_vs_Jmag_bowler_median_FWHM.pdf')
 plt.show()
 

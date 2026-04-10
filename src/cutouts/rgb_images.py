@@ -439,7 +439,7 @@ if __name__ == '__main__':
     #! U+E CANDIDATES
     t = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_02_14_with_euclid.fits')
 
-    t_xmatch = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31_XMATCH_WITH_LITERATURE.fits')
+    #t_xmatch = Table.read(Path.cwd().parents[1] / 'data' / 'catalogues' / 'candidates' / 'COSMOS_5sig_Y_J_nonDet_HSC_G_nonDet_HSC_R_nonDet_HSC_I_candidates_2025_01_31_XMATCH_WITH_LITERATURE.fits')
     # print(t_xmatch.colnames)
     # exit()
     t.sort('Muv')
@@ -457,8 +457,12 @@ if __name__ == '__main__':
     ra = t['RA']
     dec = t['DEC']
     ID = t['ID']
-    #zphot = t['Zphot']
-   # Muv = t['Muv']
+    # zphot = t['Zphot']
+    #Muv = t['Muv']
+
+    #! Stavrox z=6.8
+    # ra = [150.1200752011961]
+    # dec = [2.0898737362171156]
 
 
     # Empty arrays for collecting figures
@@ -490,7 +494,7 @@ if __name__ == '__main__':
     ############! PLOT CUTOUTS #############
 
     # Cutout titles
-    titles = [r'$I_{\rm{E}}$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$YJHK$']
+    titles = [r'$I_{\rm{E}}$', r'$Y_{\rm{E}}$', r'$J_{\rm{E}}$', r'$H_{\rm{E}}$', r'$YJHK_s$']
 
     # Save each object (with 5 cutouts) as a single image
     for i, cutouts in enumerate(all_cutouts):

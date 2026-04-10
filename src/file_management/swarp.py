@@ -14,6 +14,7 @@ import glob
 from pathlib import Path
 import pickle
 import numpy as np
+import pickle
 
 field_name = 'COSMOS'
 filter_names = ['Y', 'J', 'H', 'VIS']
@@ -25,13 +26,27 @@ euclid_dir = Path.home() / 'euclid'
 def sort_by_number(filename):
     return int(filename.split('_')[-1].split('.')[0])
 
-
+# Load pickle file of Euclid tiles within the field
+tiles_in_vista = pickle.load(open(f'euclid_within_ultravista.pkl', 'rb'))
+# print(tiles_in_vista)
+# print(len(tiles_in_vista))
 
 for filter_name in filter_names:
 
     # Get all the fits files for the filter.
     fits_files = glob.glob(str(euclid_dir / filter_name / field_name / '*BGSUB*.fits'))
     rms_files = glob.glob(str(euclid_dir / filter_name / field_name / '*MAP_WEIGHT*.fits'))
+
+    fits_tilenames = [os.path.basename(f).split('TILE')[1].split('-')[0] for f in fits_files]
+    rms_tilenames = [os.path.basename(f).split('TILE')[1].split('-')[0] for f in rms_files]
+
+    # Keep only those fits and rms files that are in tiles_in_vista
+    fits_files = [f for f in fits_files if os.path.basename(f).split('TILE')[1].split('-')[0] in tiles_in_vista]
+    rms_files = [f for f in rms_files if os.path.basename(f).split('TILE')[1].split('-')[0] in tiles_in_vista]
+
+    print(f'Filter: {filter_name}')
+    print('Number of Euclid tiles to be combined:')
+    print(len(fits_files), len(rms_files))
     
     # Sort fits_files and rms_files based on the numeric part of the filenames
     fits_files = sorted(fits_files, key=sort_by_number)
@@ -52,9 +67,9 @@ for filter_name in filter_names:
     output_dir = euclid_dir / field_name
 
     # Output file.
-    output_file = output_dir / f'{field_name}_{filter_name}_MOSAIC.fits'
+    output_file = output_dir / f'{field_name}_{filter_name}_DR1.fits'
 
-    outrms_file = output_dir / f'{field_name}_{filter_name}_MOSAIC_WHT.fits'
+    outrms_file = output_dir / f'{field_name}_{filter_name}_DR1_WHT.fits'
 
     # Key words
     config_string = '-c ./euclid.swarp'
@@ -64,8 +79,8 @@ for filter_name in filter_names:
                 -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -PIXELSCALE_TYPE MEDIAN -PIXEL_SCALE 0.0 -IMAGE_SIZE 0'
     
     swarp_command = f'~/swarp/bin/swarp {images} -WEIGHT_IMAGE {rms} {config_string} -IMAGEOUT_NAME {output_file} {keywords}' 
-    print(swarp_command)
-    os.system(swarp_command)
+    # print(swarp_command)
+    # os.system(swarp_command)
 
     #! And again on the weight image
     keywords = ' -WEIGHT_TYPE ' + 'NONE' + \
@@ -74,5 +89,5 @@ for filter_name in filter_names:
                + " -MEM_MAX 2048 -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE "
     
     swarp_command_rms = f'~/swarp/bin/swarp {rms} {config_string} -IMAGEOUT_NAME {outrms_file} {keywords}'
-    #print(swarp_command_rms)
-    #os.system(swarp_command_rms)
+    print(swarp_command_rms)
+    os.system(swarp_command_rms)

@@ -16,6 +16,7 @@ import astropy.units as u
 from shapely.geometry import Polygon
 import pickle
 import numpy as np
+import pandas as pd
 
 plt.rcParams.update({'font.size': 15})
 plt.rcParams['axes.linewidth'] = 4
@@ -47,6 +48,21 @@ ax = plt.gca()  # Get current axes
 
 # === Plot circles and points ===
 radius = 0.7136  # degrees
+
+#!
+df = pd.read_csv('Laduma_FRBs_localised.csv')
+print(df['RA'])
+frb_ra = df['RA']
+frb_dec = df['Dec']
+frb_ra_vals = [x.split(' ±')[0] for x in frb_ra]
+frb_dec_vals = [x.split(' ±')[0] for x in frb_dec]
+print(frb_ra_vals)
+print(frb_dec_vals)
+
+# Convert RA and Dec to floats and then to degrees with astropy
+frb_coords = SkyCoord(ra=frb_ra_vals, dec=frb_dec_vals, unit=(u.hourangle, u.deg))
+print(frb_coords.ra.degree)
+print(frb_coords.dec.degree)
 
 #! MIGHTEE pointings
 # for name, ra, dec in coordinates:
@@ -208,13 +224,13 @@ print(euclid_within_video)
 #         plt.plot(ra, dec, '-', color=color, lw=2.5, alpha=0.9)
 
 #! Plotting all the LSST tiles inside VIDEO, coloured by VIDEO tile
-for video_tile, lsst_tile_indices in lsst_within_video.items():
-    color = video_colors[video_tile]
-    for idx in lsst_tile_indices:
-        fp = lsst_footprints[idx].tolist()
-        fp.append(fp[0])  # Close polygon
-        ra, dec = zip(*fp)
-        plt.plot(ra, dec, '-', color=color, lw=1.5, alpha=0.8)
+# for video_tile, lsst_tile_indices in lsst_within_video.items():
+#     color = video_colors[video_tile]
+#     for idx in lsst_tile_indices:
+#         fp = lsst_footprints[idx].tolist()
+#         fp.append(fp[0])  # Close polygon
+#         ra, dec = zip(*fp)
+#         plt.plot(ra, dec, '-', color=color, lw=1.5, alpha=0.8)
 
 #! Plot a circle centred at 53,-28 with radius of my choosing
 # radius = 2 # degrees
@@ -223,10 +239,15 @@ for video_tile, lsst_tile_indices in lsst_within_video.items():
 # circle = Circle((center_ra, center_dec), radius, edgecolor='purple', facecolor='none', lw=2, alpha=0.8)
 # ax.add_patch(circle)
 
+#! FRB locations on top
+plt.plot(frb_coords.ra.degree, frb_coords.dec.degree, 'x', color='magenta', markersize=10, label='FRBs')
+
 # Dummy labels
 plt.plot([], [], color='black', lw=3, alpha=1, label='VIDEO')
-plt.plot([], [], color='green', lw=2, alpha=0.6, label='Euclid Q1')
+# plt.plot([], [], color='green', lw=2, alpha=0.6, label='Euclid Q1')
 # plt.plot([], [], color='orange', lw=2, alpha=0.8, label='MIGHTEE')
+# For lsst
+plt.plot([], [], color='deepskyblue', lw=2, alpha=0.8, label='LSST DP1')
 
 #plt.grid(True)
 plt.gca().invert_xaxis()  # Optional, matches sky view
@@ -239,8 +260,8 @@ plt.axis('equal')
 plt.show()
 
 # Save the dictionary of euclid_within_video to a file
-with open('euclid_DR1_within_video.pkl', 'wb') as f:
-    pickle.dump(euclid_within_video, f)
+# with open('euclid_DR1_within_video.pkl', 'wb') as f:
+#     pickle.dump(euclid_within_video, f)
 
 
 

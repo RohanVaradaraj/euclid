@@ -16,19 +16,14 @@ import glob
 #! Instrument can take one of three values:
 #! euclid, jwst, vista
 
-instrument ='jwst'
+instrument ='euclid'
 
 fields = ['COSMOS']
 
-#filter_names = ['VIS', 'Y', 'J', 'H'] # Euclid
 #filter_names = ['YJH'] # Euclid stack
-
-filter_names = ['F115W', 'F150W', 'F277W', 'F444W'] # CWEB
-
+# filter_names = ['F115W', 'F150W', 'F277W', 'F444W'] # CWEB
 #filter_names = ['Y', 'J', 'H', 'K'] # VISTA
-
-
-
+filter_names = ['VIS', 'Y', 'J', 'H'] # Euclid
 
 data_dir = Path.cwd().parents[3] / 'data'
 calib_dir = data_dir / 'bertin_config'
@@ -42,43 +37,53 @@ for field in fields:
 
     if instrument.lower() == 'euclid':
 
-        euclid_dir = data_dir / 'euclid' / 'images'
+        #euclid_dir = data_dir / 'euclid' / 'images'
+        euclid_dir = Path.home() / 'euclid' / 'COSMOS' # DR1 location
 
         for filter_name in filter_names:
 
+            #! Different names for the YJH stack vs individual filters
             if filter_name != 'YJH':
-                euclid_image = euclid_dir / f'{field}_{filter_name}_MOSAIC.fits' #! Original images
-                weight_image = euclid_dir / f'{field}_{filter_name}_MOSAIC_WHT.fits'
+                #euclid_image = euclid_dir / f'{field}_{filter_name}_MOSAIC.fits' #! Original images
+                #weight_image = euclid_dir / f'{field}_{filter_name}_MOSAIC_WHT.fits'
+                euclid_image = euclid_dir / f'{field}_{filter_name}_DR1.fits' #! Original DR1 mosaiced images
+                weight_image = euclid_dir / f'{field}_{filter_name}_DR1_WHT.fits'
 
             if filter_name == 'YJH':
                 euclid_image = euclid_dir / f'{field}_{filter_name}_STACK.fits' #! YJH stack
                 weight_image = euclid_dir / f'{field}_{filter_name}_STACK_WHT.fits'
 
-            save_image = euclid_dir / f'{field}_{filter_name}_resamp.fits'
-            save_weight = euclid_dir / f'{field}_{filter_name}_resamp_wht.fits'
+            save_image = euclid_dir / f'{field}_{filter_name}_DR1_resamp.fits'
+            save_weight = euclid_dir / f'{field}_{filter_name}_DR1_resamp_wht.fits'
 
             #? FIRST THE SCI IMAGE
             # Extra memory keywords
-            keywords = '-COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
-                        -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
+            #keywords = '-COMBINE_TYPE WEIGHTED -VMEM_MAX 131072 -VMEM_DIR . \
+            #        -MEM_MAX 16384 -COMBINE_BUFSIZE 16384 -VERBOSE_TYPE FULL'
+            keywords = '-WEIGHT_TYPE NONED -VMEM_MAX 131072 -VMEM_DIR . \
+                    -MEM_MAX 131072 -COMBINE_BUFSIZE 16384 -VERBOSE_TYPE FULL'
 
-            # Now reproject the image
-            os.system(f'~/swarp/bin/swarp {euclid_image} -WEIGHT_IMAGE {weight_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
+            # Now reproject the science image
+            #os.system(f'~/swarp/bin/swarp {euclid_image} -WEIGHT_IMAGE {weight_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
+            os.system(f'~/swarp/bin/swarp {euclid_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
 
             #? NOW THE RMS IMAGE
             # Extra memory keywords
-            keywords = '-WEIGHT_TYPE NONE -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE -VMEM_MAX 16384 -VMEM_DIR . \
-                        -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
+            keywords = '-WEIGHT_TYPE NONE -COMBINE_TYPE AVERAGE -VMEM_DIR . \
+                    -MEM_MAX 131072 -COMBINE_BUFSIZE 16384 -VERBOSE_TYPE FULL -VMEM_MAX 131072'
+
+            # keywords = '-WEIGHT_TYPE NONE -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE -VMEM_MAX 16384 -VMEM_DIR . \
+            #             -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
 
             # Now reproject the weight image
             os.system(f'~/swarp/bin/swarp {weight_image} -c regrid.swarp -IMAGEOUT_NAME {str(save_weight)} {keywords}')
 
     # If JWST, take all the tiles and resample and combine them.
-    if instrument.lower() == 'jwst':
+    # if instrument.lower() == 'jwst':
 
-        jwst_dir = data_dir / 'CWEB'
-        output_dir = data_dir.parent / 'rohan' / 'images'
-        mosaics = ['0A', '0B', '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B']
+    #     jwst_dir = data_dir / 'CWEB'
+    #     output_dir = data_dir.parent / 'rohan' / 'images'
+    #     mosaics = ['0A', '0B', '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B']
 
         #! Go through mosaics and unpack the image and error layers
         # for mosaic in mosaics:
@@ -114,46 +119,46 @@ for field in fields:
         #         hdu.writeto(err_layer, overwrite=True)
         #         print('Saved image and error layers')
 
-        # !Now glob all the image and error layers, looping through filters
-        print('Reprojecting the CWEB tiles')
-        for filter_name in filter_names:
+        # # !Now glob all the image and error layers, looping through filters
+        # print('Reprojecting the CWEB tiles')
+        # for filter_name in filter_names:
 
-            print('Running filter: ', filter_name)
+        #     print('Running filter: ', filter_name)
 
-            image_list = glob.glob(str(output_dir / 'CWEB' / '*' / f'CWEB-{filter_name}-*[0-7][AB].fits'))
-            err_list = glob.glob(str(output_dir / 'CWEB' / '*' / f'CWEB-{filter_name}-*err.fits'))
-            print('Globbed image and error layers')
+        #     image_list = glob.glob(str(output_dir / 'CWEB' / '*' / f'CWEB-{filter_name}-*[0-7][AB].fits'))
+        #     err_list = glob.glob(str(output_dir / 'CWEB' / '*' / f'CWEB-{filter_name}-*err.fits'))
+        #     print('Globbed image and error layers')
 
-            # Make string of image names to pass to Swarp
-            images = image_list[0]
-            for i in range(1, len(image_list)):
-                images = images + ',' + image_list[i]
+        #     # Make string of image names to pass to Swarp
+        #     images = image_list[0]
+        #     for i in range(1, len(image_list)):
+        #         images = images + ',' + image_list[i]
 
-            # Same for rms images
-            errors = err_list[0]
-            for i in range(1, len(err_list)):
-                errors = errors + ',' + err_list[i]
+        #     # Same for rms images
+        #     errors = err_list[0]
+        #     for i in range(1, len(err_list)):
+        #         errors = errors + ',' + err_list[i]
 
-            print('Created string of image and error layers')
+        #     print('Created string of image and error layers')
 
-            save_image = jwst_dir / f'CWEB-{filter_name}_resamp.fits'
-            save_error = jwst_dir / f'CWEB-{filter_name}_resamp_rms.fits'
+        #     save_image = jwst_dir / f'CWEB-{filter_name}_resamp.fits'
+        #     save_error = jwst_dir / f'CWEB-{filter_name}_resamp_rms.fits'
 
-            #? FIRST THE SCI IMAGE
-            # Extra memory keywords
-            keywords = '-WEIGHT_TYPE MAP_RMS -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
-                        -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
+        #     #? FIRST THE SCI IMAGE
+        #     # Extra memory keywords
+        #     keywords = '-WEIGHT_TYPE MAP_RMS -COMBINE_BUFSIZE 2048 -COMBINE_TYPE WEIGHTED -VMEM_MAX 16384 -VMEM_DIR . \
+        #                 -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
 
-            # Now reproject the image
-            os.system(f'~/swarp/bin/swarp {images} -WEIGHT_IMAGE {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
+        #     # Now reproject the image
+        #     os.system(f'~/swarp/bin/swarp {images} -WEIGHT_IMAGE {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} {keywords}')
 
-            #? NOW THE RMS IMAGE
-            # Extra memory keywords
-            keywords = '-WEIGHT_TYPE NONE -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE -VMEM_MAX 16384 -VMEM_DIR . \
-                        -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
+        #     #? NOW THE RMS IMAGE
+        #     # Extra memory keywords
+        #     keywords = '-WEIGHT_TYPE NONE -COMBINE_BUFSIZE 2048 -COMBINE_TYPE AVERAGE -VMEM_MAX 16384 -VMEM_DIR . \
+        #                 -MEM_MAX 2048 -COMBINE_BUFSIZE 2048'
 
-            # Now reproject the image and error layers
-            os.system(f'~/swarp/bin/swarp {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_error)} {keywords}')
+        #     # Now reproject the image and error layers
+        #     os.system(f'~/swarp/bin/swarp {errors} -c regrid.swarp -IMAGEOUT_NAME {str(save_error)} {keywords}')
 
             #!# Remove the temporary image and error layers
             # for image in image_list:
@@ -162,16 +167,16 @@ for field in fields:
             #     os.remove(error)
             # print('Removed temporary image and error layers')
 
-    if instrument.lower() == 'vista':
+    # if instrument.lower() == 'vista':
 
-        vista_dir = data_dir / f'{field}'
+    #     vista_dir = data_dir / f'{field}'
 
-        for filter_name in filter_names:
+    #     for filter_name in filter_names:
 
-            vista_image = vista_dir / 'tmp' / f'UVISTA_{filter_name}_DR6_cropped.fits'
-            vista_weight = vista_dir / 'tmp' / f'UVISTA_{filter_name}_DR6_weight_cropped.fits'
+    #         vista_image = vista_dir / 'tmp' / f'UVISTA_{filter_name}_DR6_cropped.fits'
+    #         vista_weight = vista_dir / 'tmp' / f'UVISTA_{filter_name}_DR6_weight_cropped.fits'
 
-            save_image = vista_dir / f'UVISTA_{filter_name}_DR6.fits'
-            save_weight = vista_dir / f'UVISTA_{filter_name}_DR6_wht.fits'
+    #         save_image = vista_dir / f'UVISTA_{filter_name}_DR6.fits'
+    #         save_weight = vista_dir / f'UVISTA_{filter_name}_DR6_wht.fits'
 
-            os.system(f'~/swarp/bin/swarp {str(vista_image)} -WEIGHT_IMAGE {str(vista_weight)} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} -WEIGHTOUT_NAME {str(save_weight)}')
+    #         os.system(f'~/swarp/bin/swarp {str(vista_image)} -WEIGHT_IMAGE {str(vista_weight)} -c regrid.swarp -IMAGEOUT_NAME {str(save_image)} -WEIGHTOUT_NAME {str(save_weight)}')

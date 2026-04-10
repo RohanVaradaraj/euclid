@@ -21,22 +21,27 @@ def get_tile_id(filename):
 # For testing load the Euclid tile names that lie in the VIDEO footprints.
 euclid_in_video = pickle.load(open('euclid_within_video.pkl', 'rb'))
 
-filter_names = ['VIS', 'Y', 'J', 'H']
+#filter_names = ['VIS', 'Y', 'J', 'H']
+filter_names = ['VIS']
 
 #euclid_dir = Path.home() / 'euclid' #! COSMOS
-euclid_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'data' / 'euclid' / 'euclid_deep_field_fornax' #! CDFS
+#euclid_dir = Path.home().parents[1] / 'vardy' / 'vardygroupshare' / 'data' / 'euclid' / 'euclid_deep_field_fornax' #! CDFS
+euclid_dir = Path.home() / 'euclid' / 'CDFS'
 
 for filter_name in filter_names:
     print(f'Running in {filter_name}')
 
-    image_dir = euclid_dir / filter_name
+    #image_dir = euclid_dir / filter_name / 'COSMOS'
+    image_dir = euclid_dir
     print(image_dir)
 
     # Get all files containing "RMS" in the name
     rms_files = glob.glob(str(image_dir / '*RMS*'))
+    print(rms_files)
 
-    for rms_file in rms_files:
+    for i, rms_file in enumerate(rms_files):
         print(rms_file)
+        print(f'File no. {i+1} of {len(rms_files)}')
 
         # Open the RMS image
         with fits.open(Path(rms_file)) as hdul:

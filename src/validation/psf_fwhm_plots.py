@@ -22,11 +22,12 @@ psfex_dir = Path.cwd().parent.parent / 'data' / 'psf' / 'COSMOS' / 'catalogues'
 plot_dir = Path.cwd().parent.parent / 'plots' / 'psf'
 
 # Plot pipeline or our PSF FWHMs? True for pipeline, False for our PSFEx
-plot_pipe = False
+plot_pipe = True
 
 filter_names = ['VIS', 'Y', 'J', 'H']
+filter_names = ['J']
 
-colors = ['blue', 'green', 'red', 'purple']
+colors = ['blue'] #, 'green', 'red', 'purple']
 
 pix_scale = 0.1 # arcsec / pix
 
@@ -41,7 +42,8 @@ for filter_name in filter_names:
 
         #Fit a Gaussian to the pipeline data to measure the peak
         mu, std = norm.fit(pipeline_data['FWHM'])
-        
+        data = pipeline_data['FWHM']
+
         plt.hist(pipeline_data['FWHM'], bins=np.arange(0.1, 0.6, 0.001), color=colors[filter_names.index(filter_name)], alpha=0.8, label=filter_name + f', peak={round(mu, 2)}as', density=True)
 
     #! 2) Now load our PSFEx PSFs
@@ -51,14 +53,34 @@ for filter_name in filter_names:
 
         # FWHM is in pixels, convert to arcsec with pixel scale
         psfex_data['FWHM_IMAGE'] *= pix_scale
+        data = psfex_data['FWHM_IMAGE']
 
         # Fit a Gaussian to the pipeline data to measure the peak
         mu, std = norm.fit(psfex_data['FWHM_IMAGE'])
 
         plt.hist(psfex_data['FWHM_IMAGE'], bins=np.arange(0.1, 0.6, 0.005), color=colors[filter_names.index(filter_name)], alpha=0.8, label=filter_name + f', peak={mu:.2f}as', density=True)
 
+    # Plot 68th percentile lines based on the Gaussian fit
+    lo = mu - std
+    hi = mu + std
+
+    lo = np.percentile(data, 16)
+    hi = np.percentile(data, 84)
+
+    # 2sigma percentiles
+    lo = np.percentile(data, 2.5)
+    hi = np.percentile(data, 97.5)
+
+    plt.axvline(lo, color=colors[filter_names.index(filter_name)], linestyle='dashed', alpha=0.5)
+    plt.axvline(hi, color=colors[filter_names.index(filter_name)], linestyle='dashed', alpha=0.5)
+
+    # Print for each filter
+    print(f'{filter_name} FWHM 16th percentile: {lo:.3f} as, 84th percentile: {hi:.3f} as, median: {np.median(data):.3f} as')
+
 plt.xlabel('FWHM (arcsec)')
 plt.ylabel('Normalized count')
+
+
 plt.legend()
 if plot_pipe:
     plt.savefig(plot_dir / 'pipeline_psf_fwhms.png')

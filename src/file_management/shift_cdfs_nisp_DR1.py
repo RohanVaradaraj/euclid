@@ -48,59 +48,62 @@ for field in fields:
             print(f"Actual file size:   {actual_size}")
             print(f"Expected data size: {expected_data_size}")
 
-        with fits.open(wht_path, memmap=False) as wht_hdul:
-            wht_data = wht_hdul[0].data
-            wht_hdr = wht_hdul[0].header.copy()
+            print(sci_hdr['MAGZERO'])
+        continue
 
-            # actual file size (bytes)
-            actual_size = os.path.getsize(wht_path)
+        # with fits.open(wht_path, memmap=False) as wht_hdul:
+        #     wht_data = wht_hdul[0].data
+        #     wht_hdr = wht_hdul[0].header.copy()
 
-            # expected data size (bytes)
-            bitpix = abs(wht_hdr['BITPIX']) // 8
-            naxis = wht_hdr['NAXIS']
-            shape = [wht_hdr[f'NAXIS{i+1}'] for i in range(naxis)]
-            expected_data_size = bitpix
-            for dim in shape:
-                expected_data_size *= dim
+        #     # actual file size (bytes)
+        #     actual_size = os.path.getsize(wht_path)
+
+        #     # expected data size (bytes)
+        #     bitpix = abs(wht_hdr['BITPIX']) // 8
+        #     naxis = wht_hdr['NAXIS']
+        #     shape = [wht_hdr[f'NAXIS{i+1}'] for i in range(naxis)]
+        #     expected_data_size = bitpix
+        #     for dim in shape:
+        #         expected_data_size *= dim
             
-            print(f"{wht_path}")
-            print(f"Actual file size:   {actual_size}")
-            print(f"Expected data size: {expected_data_size}")
+        #     print(f"{wht_path}")
+        #     print(f"Actual file size:   {actual_size}")
+        #     print(f"Expected data size: {expected_data_size}")
 
-        print(f'~~~~~~~~Processing {field} {filter_name}...~~~~~~~~~')
+        # print(f'~~~~~~~~Processing {field} {filter_name}...~~~~~~~~~')
 
-        print('### VISTA REF ###')
-        with fits.open(f'/mnt/vardy/vardygroupshare/data/{field}/{field}_YJ.fits') as vista_hdul:
-            vista_hdr = vista_hdul[0].header
-        print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
-        print(vista_hdr['NAXIS1'], vista_hdr['NAXIS2'], vista_hdr['CRPIX1'], vista_hdr['CRPIX2'])
-        print('CD1_1, CD1_2, CD2_1, CD2_2')
-        print(vista_hdr['CD1_1'], vista_hdr['CD1_2'], vista_hdr['CD2_1'], vista_hdr['CD2_2'])
+        # print('### VISTA REF ###')
+        # with fits.open(f'/mnt/vardy/vardygroupshare/data/{field}/{field}_YJ.fits') as vista_hdul:
+        #     vista_hdr = vista_hdul[0].header
+        # print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
+        # print(vista_hdr['NAXIS1'], vista_hdr['NAXIS2'], vista_hdr['CRPIX1'], vista_hdr['CRPIX2'])
+        # print('CD1_1, CD1_2, CD2_1, CD2_2')
+        # print(vista_hdr['CD1_1'], vista_hdr['CD1_2'], vista_hdr['CD2_1'], vista_hdr['CD2_2'])
 
-        # In the sci and wht header, modify CD1_1, CD1_2, CD2_1, CD2_2 to match VISTA
-        sci_hdr['CD1_1'] = vista_hdr['CD1_1']
-        sci_hdr['CD1_2'] = vista_hdr['CD1_2']
-        sci_hdr['CD2_1'] = vista_hdr['CD2_1']
-        sci_hdr['CD2_2'] = vista_hdr['CD2_2']
+        # # In the sci and wht header, modify CD1_1, CD1_2, CD2_1, CD2_2 to match VISTA
+        # sci_hdr['CD1_1'] = vista_hdr['CD1_1']
+        # sci_hdr['CD1_2'] = vista_hdr['CD1_2']
+        # sci_hdr['CD2_1'] = vista_hdr['CD2_1']
+        # sci_hdr['CD2_2'] = vista_hdr['CD2_2']
 
-        wht_hdr['CD1_1'] = vista_hdr['CD1_1']
-        wht_hdr['CD1_2'] = vista_hdr['CD1_2']
-        wht_hdr['CD2_1'] = vista_hdr['CD2_1']
-        wht_hdr['CD2_2'] = vista_hdr['CD2_2']
+        # wht_hdr['CD1_1'] = vista_hdr['CD1_1']
+        # wht_hdr['CD1_2'] = vista_hdr['CD1_2']
+        # wht_hdr['CD2_1'] = vista_hdr['CD2_1']
+        # wht_hdr['CD2_2'] = vista_hdr['CD2_2']
 
-        print('### SCI HEADER REF ###')
-        print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
-        print(sci_hdr['NAXIS1'], sci_hdr['NAXIS2'], sci_hdr['CRPIX1'], sci_hdr['CRPIX2'])
-        print('CD1_1, CD1_2, CD2_1, CD2_2')
-        print(sci_hdr['CD1_1'], sci_hdr['CD1_2'], sci_hdr['CD2_1'], sci_hdr['CD2_2'])
+        # print('### SCI HEADER REF ###')
+        # print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
+        # print(sci_hdr['NAXIS1'], sci_hdr['NAXIS2'], sci_hdr['CRPIX1'], sci_hdr['CRPIX2'])
+        # print('CD1_1, CD1_2, CD2_1, CD2_2')
+        # print(sci_hdr['CD1_1'], sci_hdr['CD1_2'], sci_hdr['CD2_1'], sci_hdr['CD2_2'])
 
-        print('### WHT HEADER REF ###')
-        print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
-        print(wht_hdr['NAXIS1'], wht_hdr['NAXIS2'], wht_hdr['CRPIX1'], wht_hdr['CRPIX2'])
-        print('CD1_1, CD1_2, CD2_1, CD2_2')
-        print(wht_hdr['CD1_1'], wht_hdr['CD1_2'], wht_hdr['CD2_1'], wht_hdr['CD2_2'])
+        # print('### WHT HEADER REF ###')
+        # print('NAXIS1, NAXIS2, CRPIX1, CRPIX2')
+        # print(wht_hdr['NAXIS1'], wht_hdr['NAXIS2'], wht_hdr['CRPIX1'], wht_hdr['CRPIX2'])
+        # print('CD1_1, CD1_2, CD2_1, CD2_2')
+        # print(wht_hdr['CD1_1'], wht_hdr['CD1_2'], wht_hdr['CD2_1'], wht_hdr['CD2_2'])
 
-        fits.PrimaryHDU(data=sci_data, header=sci_hdr).writeto(sci_path, overwrite=True)
-        fits.PrimaryHDU(data=wht_data, header=wht_hdr).writeto(wht_path, overwrite=True)
+        # fits.PrimaryHDU(data=sci_data, header=sci_hdr).writeto(sci_path, overwrite=True)
+        # fits.PrimaryHDU(data=wht_data, header=wht_hdr).writeto(wht_path, overwrite=True)
 
-        print(f'Saved modified headers to files for {field} {filter_name}')
+        # print(f'Saved modified headers to files for {field} {filter_name}')

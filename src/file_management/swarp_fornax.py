@@ -32,7 +32,7 @@ euclid_dir = Path.home() / 'euclid' / 'CDFS' #! DR1
 
 # Output directory
 #output_dir = euclid_dir / 'tmp #! Q1
-output_dir = euclid_dir.parent #! DR1
+output_dir = Path.home().parents[1] / 'extraspace' / 'varadaraj' / 'euclid' / 'DR1' #! DR1
 
 #! Load the Euclid tile names that lie in the VIDEO footprints.
 # euclid_in_video = pickle.load(open('euclid_within_video.pkl', 'rb')) #! Q1

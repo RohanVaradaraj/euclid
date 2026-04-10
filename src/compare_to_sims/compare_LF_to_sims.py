@@ -268,7 +268,7 @@ LF_hi = np.percentile(LF_samples, 84, axis=0)
 
 # Plot best fit + shaded envelope
 #ax1.plot(M_fit, LF_median, color='tab:red', lw=7, label="Best-fit DPL", alpha=0.9)
-#ax1.fill_between(M_fit, LF_lo, LF_hi, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
+ax1.fill_between(M_fit, LF_lo, LF_hi, color='tab:red', alpha=0.25, zorder=-1, edgecolor='none')
 
 # ax2.axhline(0, color='black', lw=2)  # reference line
 ax2.set_xlim(-24.5, -19)
@@ -309,7 +309,7 @@ ax2.minorticks_on()
 
 ax1.legend(loc='lower right', fontsize=18, frameon=False, ncols=2)
 plot_dir = Path.cwd().parents[1] / 'plots' / 'LF'
-plt.savefig(plot_dir / 'LF_comparison_to_sims.pdf', bbox_inches='tight')
+plt.savefig(plot_dir / 'LF_comparison_to_sims_with_LF_error.pdf', bbox_inches='tight')
 plt.show()
 
 

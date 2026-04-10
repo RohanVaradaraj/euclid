@@ -16,21 +16,25 @@ from pathlib import Path
 import time
 from datetime import datetime, timedelta
 
-
-
 telescope = 'euclid'
 field_name = 'COSMOS'
+data_release = 'DR1'
 
 if field_name == 'COSMOS':
     #euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'images' #! Q1
+    # if data_release == 'Q1':
     euclid_dir = Path.home() / 'euclid' / 'COSMOS'
     save_dir = Path.cwd().parents[3] / 'data' / 'COSMOS'
+    # if data_release == 'DR1':
+    #     euclid_dir = Path.home().parents[1] / 'extraspace' / 'varadaraj' / 'euclid' / 'DR1' / 'COSMOS'
+    #     save_dir = euclid_dir
+
 if field_name == 'CDFS':
     euclid_dir =  Path.cwd().parents[3] / 'data' / 'euclid' / 'euclid_deep_field_fornax' / 'tmp'
     save_dir = Path.cwd().parents[3] / 'data'
 
 
-filter_names = ['Y']
+filter_names = ['VIS'] #? Euclid filters to convolve
 # filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
 
 cdfs_filter_dict = {'YE': 'Y', 'JE': 'J', 'HE': 'H', 'VIS': 'VIS'}
@@ -77,7 +81,7 @@ if telescope == 'euclid':
                 output_name = image_dir / field / f'{field}_Euclid_{filter_name}_Q1_psfhom.fits'
                 hdu.writeto(output_name)
 
-                print(f'PSF homogenized file for {filter_name} {tile} written to ', output_name)
+                print(f'PSF homogenized file for {filter_name} {field} written to ', output_name)
 
                 #! Weight layer
                 print('Now doing weight layer.')
@@ -111,7 +115,7 @@ if telescope == 'euclid':
                 output_name = image_dir / field / f'{field}_Euclid_{filter_name}_Q1_psfhom_WHT.fits'
                 hdu.writeto(output_name)
 
-                print(f'PSF homogenized file for {filter_name} {tile} written to ', output_name)
+                print(f'PSF homogenized file for {filter_name} {field} written to ', output_name)
 
 
         if field_name == 'COSMOS':
@@ -123,7 +127,7 @@ if telescope == 'euclid':
                 image = hdu[0].data
                 hdr = hdu[0].header
 
-            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}e_to_VISTA_kernel_DR1.fits')
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel_DR1.fits')
             kernel = hdu[0].data
 
             print('Opened image. Now convolving...')
@@ -156,7 +160,7 @@ if telescope == 'euclid':
                 image = hdu[0].data
                 hdr = hdu[0].header
 
-            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}e_to_VISTA_kernel_DR1.fits')
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel_DR1.fits')
             kernel = hdu[0].data
 
             print('Opened weight image. Now convolving...')

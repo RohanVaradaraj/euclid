@@ -32,6 +32,10 @@ lam_rest = 1908.73  # Å (CIII] rest wavelength; average of doublet)
 EW = 10             # Å (rest-frame equivalent width)
 # Note: For a doublet, this can be refined per component
 
+# NVλ1243
+lam_rest = 1243
+EW = 10
+
 # lam_rest = 1216
 # EW = 25
 

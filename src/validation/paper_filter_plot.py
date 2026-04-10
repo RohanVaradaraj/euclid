@@ -77,7 +77,7 @@ def compute_fwhm(wavelength, trans, depth):
         return left, right, (left + right) / 2
     return None, None, None
 
-def process_filter_group(filters, depths, color=None, label=None, labels=None, text=False, colours=None):
+def process_filter_group(filters, depths, color=None, label=None, labels=None, text=False, colours=None, alpha=1):
     centres = []
     for i, fpath in enumerate(filters):
         wave, trans = load_filter_data(fpath)
@@ -89,7 +89,7 @@ def process_filter_group(filters, depths, color=None, label=None, labels=None, t
 
         if centre:
             centres.append(centre)
-            plt.hlines(depths[i], left, right, colors=this_color, linewidth=6, alpha=1, zorder=15)
+            plt.hlines(depths[i], left, right, colors=this_color, linewidth=6, alpha=alpha, zorder=15)
             if text and labels:
                 plt.text(centre, depths[i] + 0.25, labels[i], color=this_color, fontsize=33, ha='center', va='center', zorder=20, fontweight='bold')
 
@@ -223,7 +223,7 @@ for i, colour in enumerate(euclid_colours):
 print('VISTA')
 fwhm_centres_vista = process_filter_group(vista_filters, vista_depths, color='tab:orange', label='VISTA')
 print('HSC')
-fwhm_centres_hsc = process_filter_group(hsc_filters, hsc_depths, color='black', label='HSC')
+fwhm_centres_hsc = process_filter_group(hsc_filters, hsc_depths, color='black', label='HSC', alpha=0.6)
 
 # Final plot tweaks
 plt.xlabel(r'$\lambda \ [\rm{\mu} \mathrm{m}]$', fontsize=35)
@@ -231,7 +231,6 @@ plt.ylabel('Depth [mag]', fontsize=30)
 plt.tick_params(axis='both', which='major', size=10, width=4)
 plt.xticks(fontsize=30)
 plt.yticks(fontsize=30)
-plt.legend()
 plt.tight_layout()
 
 
@@ -242,8 +241,12 @@ primary_wlen, secondary_wlen, stellar_wlen = model_wlens
 primary_flux, secondary_flux, stellar_flux = model_fluxes
 
 # Plot SEDs
-plt.plot(stellar_wlen, stellar_flux, color='gray', lw=LW, zorder=2, alpha=0.7)
-plt.plot(primary_wlen, primary_flux, color='gray', lw=LW, zorder=2, linestyle='--', alpha=0.7)
+# plt.plot(stellar_wlen, stellar_flux, color='gray', lw=LW, zorder=2, alpha=0.7)
+# plt.plot(primary_wlen, primary_flux, color='gray', lw=LW, zorder=2, linestyle='--', alpha=0.7)
+
+plt.plot(stellar_wlen, stellar_flux, color='darkred', lw=LW, zorder=2, alpha=0.7)
+plt.plot(primary_wlen, primary_flux, color='darkblue', lw=LW, zorder=2, alpha=0.7)
+
 plt.gca().invert_yaxis()
 
 # Combine all filters
@@ -262,9 +265,9 @@ for i, fpath in enumerate(all_filters):
     mag_stellar = compute_effective_mag(wl, trans, stellar_wlen, mag_to_flux(stellar_flux))
     mag_primary = compute_effective_mag(wl, trans, primary_wlen, mag_to_flux(primary_flux))
 
-    plt.scatter(fwhm_centres_all[i], mag_stellar, color=all_colours[i], s=300, zorder=30,
+    plt.scatter(fwhm_centres_all[i], mag_stellar, color=all_colours[i], s=500, zorder=30,
                 marker='*', edgecolors='black')
-    plt.scatter(fwhm_centres_all[i], mag_primary, color=all_colours[i], s=300, zorder=29,
+    plt.scatter(fwhm_centres_all[i], mag_primary, color=all_colours[i], s=500, zorder=29,
                 marker='o', edgecolors='black')
 
     #print(f"Filter: {Path(fpath).name}, mag (primary): {mag_primary:.3f}")
@@ -279,7 +282,7 @@ plt.minorticks_on()
 
 plt.xlim(0.4, 2.5)
 plt.ylim(29,23.5)
-plt.legend(loc='lower right', fontsize=25, ncols=2)
+# plt.legend(loc='lower right', fontsize=25, ncols=2)
 plt.tight_layout()
-plt.savefig(plot_dir / 'depths_and_model_mags.pdf', bbox_inches='tight')
+plt.savefig(plot_dir / 'depths_and_model_mags_ISTA.pdf', bbox_inches='tight')
 plt.show()

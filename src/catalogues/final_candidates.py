@@ -24,21 +24,27 @@ from sed_fitting_codes import parse_spec_file, LymanAlphaModel
 #     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
 # }
 
+# filters = {
+#     'Y+J': {'type': 'stacked-detection', 'value': 5},
+#     'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
+#     'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+# }
+
 filters = {
-    'Y+J': {'type': 'stacked-detection', 'value': 5},
-    'HSC-G_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-R_DR3': {'type': 'non-detection', 'value': 2},
-    'HSC-I_DR3': {'type': 'non-detection', 'value': 2},
+    'HSC-Z': {'type': 'detection', 'value': 5},
+    'HSC-G': {'type': 'non-detection', 'value': 2},
+    'r': {'type': 'non-detection', 'value': 2},
 }
 
 #! Field name
-field_name = 'COSMOS' #'XMM'
+field_name = 'CDFS' #'XMM'
 
 #! Run type - governing the filter set used.
 run_type = 'with_euclid' #''
 
 #! Run flag - options are 'z7', 'BD'/'best_bd', 'dustyInterlopers'
-run_flag = 'really_good_BDs'
+run_flag = 'best_highz'
 
 # Only get lya if we are looking at the LBG sample
 run_lya = (run_flag == 'z7')
@@ -85,13 +91,14 @@ def clean_filter_name(filt, DR3=False):
 # Generate name of the directory we want to use to make the catalogue
 det_filters = [f for f, t in filters.items() if t['type'] in ['detection', 'stacked-detection']]
 det_filter_str = '_'.join(det_filters)
+det_filter_str = clean_filter_name(det_filter_str)
+
 if run_type != '':
     folder = f'det_{det_filter_str}_{run_type}_{run_flag}'
     lya_folder = f'det_{det_filter_str}_{run_type}_lya'
 else:
     folder = f'det_{det_filter_str}_{run_flag}'
     lya_folder = f'det_{det_filter_str}_lya'
-
 #! Generate parent catalogue name
 cat_name_parts = [field_name]
 
@@ -118,7 +125,7 @@ print(cat_name)
 today_date = datetime.datetime.now().strftime('%Y_%m_%d')
 
 # Name of the new catalogue
-if run_flag == 'z7':
+if (run_flag == 'z7') | (run_flag == 'best_highz'):
     new_cat_name = cat_name.split('.fits')[0] + '_candidates_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_candidates_' + today_date + '.fits'
 else:
     new_cat_name = cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '_' + run_type + '.fits' if run_type != '' else cat_name.split('.fits')[0] + '_' + run_flag + '_INTERLOPERS_' + today_date + '.fits'
@@ -130,14 +137,24 @@ print(new_cat_name)
 
 # Read in the parent catalogue
 cat_dir = Path.cwd().parents[1] / 'data' / 'catalogues'
-t = Table.read(cat_dir / cat_name)
+# t = Table.read(cat_dir / cat_name)
+# print(t)
+
+# parent_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCOSMOS' / 'other'
+# cat_name = 'COSMOS_det_YJHK_masked_1.8as_Euclid_CWEB_2024_10_16.fits'
+parent_cat_dir = Path.cwd().parents[3] / 'data' / 'catalogues' / 'finalCDFS' / 'other'
+cat_name = 'CDFSFULL_DR3_MASKVISTADET_HSC-Z_2026_04_08_2.0as_IRAC_2.8as_ALL.fits'
+t = Table.read(parent_cat_dir / cat_name)
 print(t)
+
 
 # Get the list of objects that made it through the SED fitting
 obj_dir = Path.cwd().parents[1] / 'data' / 'sed_fitting' / 'zphot' / field_name / 'best_fits'
 
 folder = folder.replace('+', '_') #[:-1]
+folder = folder.replace('HSC_Z', 'HSC-Z')
 print(f'Folder name: {folder}')
+
 obj_list = glob.glob(str(obj_dir / folder / '*.spec'))
 print(len(obj_list))
 
@@ -146,6 +163,7 @@ print(obj_dir / folder)
 
 # And lyman-alpha emitters
 if run_lya:
+    print(str(obj_dir / lya_folder / '*.spec'))
     lya_obj_list = glob.glob(str(obj_dir / lya_folder / '*.spec'))
     lya_IDs = [spec_file.split('/')[-1].split('Id')[-1].lstrip('0').split('.spec')[0] for spec_file in lya_obj_list]
     lya_IDs = [int(ID) for ID in lya_IDs]
@@ -218,6 +236,8 @@ for i, ID in enumerate(IDs):
 #! Now loop through Lya objects
 if run_lya:
     for i, lya_ID in enumerate(lya_IDs):
+
+        print('Saving LAE ', lya_ID)
 
         row_index = np.where(t_candidates['ID'] == lya_ID)[0]
 

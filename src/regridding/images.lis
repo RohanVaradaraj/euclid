@@ -1,0 +1,29 @@
+# Name		Image				Weight					Wht_type	zeropoint	filter                 directory	mask	telescope
+CFHT-u		CFHTLS_D2_u_DR4.fits		CFHTLS_D2_u_DR4_wht.fits		MAP_WEIGHT	30.0		MEGACAM/MegaCam_u      here		CFHT_current.reg	CFHT
+CFHT-g		CFHTLS_D2_g_DR4.fits		CFHTLS_D2_g_DR4_wht.fits		MAP_WEIGHT	30.0		MEGACAM/MegaCam_g      here		CFHT_current.reg	CFHT
+CFHT-r		CFHTLS_D2_r_DR4.fits		CFHTLS_D2_r_DR4_wht.fits		MAP_WEIGHT	30.0		MEGACAM/MegaCam_r      here		CFHT_current.reg	CFHT
+CFHT-iy		CFHTLS_D2_iy_DR4.fits		CFHTLS_D2_iy_DR4_wht.fits		MAP_WEIGHT	30.0		MEGACAM/MegaCam_i_new  here		CFHT_current.reg	CFHT
+CFHT-z		CFHTLS_D2_z_DR4.fits		CFHTLS_D2_z_DR4_wht.fits		MAP_WEIGHT	30.0		MEGACAM/MegaCam_z      here		CFHT_current.reg	CFHT
+HSC-G_DR3	HSC-G_DR3.fits			HSC-G_DR3_wht.fits			MAP_WEIGHT	27.0		HSC/g_HSC.txt		here		none	HSC
+HSC-R_DR3	HSC-R_DR3.fits			HSC-R_DR3_wht.fits			MAP_WEIGHT	27.0		HSC/r_HSC.txt	       here		none	HSC
+HSC-I_DR3	HSC-I_DR3.fits			HSC-I_DR3_wht.fits			MAP_WEIGHT	27.0		HSC/i_HSC.txt	       here		none	HSC
+HSC-NB0816_DR3  HSC-NB0816_DR3.fits             HSC-NB0816_DR3_wht.fits                 MAP_WEIGHT      27.0            SC/subaru_NB816.txt      here		none	HSC
+HSC-Z_DR3	HSC-Z_DR3.fits			HSC-Z_DR3_wht.fits			MAP_WEIGHT	27.0		HSC/z_HSC.txt	       here		none	HSC
+HSC-NB0921_DR3	HSC-NB0921_DR3.fits		HSC-NB0921_DR3_wht.fits			MAP_WEIGHT	27.0		SC/subaru_NB921.txt      here		none	HSC
+HSC-Y_DR3	HSC-Y_DR3.fits			HSC-Y_DR3_wht.fits			MAP_WEIGHT	27.0		HSC/y_HSC.txt	       here		none	HSC
+Y           UVISTA_Y_DR6.fits       UVISTA_Y_DR6_wht.fits        MAP_WEIGHT      30.0            VISTA/VISTA_Y.txt  here                 Y_current.reg	VISTA
+J           UVISTA_J_DR6.fits       UVISTA_J_DR6_wht.fits        MAP_WEIGHT      30.0            VISTA/VISTA_J.txt  here                 Y_current.reg	VISTA
+H           UVISTA_H_DR6.fits       UVISTA_H_DR6_wht.fits        MAP_WEIGHT      30.0            VISTA/VISTA_H.txt  here                 Y_current.reg	VISTA
+Ks           UVISTA_K_DR6.fits       UVISTA_K_DR6_wht.fits        MAP_WEIGHT      30.0            VISTA/VISTA_Ks.txt here                 Y_current.reg	VISTA
+ch1cds          COSMOS_ch1_COMPLETE_microJy.fits COSMOS_ch1_COMPLETE_unc_microJy.fits   MAP_WEIGHT      23.9            SPITZER/irac_ch1.txt   here             none	Spitzer
+ch2cds          COSMOS_ch2_COMPLETE_microJy.fits COSMOS_ch1_COMPLETE_unc_microJy.fits   MAP_WEIGHT      23.9            SPITZER/irac_ch2.txt   here             none	Spitzer
+f115w	CWEB_f115w_vista_matched.fits	CWEB_f115w_vista_matched_RMS.fits	MAP_WEIGHT	24.85	JWST/f115w.txt	here	CWEB.reg	JWST
+f150w	CWEB_f150w_vista_matched.fits	CWEB_f150w_vista_matched_RMS.fits	MAP_WEIGHT	24.85	JWST/f150w.txt	here	CWEB.reg	JWST
+f277w	CWEB_f277w_vista_matched.fits	CWEB_f277w_vista_matched_RMS.fits	MAP_WEIGHT	24.85	JWST/f277w.txt	here	CWEB.reg	JWST
+f444w	CWEB_f444w_vista_matched.fits	CWEB_f444w_vista_matched_RMS.fits	MAP_WEIGHT	24.85	JWST/f444w.txt	here	CWEB.reg	JWST
+Ye	Euclid_Y_vista_matched.fits    Euclid_Y_vista_matched_WHT.fits        MAP_WEIGHT 29.8    Y       here	Y_euclid.reg	Euclid
+Je	Euclid_J_vista_matched.fits    Euclid_J_vista_matched_WHT.fits        MAP_WEIGHT 30.0    J       here	Y_euclid.reg	Euclid
+He	Euclid_H_vista_matched.fits    Euclid_H_vista_matched_WHT.fits        MAP_WEIGHT 30.0    H       here  Y_euclid.reg	Euclid
+VIS	Euclid_VIS_vista_matched.fits  Euclid_VIS_vista_matched_WHT.fits      MAP_WEIGHT 24.4    VIS     here  Y_euclid.reg	Euclid
+
+

@@ -12,7 +12,7 @@ from pathlib import Path
 from astropy.io import ascii
 from typing import Optional
 from astropy.io import fits
-from astropy.nddata.utils import Cutout2D
+from astropy.nddata.utils import Cutout2D, NoOverlapError
 from astropy.wcs import WCS
 import glob
 from astropy.coordinates import SkyCoord
@@ -33,9 +33,15 @@ ground_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data'
 euclid_dir = Path.home() / 'euclid'
 cweb_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'CWEB'
 primer_dir = Path.home().parent.parent / 'vardy' / 'vardygroupshare' / 'data' / 'COSMOS'
-plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts'
+plot_dir = Path.cwd().parent.parent / 'plots' / 'cutouts' / 'z4'
+# Check if exists, if not then make
+
+
 refcat_dir = Path.cwd().parents[1] / 'data' / 'ref_catalogues'
 
+def save_cutout_fits(cutout, filename):
+    hdu = fits.PrimaryHDU(data=cutout.data, header=cutout.wcs.to_header())
+    hdu.writeto(filename, overwrite=True)
 
 def readAllCOSMOSGalaxies() -> Table:
 
@@ -68,13 +74,41 @@ def findPlotLimits(data: np.ndarray) -> tuple:
     # Recalculate mean and std_dev
     mean = np.mean(data)
     std_dev = np.std(data)
+    
+    # Sigma clip the data
+    data = data[(data < mean + 3 * std_dev)]
+
+    # Recalculate mean and std_dev
+    mean = np.mean(data)
+    std_dev = np.std(data)
 
     lower = mean - 2 * std_dev
     upper = mean + 5 * std_dev
 
     return lower, upper
 
+def truncate(value, decimals):
+    factor = 10 ** decimals
+    return int(value * factor) / factor
 
+
+def make_euclid_name(ra_deg, dec_deg):
+    c = SkyCoord(ra=ra_deg * u.deg, dec=dec_deg * u.deg, frame='icrs')
+    ra_h = c.ra.hms
+    dec_d = c.dec.dms
+
+    # Truncate RA to two d.p.
+    ra_sec_trunc = truncate(ra_h.s, 2)
+    ra_str = f"{int(ra_h.h):02d}{int(ra_h.m):02d}{int(ra_sec_trunc):02d}.{int((ra_sec_trunc % 1) * 100):02d}"
+
+    # Truncate DEC to one d.p.
+    sign = '+' if dec_d.d >= 0 else '-'
+    dec_d_abs = abs(dec_d.d)
+    dec_m_abs = abs(dec_d.m)
+    dec_s_trunc = truncate(abs(dec_d.s), 1)
+    dec_str = f"{sign}{int(dec_d_abs):02d}{int(dec_m_abs):02d}{int(dec_s_trunc):02d}.{int((dec_s_trunc % 1) * 10):1d}"
+
+    return f"J{ra_str}${sign}${dec_str[1:]}"  
 
 def isCoordInSurveyFootprints(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
     """
@@ -248,7 +282,7 @@ def isCoordInCWEB(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 
-def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: float = 10.0, 
+def Cutout(ra: float, dec:float, ID=None, contained_in: Optional[np.array] = None, size: float = 10.0, 
            save_cutout: bool = True, save_dir: Path = Path.cwd().parent.parent / 'data' / 'cutouts',
            plot_title: Optional[str] = None,
            add_centre_lines: Optional[bool] = False) -> None:
@@ -357,6 +391,29 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
 
     #     cutout_grK = Cutout2D(data_K, c, size=size/pix_scale, wcs=wcs_K)
 
+
+    ### YJHK STACK ###
+    with fits.open(vista_dir / 'UVISTA_YJHK_DR6.fits') as hdu_stack:
+
+        data_stack = hdu_stack[0].data
+        hdr_stack = hdu_stack[0].header
+        pix_scale = np.abs(hdr_stack['CD1_1']) * 3600
+        wcs_stack = WCS(hdr_stack)
+
+        cutout_grStack = Cutout2D(data_stack, c, size=size/pix_scale, wcs=wcs_stack)
+
+    # Save VIS and H cutout
+    # if save_cutout:
+    #     save_dir_euclid = Path.cwd().parents[1] / 'data' / 'proposals' / 'p2_cutouts'
+    #     save_dir_euclid.mkdir(parents=True, exist_ok=True)
+
+        # save_cutout_fits(cutout_euVIS, save_dir_euclid / f'ID_{ID}_cutout_Euclid_VIS_{ra:.2f}_{dec:.2f}.fits')
+        # save_cutout_fits(cutout_euY, save_dir_euclid / f'ID_{ID}_cutout_Euclid_Y_{ra:.2f}_{dec:.2f}.fits')
+        # save_cutout_fits(cutout_euJ, save_dir_euclid / f'ID_{ID}_cutout_Euclid_J_{ra:.2f}_{dec:.2f}.fits')
+        # save_cutout_fits(cutout_euH, save_dir_euclid / f'ID_{ID}_cutout_Euclid_H_{ra:.2f}_{dec:.2f}.fits')
+
+        # save_cutout_fits(cutout_grStack, save_dir_euclid / f'{plot_title}_cutout_VISTA_YJHK_10x10arcmin.fits')
+
     
     #! Next get the Euclid cutouts
     euclid_tile = contained_in[0][0]
@@ -364,7 +421,8 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     if euclid_tile != '0':
 
         #### VIS ####
-        tile_VIS = glob.glob(str(euclid_dir / 'VIS' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        #tile_VIS = glob.glob(str(euclid_dir / 'VIS' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        tile_VIS = glob.glob(str(euclid_dir / 'COSMOS' / f'COSMOS_VIS_DR1.fits'))[0]
         with fits.open(tile_VIS) as hdu_VIS:
 
             data_VIS = hdu_VIS[0].data
@@ -372,10 +430,28 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_VIS['CD1_1']) * 3600
             wcs_VIS = WCS(hdr_VIS)
 
-            cutout_euVIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
+            try:
+                cutout_euVIS = Cutout2D(data_VIS, c, size=size/pix_scale, wcs=wcs_VIS)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_VIS.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_euVIS = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_VIS
+                    )
 
         #### Y ####
-        tile_Y = glob.glob(str(euclid_dir / 'Y' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        # tile_Y = glob.glob(str(euclid_dir / 'Y' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        tile_Y = glob.glob(str(euclid_dir / 'COSMOS' / f'COSMOS_Y_DR1.fits'))[0]
         with fits.open(tile_Y) as hdu_Y:
 
             data_Y = hdu_Y[0].data
@@ -383,10 +459,29 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_Y['CD1_1']) * 3600
             wcs_Y = WCS(hdr_Y)
 
-            cutout_euY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
+            try:
+                cutout_euY = Cutout2D(data_Y, c, size=size/pix_scale, wcs=wcs_Y)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_Y.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_euY = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_Y
+                    )
 
         #### J ####
-        tile_J = glob.glob(str(euclid_dir / 'J' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        #tile_J = glob.glob(str(euclid_dir / 'J' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        tile_J = glob.glob(str(euclid_dir / 'COSMOS' / f'COSMOS_J_DR1.fits'))[0]
+
         with fits.open(tile_J) as hdu_J:
 
             data_J = hdu_J[0].data
@@ -394,10 +489,28 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_J['CD1_1']) * 3600
             wcs_J = WCS(hdr_J)
 
-            cutout_euJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
+            try:
+                cutout_euJ = Cutout2D(data_J, c, size=size/pix_scale, wcs=wcs_J)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
 
+                empty_data = np.zeros(shape, dtype=data_J.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_euJ = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_J
+                    )
         #### H ####
-        tile_H = glob.glob(str(euclid_dir / 'H' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+#        tile_H = glob.glob(str(euclid_dir / 'H' / 'COSMOS' / f'*BGSUB*_{euclid_tile}.fits*'))[0]
+        tile_H = glob.glob(str(euclid_dir / 'COSMOS' / f'COSMOS_H_DR1.fits'))[0]
+
         with fits.open(tile_H) as hdu_H:
 
             data_H = hdu_H[0].data
@@ -405,7 +518,36 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_H['CD1_1']) * 3600
             wcs_H = WCS(hdr_H)
 
-            cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+            try:
+                cutout_euH = Cutout2D(data_H, c, size=size/pix_scale, wcs=wcs_H)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_H.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_euH = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_H
+                    )
+
+        # Save VIS and H cutout
+        # if save_cutout:
+        #     save_dir_euclid = Path.cwd().parents[1] / 'data' / 'proposals' / 'p2_cutouts'
+        #     save_dir_euclid.mkdir(parents=True, exist_ok=True)
+
+            # save_cutout_fits(cutout_euVIS, save_dir_euclid / f'ID_{ID}_cutout_Euclid_VIS_{ra:.2f}_{dec:.2f}.fits')
+            # save_cutout_fits(cutout_euY, save_dir_euclid / f'ID_{ID}_cutout_Euclid_Y_{ra:.2f}_{dec:.2f}.fits')
+            # save_cutout_fits(cutout_euJ, save_dir_euclid / f'ID_{ID}_cutout_Euclid_J_{ra:.2f}_{dec:.2f}.fits')
+            # save_cutout_fits(cutout_euH, save_dir_euclid / f'ID_{ID}_cutout_Euclid_H_{ra:.2f}_{dec:.2f}.fits')
+
+            #save_cutout_fits(cutout_euH, save_dir_euclid / f'{plot_title}_cutout_Euclid_H_10x10arcmin.fits')
 
         # If all of the Euclid cutouts are zero, then the cutout is empty so return none
         # if np.all(cutout_euVIS.data == 0.) and np.all(cutout_euY.data == 0.) and np.all(cutout_euJ.data == 0.) and np.all(cutout_euH.data == 0.):
@@ -415,10 +557,7 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     # If all the Euclid cutouts are zero, return an empty cutout
     if euclid_tile == '0':
 
-        cutout_euVIS = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
-        cutout_euY = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
-        cutout_euJ = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
-        cutout_euH = Cutout2D(np.zeros((size, size)), c, size=size, wcs=WCS(naxis=2))
+        return None
 
 
     #! Next check for and get the Hubble cutouts
@@ -461,7 +600,24 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            try:
+                cutout_f115w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_CWEB.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_f115w_cweb = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_CWEB
+                    )
 
 
         #### F150W ####
@@ -472,7 +628,24 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f150w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            try:
+                cutout_f150w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_CWEB.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_f150w_cweb = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_CWEB
+                    )
 
         #### F277W ####
         with fits.open(tile_f277w) as hdu_CWEB:
@@ -482,7 +655,24 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             pix_scale = np.abs(hdr_CWEB['CDELT1']) * 3600
             wcs_CWEB = WCS(hdr_CWEB)
 
-            cutout_f277w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            try:
+                cutout_f277w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
+
+                empty_data = np.zeros(shape, dtype=data_CWEB.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_f277w_cweb = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_CWEB
+                    )
         
         #### F444W ####
         with fits.open(tile_f444w) as hdu_CWEB:
@@ -493,8 +683,38 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
             wcs_CWEB = WCS(hdr_CWEB)
             pa = hdr_CWEB['PA_APER']
 
-            cutout_f444w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            try:
+                cutout_f444w_cweb = Cutout2D(data_CWEB, c, size=size/pix_scale, wcs=wcs_CWEB)
+            except NoOverlapError:
+                # Compute desired shape in pixels
+                if np.isscalar(size):
+                    shape = (int(size/pix_scale), int(size/pix_scale))
+                else:
+                    shape = (int(size[1]/pix_scale), int(size[0]/pix_scale))
 
+                empty_data = np.zeros(shape, dtype=data_CWEB.dtype)
+
+                # Make a "fake" cutout with zeros, keeping WCS centered at `c`
+                cutout_f444w_cweb = Cutout2D(
+                    empty_data,
+                    position=(shape[1]//2, shape[0]//2),
+                    size=shape,
+                    wcs=wcs_CWEB
+                    )
+
+        # Save the CWEB cutouts as fits files
+        # if save_cutout:
+        #     save_dir_cweb = Path.cwd().parents[1] / 'data' / 'proposals' / 'p1_cutouts'
+        #     save_dir_cweb.mkdir(parents=True, exist_ok=True)
+
+        #     save_cutout_fits(cutout_f115w_cweb, save_dir_cweb / f'ID_{ID}_cutout_CWEB_F115W_{ra:.2f}_{dec:.2f}.fits')
+        #     save_cutout_fits(cutout_f150w_cweb, save_dir_cweb / f'ID_{ID}_cutout_CWEB_F150W_{ra:.2f}_{dec:.2f}.fits')
+        #     save_cutout_fits(cutout_f277w_cweb, save_dir_cweb / f'ID_{ID}_cutout_CWEB_F277W_{ra:.2f}_{dec:.2f}.fits')
+        #     save_cutout_fits(cutout_f277w_cweb, save_dir_cweb / f'ID_{ID}_cutout_CWEB_F444W_{ra:.2f}_{dec:.2f}.fits')
+
+        #     # p2
+        #     save_cutout_fits(cutout_f444w_cweb, save_dir_cweb / f'{plot_title}_cutout_CWEB_F444W_10x10arcmin.fits')
+            
 
     #### PRIMER ####
     primer_tile = contained_in[0][2]
@@ -724,13 +944,14 @@ def Cutout(ra: float, dec:float, contained_in: Optional[np.array] = None, size: 
     if save_cutout:
         plot_title = str(plot_title)
         save_name = plot_title.split(',')[0]
-        plt.savefig(plot_dir / f'{save_name}.png')
+        plt.savefig(plot_dir / f'COSMOS_ID_{save_name}.pdf')
 
     plt.show()
     return fig, ax
 
     #plt.close()
     #return None
+    return None
 
 
 
@@ -917,6 +1138,8 @@ if __name__ == '__main__':
     dec = [2.2522416552619746]
     ID = [178396]
 
+
+
     #! Stars
     # t = Table.read(Path.cwd().parents[1] / 'data' / 'depths' / 'COSMOS' / 'catalogues' / 'df444w_locus_stars.fits')
 
@@ -948,13 +1171,69 @@ if __name__ == '__main__':
     ID = t['ID']
 
     #! Stavrox z=6.8
-    ra = [150.1200752011961]
-    dec = [2.0898737362171156]
+    # ra = [150.1200752011961]
+    # dec = [2.0898737362171156]
+
+    #! Nathan's z=5 candidates in COSMOS
+    # ra = [ 150.0646487736565, 150.2970171829096, 150.0015577303966, 149.93031878361805, 149.55790768581574, 149.81976533364988, 150.67691341136822, 150.37025906264196, 149.9179524404775, 150.41129219687292, 149.6785624899251, 150.02803178397048, 150.4029315800968, 150.31595510191195]
+    # dec = [2.1240832246701857, 2.488110301538341, 2.6952885516554907, 1.7686795080791051, 1.790581039771246, 1.9773914886177946, 2.22463751680825, 2.3805154948508487, 2.392064687286876, 2.4150960438461673, 2.5690418786852987, 2.6098005600763656, 2.760439230110506, 2.3366573607029992]
+
+    #! MIGHTEE Grism sources
+    # ra = [149.9179524404775, 150.00206688878058, 150.243604, 149.962789, 150.265429, 150.100959, 150.142425]
+    # dec = [2.392064687286876, 2.3821626758186336, 2.027584, 2.287607, 1.922736, 2.419417, 1.959391]
+    # IDs = [10702958, 639925, 624358, 741471, 313390, 377487, 279517]
+
+
+    #!####################### Z=7 JWST PROPOSAL CANDIDATES ###############################
+    # ra = [150.1647669969571, 150.1064823589874, 150.127050120108]
+    # dec =[2.0391523065389685, 2.2780829372629783, 2.5628551920144758]
+    # IDs = [387777, 615679, 878786]
+
+    #! Stavros z=5.5
+    # ra = [150.0019421102753]
+    # dec = [2.3822915064172214]
+    # IDs = [639925]
+
+    #! #################### JWST GRISM PROPOSAL SOURCES ############################
+    # ra = [150.2971319745991, 150.1200752011961, 150.0646487736565]
+    # dec = [2.4881504586968317, 2.0898737362171156, 2.1240832246701857]
+    # names = ['G8', 'OD1_z6p53', 'OD1_z5p03']
+
+    #150.1647669969571,2.0391523065389685 150.1064823589874,2.2780829372629783 150.127050120108,2.5628551920144758
+
+    #! All stavros cosmos sources
+    # t = Table.read(Path.home() / 'highz_rgs' / 'data' / 'catalogues' / 'cosmos_highz_candidates.fits')
+    # ra = t['ra']
+    # dec = t['dec']
+    # IDs = t['id']
+
+    #! Nathan z=5 COSMOS sample
+    # radio_dir = Path.home() / 'highz_rgs' / 'data' / 'catalogues'
+    # t = Table.read(radio_dir / 'combined_z5_matches_nospecz.fits')
+
+    #! Nathan z=4 COSMOS sample
+    # radio_dir = Path.home() / 'highz_rgs' / 'data' / 'catalogues'
+    # t = Table.read(radio_dir / 'Nathan_z4_COSMOS_Xmatch.fits')
+
+    # #t = t[t['RA'] > 140]
+    # ra = t['RA']
+    # dec = t['DEC']
+    # IDs = t['UID']
+
+    #! Charlotte high-z surces
+    ra = [149.66141582700155, 149.42841140442525, 150.6525914016524]
+    dec = [1.948786031298198, 2.7373798003707375, 2.7949620730349847]
+    IDs = ['MGTDR1J095838.73+015655.6', 'MGTDR1J095742.75+024414.9', 'MGTDR1J100236.62+024741.8']
+
+
 
     ############! GET CUTOUTS ############
     for i in range(len(ra)):
 
         print(f'Object number {i+1} of {len(ra)}')
+        print(IDs[i])
+        print(make_euclid_name(ra[i], dec[i]))
+        # continue
 
     #     print(f'Object number {i+1} of {len(ra)}')
 
@@ -971,7 +1250,8 @@ if __name__ == '__main__':
         #print(class_star[i], flag[i], elong[i], fwhm[i])
         #Cutout(ra[i], dec[i], size=6., save_cutout=False)
         #Cutout(ra[i], dec[i], size=6., add_centre_lines=True, save_cutout=False, plot_title=ID[i])
-        Cutout(ra[i], dec[i], size=6.) #, add_centre_lines=True, save_cutout=False)
+        Cutout(ra[i], dec[i], size=10, ID=IDs[i], save_cutout=False, plot_title=IDs[i]) #, add_centre_lines=True, save_cutout=False)
+        #Cutout(ra[i], dec[i], size=600, plot_title=names[i], save_cutout=True)
         #Cutout(ra[i], dec[i], size=6., plot_title=ID[i])
         #Cutout(ra[i], dec[i], size=10., plot_title='Big Three Dragons')   #
         #Cutout(ra[i], dec[i], size=4., plot_title=ID[i] + ', z=' + str(z[i]) + ', Muv=' + str(Muv[i]))

@@ -17,12 +17,31 @@ plt.rcParams.update({'font.size': 15})
 plt.rcParams['figure.dpi'] = 100
 
 #! Switches and setup
-instrument = 'jwst'
+instrument = 'euclid'
 
-fields = ['COSMOS']
+fields = ['CDFS1', 'CDFS2', 'CDFS3']
 
-filter_names_euclid = ['VIS', 'Y', 'J', 'H']
-filter_names_jwst = ['F115W', 'F150W', 'F277W', 'F444W']
+filter_names_euclid = ['YE', 'JE', 'HE', 'VIS']
+#filter_names_jwst = ['F115W', 'F150W', 'F277W', 'F444W']
+
+dr = 'Q1' # DR1
+
+def findPlotLimits(data: np.ndarray) -> tuple:
+
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    # Sigma clip the data
+    data = data[(data < mean + 3 * std_dev)]
+
+    # Recalculate mean and std_dev
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    lower = mean - 2 * std_dev
+    upper = mean + 5 * std_dev
+
+    return lower, upper
 
 
 for field in fields:
@@ -30,16 +49,27 @@ for field in fields:
     if instrument.lower() == 'euclid':
 
         filter_names = filter_names_euclid
-        euclid_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'results'
+        # euclid_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'results'
+        euclid_psf_dir = Path.cwd().parents[3] / 'data' / 'psf' / f'{field}' / 'results' #! read in Euclid PSFs from here.
+        # Make output directory if it doesn't exist
+        euclid_psf_dir.mkdir(parents=True, exist_ok=True)
 
-        output_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'kernel'
+        # psf_out_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'results'
+        # psf_out_dir.mkdir(parents=True, exist_ok=True)
+
+        output_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'kernel' #! Output the kernels to here
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         # Get reference VISTA PSF
-        vista_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'ref_psf'
-        vista_psf = vista_psf_dir / 'Y_DR6_psf.fits'
+        vista_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'ref_psf' #! Read in VISTA PSF from here, and convert .psf to .fits
+        vista_psf_dir.mkdir(parents=True, exist_ok=True)
+        vista_psf = vista_psf_dir / 'Y_psf.fits'
 
         for filter_name in filter_names:
 
+            print(f'Processing filter: {filter_name}')
+
+            #! If the Euclid PSF slice doesn't exist, extract it from the .psf file and save as a fits file with the same header. If it does exist, just read in the fits file.
             if not Path.exists(euclid_psf_dir / f'{filter_name}_psf.fits'):
 
                 hdu = fits.open(euclid_psf_dir / f'{filter_name}.psf')
@@ -49,19 +79,26 @@ for field in fields:
                 # PSF slice
                 yz_slice = np.array(data[0, :, :])
 
-                # plt.imshow(yz_slice, origin='lower')
-                # plt.show()
-                # continue
+                vmin, vmax = findPlotLimits(yz_slice)
 
-                # Save the slice as a fits file with the same header
+                plt.imshow(yz_slice, origin='lower', vmin=vmin, vmax=vmax)
+                plt.show()
+
+                #  Save the slice as a fits file with the same header
                 hdu = fits.PrimaryHDU(yz_slice, header=header)
                 hdu.writeto(euclid_psf_dir / f'{filter_name}_psf.fits', overwrite=True)
 
             euclid_psf = euclid_psf_dir / f'{filter_name}_psf.fits'
 
-            output_name = output_dir / f'{filter_name}_to_VISTA_kernel.fits'
-            os.system(f'addpixscl {str(euclid_psf)} 0.1')
-            os.system(f'addpixscl {str(vista_psf)} 0.15')
+            output_name = output_dir / f'{filter_name}_to_VISTA_kernel_{dr}.fits'
+
+            # If field is cosmos, pixel scale is 0.15
+            if field == 'COSMOS':
+                os.system(f'addpixscl {str(euclid_psf)} 0.15')
+                os.system(f'addpixscl {str(vista_psf)} 0.15')
+            else:
+                os.system(f'addpixscl {str(euclid_psf)} 0.2')
+                os.system(f'addpixscl {str(vista_psf)} 0.2')
             os.system(f'pypher {str(euclid_psf)} {str(vista_psf)} {str(output_name)}')
 
     if instrument.lower() == 'jwst':
