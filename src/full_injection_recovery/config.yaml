@@ -1,0 +1,69 @@
+#! z=7
+# luminosity_function:
+#   type: "DPL"
+#   alpha: -2.08
+#   beta: -4.81
+#   M_star: -21.01
+#   phi_star: 10**(-3.74)
+#   Muv_range: [-23, -20.]  # Minimum and maximum mag values
+#   reference: "Harikane+24"
+#   n_samples: 1000
+#   dMuv: 0.1
+
+# source_injection:
+#   beta_mean: -2
+#   beta_std: 0.2
+#   zmin: 6.5
+#   zmax: 7.5
+#   dz: 0.05
+#   filters: ['Y', 'J']
+#   image_size_arcmin: 10
+#   n_images: 1000
+#   base_image: "UVISTA_YJ_DR6.fits"
+
+# source_extraction:
+#   batch_size: 50
+
+#! z=6
+luminosity_function:
+  type: "Schechter"
+  alpha: -1.88
+  beta: None
+  M_star: -20.77
+  phi_star: 10**(-3.24)
+  Muv_range: [-23.5, -19.5]  # Minimum and maximum mag values
+  reference: "Bowler+15"
+  n_samples: 1000
+  dMuv: 0.1
+
+source_injection:
+  beta_mean: -2
+  beta_std: 0.2
+  zmin: 5.5
+  zmax: 6.5
+  dz: 0.05
+  filters: ['HSC-Z_DR3']
+  image_size_arcmin: 10
+  n_images: 1000
+  base_image: "HSC-Z_DR3.fits"
+
+source_extraction:
+  batch_size: 50
+  aperture_diameter_arcsec: 2.0
+  overwrite: true
+
+field:
+  name: "XMM3"
+  pix_scale: 0.2
+
+processing:
+  batch_size: 50
+  queue: "cmb"
+  queue_memory_gb: 2
+  check_interval: 15
+  cleanup_batch_images: true
+  overwrite_output_catalogues: false
+  # Leave null to use: /mnt/vardy/vardygroupshare/data/<field>/images.lis
+  images_lis: null
+  # Optional subset of Name entries from images.lis, e.g. ["HSC-Z_DR3"].
+  selected_names: []
