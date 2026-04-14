@@ -20,7 +20,11 @@ from photutils.aperture import CircularAperture
 from astropy.io import fits
 from astropy.wcs import WCS
 from luminosity_function import LuminosityFunction
-import bagpipes as pipes
+# import bagpipes as pipes
+from synthesizer.emission_models.attenuation import Asada25
+from unyt import angstrom
+
+import numpy as np
 
 class SourceInjector:
     def __init__(self, samples, params):
@@ -44,9 +48,19 @@ class SourceInjector:
         self.beta_mean = params['beta_mean']
         self.beta_std = params['beta_std']
         self.filters = params['filters']
+        self.zeropoints = params['zeropoints']
         self.image_size = params['image_size_arcmin']
         self.n_images = params['n_images']
         self.base_image = params['base_image']
+        self.ucd_ref_filter = params['ucd_ref_filter']
+        self.ucd_mAB_range = params['ucd_mAB_range']
+        self.ucd_types = params['ucd_types']
+        self.filter_zeropoints = dict(zip(self.filters, self.zeropoints))
+        self.filter_flux_zeropoints = {
+            filter_name: 10 ** (-0.4 * (zeropoint + 48.6))
+            for filter_name, zeropoint in self.filter_zeropoints.items()
+        }
+        self.ucd_ref_flux_zeropoint = self.filter_flux_zeropoints[self.ucd_ref_filter]
 
         filter_dir = Path.home() / 'lephare' / 'lephare_dev' / 'filt'
 
@@ -63,6 +77,105 @@ class SourceInjector:
 
         # Cosmology
         self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+
+    
+    def load_ucd_templates(self, template_dir=Path.home() / 'lephare' / 'lephare_dev' / 'sed' / 'STAR' / 'DWARFSTARS'):
+
+        # Get all dwarfs by stellar type, starting with M and ending with .txt_trim
+        template_files_M = list(template_dir.glob('M*.txt_trim'))
+        template_files_L = list(template_dir.glob('L*.txt_trim'))   
+        template_files_T = list(template_dir.glob('T*.txt_trim'))
+
+        # Read the templates into a dictionary, and get type by splitting filename by '_' and taking the first part
+        templates = {}
+        for template_file in template_files_M + template_files_L + template_files_T:
+            template_type = template_file.stem.split('_')[0]
+            data = np.genfromtxt(template_file)
+            templates[template_type] = data
+        self.ucd_templates = templates
+
+        # Sort the dictionary by stellar type, in order M, L, T
+        templates = dict(sorted(templates.items()))
+        print('Loaded UCD templates:', list(templates.keys()))
+
+        return templates
+    
+    def sample_ucd_mags(self):
+        """
+        Sample magnitudes for ultra-cool dwarfs from a uniform distribution within the specified range.
+        
+        :param n_samples: Number of samples to draw for each UCD type.
+        :param mAB_range: Tuple specifying the (min, max) magnitude range.
+        :return: Dictionary of sampled magnitudes for each UCD type.
+        """
+        n = len(self.samples)
+
+        ucd_mags = {}
+        for ucd_type in self.ucd_types:
+            mags = np.random.uniform(self.ucd_mAB_range[0], self.ucd_mAB_range[1], n)
+            ucd_mags[ucd_type] = mags
+        return ucd_mags
+    
+    def draw_ucd_types(self):
+
+        n = len(self.samples)
+
+        ucd_sample = {}
+
+        for type in self.ucd_types:
+            # Draw n_samples of this type, at random (so e.g. can be any of M0-M9 for M type
+            types = np.random.choice([template_type for template_type in self.ucd_templates.keys() if template_type.startswith(type)], n)
+
+            ucd_sample[type] = types
+
+        return ucd_sample
+    
+    
+    def scale_ucds_to_mags(self, ucd_mags, ucd_types, pix_scale):
+        """
+        Scale the UCD templates to the desired magnitudes in the reference filter.
+        
+        :param ucd_mags: Dictionary of magnitudes for each UCD type.
+        :param ucd_types: Dictionary of sampled UCD types for each source.
+        :param pix_scale: Pixel scale in arcsec/pixel.
+        :return: Wavelength arrays and scaled SEDs in reference-filter count units.
+        """
+        scaled_seds = []
+        wlens = []
+
+        for ucd_type in self.ucd_types:
+            mags = ucd_mags[ucd_type]
+            types = ucd_types[ucd_type]
+
+            for mag, template_type in zip(mags, types):
+                template_data = self.ucd_templates[template_type]
+                wavelengths = template_data[:, 0]  # Angstroms
+                fluxes = template_data[:, 1]  # Arbitrary units
+
+                # Interpolate the template to the filter wavelength grid
+                filter_data = self.filter_response_curves[self.ucd_ref_filter]
+                filter_wlen = filter_data[:, 0]
+
+                interp_func = interp1d(wavelengths, fluxes, bounds_error=False, fill_value=0)
+                interpolated_fluxes = interp_func(filter_wlen)
+
+                # Calculate the flux in the reference filter
+                filter_trans = filter_data[:, 1] 
+                filter_trans /= np.max(filter_trans)  # Normalize the transmission curve
+
+                filter_area = simpson(filter_trans, filter_wlen)    
+                flux_in_filter = simpson(interpolated_fluxes * filter_trans, filter_wlen) / filter_area 
+
+                # Calculate the scaling factor to match the desired magnitude
+                target_flux = 10 ** (-0.4 * (mag + 48.6))  # Convert mag to flux
+
+                scaling_factor = target_flux / flux_in_filter
+                scaled_fluxes = fluxes * scaling_factor
+                scaled_counts = scaled_fluxes / self.ucd_ref_flux_zeropoint
+                scaled_seds.append(scaled_counts)
+                wlens.append(wavelengths)
+
+        return wlens, scaled_seds
 
 
 
@@ -98,7 +211,7 @@ class SourceInjector:
         :param beta: Array of beta slopes.
         :return: 2D array of wavelengths and 2D array of fluxes (one row per sample).
         """
-        # Define the wavelength grid for all SEDs
+        # Define the wavelength grid for all SEDs. This is in the observed frame.
         wavelengths = np.linspace(1000, 30000, 1000)  # Angstroms
 
         lyman_breaks = 1216 * (1 + z[:, None])  # Lyman break for each redshift
@@ -108,7 +221,13 @@ class SourceInjector:
 
         # Apply redshift and Lyman break
         flux /= (1 + z[:, None])**2
-        flux[wavelengths < lyman_breaks] = 0
+        
+        #flux[wavelengths < lyman_breaks] = 0
+        asada = Asada25()
+
+        # For every SED, apply the IGM transmission
+        for i in range(len(flux)):
+            flux[i, :] *= asada.get_transmission(lam_obs=wavelengths*angstrom, redshift=z[i])
 
         # Convert flux to f_nu
         c = physical_constants['speed of light in vacuum'][0]
@@ -116,8 +235,6 @@ class SourceInjector:
         flux = flux * c / (frequencies[None, :]**2)
 
         return wavelengths, flux
-
-
 
     def scale_seds_to_muv(self, sed_wavelengths, sed_fluxes, Muv, z):
         """
@@ -137,7 +254,7 @@ class SourceInjector:
         tophat_area = simpson(tophat_filter, sed_wavelengths, axis=1)
 
         # Flux in the tophat filter
-        flux_tophat = np.trapz(sed_fluxes * tophat_filter, sed_wavelengths, axis=1) / tophat_area # Width of the filter
+        flux_tophat = simpson(sed_fluxes * tophat_filter, sed_wavelengths) / tophat_area # Width of the filter
 
         # Luminosity distance
         DL = self.cosmo.luminosity_distance(z).value * 10**6  # in pc
@@ -192,11 +309,89 @@ class SourceInjector:
         else:
             self.combined_filter = None
 
+        # Convert these cgs fluxes back into counts
+        fluxes = {
+            filter_name: flux / self.filter_flux_zeropoints[filter_name]
+            for filter_name, flux in fluxes.items()
+            if filter_name in self.filter_flux_zeropoints
+        }
+
+
+        return fluxes
+
+    def calculate_ucd_fluxes(self, sed_wavelengths, sed_counts, average=False):
+        """
+        Calculate the image counts in each filter for scaled UCD SEDs.
+
+        The input SEDs are expected to be in the reference-filter count-density
+        units returned by ``scale_ucds_to_mags``.
+
+        :param sed_wavelengths: 2D array/list of wavelength grids.
+        :param sed_counts: 2D array/list of scaled count-density SEDs.
+        :param average: If True, also return the summed counts across all filters.
+        :return: Dictionary of fluxes for each filter (key: filter name, value: 1D array).
+        """
+        fluxes = {}
+
+        if len(sed_wavelengths) != len(sed_counts):
+            raise ValueError("sed_wavelengths and sed_counts must have matching lengths.")
+
+        for filter_name, filter_data in self.filter_response_curves.items():
+            filter_wlen = filter_data[:, 0]
+            filter_trans = filter_data[:, 1].copy()
+            filter_trans /= np.max(filter_trans)
+
+            interpolated_seds = np.array([
+                np.interp(filter_wlen, sed_wavelengths[i], sed_counts[i], left=0.0, right=0.0)
+                for i in range(len(sed_counts))
+            ])
+
+            filter_area = simpson(filter_trans, filter_wlen)
+            ref_filter_counts = np.array([
+                simpson(interpolated_seds[i, :] * filter_trans, filter_wlen) / filter_area
+                for i in range(len(interpolated_seds))
+            ])
+
+            fluxes[filter_name] = (
+                ref_filter_counts
+                * self.ucd_ref_flux_zeropoint
+                / self.filter_flux_zeropoints[filter_name]
+            )
+
+        if average:
+            combined_filter = ''.join(filter_name for filter_name, _ in self.filter_response_curves.items())
+            fluxes[combined_filter] = np.sum([fluxes[filter_name] for filter_name in self.filters], axis=0)
+
         return fluxes
 
 
+    def get_filter_centre_and_fwhm(self):
+       
+        filter_centre = []
+        filter_fwhm = []
 
-    def generate_random_positions(self, image_size, pix_scale):
+        for filter_name, filter_data in self.filter_response_curves.items():
+            filter_wlen = filter_data[:, 0]
+            filter_trans = filter_data[:, 1]
+
+            # Normalize the transmission curve
+            filter_trans /= np.max(filter_trans)
+
+            # Calculate the filter centre
+            centre = simpson(filter_wlen * filter_trans, filter_wlen) / simpson(filter_trans, filter_wlen)
+
+            # Calculate the FWHM
+            cumulative_trans = np.cumsum(filter_trans)
+
+            fwhm = np.interp(0.5 * np.max(filter_trans), cumulative_trans, filter_wlen)
+        
+            filter_centre.append(centre)
+            filter_fwhm.append(fwhm)
+        
+        return filter_centre, filter_fwhm
+
+
+    def generate_random_positions(self, image_size, pix_scale, ucd=False):
         """
         Generate random positions for the sources within the image.
         
@@ -210,23 +405,61 @@ class SourceInjector:
         # Buffer for PSF size, plus some extra pixels
         psf_buffer = (75 // 2) + 20
 
-        x = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
-        y = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
+        n_types = len(self.ucd_types)
+
+        if ucd == False:
+            x = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
+            y = np.random.randint(psf_buffer, image_size-psf_buffer, len(self.samples))
+        else:
+            x = np.random.randint(psf_buffer, image_size-psf_buffer, n_types*len(self.samples))
+            y = np.random.randint(psf_buffer, image_size-psf_buffer, n_types*len(self.samples))            
 
         return x, y
 
 
 
-    def get_psf(self):
+    def get_psf(self, field_name):
         """
         Add PSF to the class.
+        :param field_name: Name of the field.
+
+        If the PSF file does not exist, it extracts it from the .psf cube file.
         """
 
-        psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / 'COSMOS' / 'ref_psf'
-        hdu = fits.open(psf_dir / 'Y_DR6_psf.fits')
-        psf = hdu[0].data
+        # Store PSFs in an array
+        psf_array = []
 
-        self.psf = psf
+        if 'XMM' in field_name:
+            base_dir = Path.home().parents[1] / 'hoy' / 'temporaryFilesROHAN' / 'psf'
+        else:
+            base_dir = Path.cwd().parents[3] / 'data' / 'psf'
+
+        for filter_name in self.filters:
+            psf_path = Path.cwd().parents[1] / 'data' / 'psf' / field_name / 'ref_psf' / f'{filter_name}_psf.fits'
+            if not psf_path.is_file():
+
+                # Open the .psf file
+                original_psf_path = base_dir / field_name / 'results' / f'{filter_name}.psf'
+
+                hdu = fits.open(original_psf_path)
+                data = hdu[1].data[0][0]
+                header = hdu[1].header
+
+                # PSF slice
+                yz_slice = np.array(data[0, :, :])
+                #  Save the slice as a fits file with the same header
+                hdu = fits.PrimaryHDU(yz_slice, header=header)
+                hdu.writeto(psf_path, overwrite=True)
+
+            # Open the PSF file
+            with fits.open(psf_path) as hdu:
+                psf = hdu[0].data
+            
+            psf_array.append(psf)
+
+        psf_array = np.array(psf_array)
+
+        self.psf = psf_array
 
         return None
 
@@ -234,32 +467,38 @@ class SourceInjector:
 
     def measure_psf_flux(self, pix_scale, plot=False):
 
-        # Place 1.8 arcsec diameter aperture at centre of image
-        aperture = CircularAperture((self.psf.shape[1] / 2, self.psf.shape[0] / 2), r=0.9 / pix_scale)
+        fluxes = []
 
-        # Measure the flux in the aperture
-        flux, _ = aperture.do_photometry(self.psf)
+        for psf in self.psf:
 
-        # Draw aperture on PSF
-        if plot:
-            plt.imshow(self.psf, origin='lower')
-            aperture.plot(color='red')
-            plt.show()
+            # Place 1.8 arcsec diameter aperture at centre of image
+            aperture = CircularAperture((psf.shape[1] / 2, psf.shape[0] / 2), r=1.0 / pix_scale)
 
-        return flux
+            # Measure the flux in the aperture
+            flux, _ = aperture.do_photometry(psf)
+
+            fluxes.append(flux[0])
+
+            # Draw aperture on PSF
+            if plot:
+                plt.imshow(self.psf, origin='lower')
+                aperture.plot(color='red')
+                plt.show()
+
+        return np.array(fluxes)
 
     
     
     def scale_psf_to_Muv(self, fluxes, Muv, z, pix_scale):
         """
-        Scale the N = len(samples) psfs we will inject into the image to the desired Y+J band magnitude.
+        Scale the N = len(samples) psfs we will inject into the image to the desired input image magnitudes.
 
         :param fluxes: Array of fluxes in Y+J.
         :return: Array of scaled PSFs.
         """
 
-        # Get the PSF flux, to be scaled
-        flux_count = self.measure_psf_flux(pix_scale)
+        # Get the PSF fluxes, to be scaled
+        flux_counts = self.measure_psf_flux(pix_scale)
 
         # Check if there exists a combined filter
         if self.combined_filter is None:
@@ -269,16 +508,11 @@ class SourceInjector:
             fluxes = fluxes[self.combined_filter]
             target_mags = -2.5 * np.log10(fluxes) - 48.6
 
-        vista_zpt = 30.
-
         # Convert flux count to flux
-        flux = flux_count  * 10 **(-0.4 * (vista_zpt + 48.6))
-
-        # PSF correction
-        flux /= 0.72
+        fluxes = flux_counts  * 10 **(-0.4 * (self.zeropoints + 48.6))
 
         # Compute apparent magnitude, to be rescaled to mags
-        app_mag = -2.5 * np.log10(flux) - 48.6
+        app_mag = -2.5 * np.log10(fluxes) - 48.6
 
         # Get luminosity distance
         DL = self.cosmo.luminosity_distance(z).value * 10**6  # in pc
@@ -294,8 +528,54 @@ class SourceInjector:
 
         return scaled_psfs
 
+    def scale_PSFs_to_model_fluxes(self, target_fluxes, pix_scale):
+        """
+        Scale the PSFs in each band according to the model fluxes for each source.
 
-    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False, plot_each_source=False):
+        Parameters
+        ----------
+        target_fluxes : dict
+            Dictionary keyed by filter name. Each value should be either a scalar
+            or a 1D array of length n_sources.
+        pix_scale : float
+            Pixel scale in arcsec/pixel.
+
+        Returns
+        -------
+        np.ndarray
+            Array with shape (n_sources, n_filters, psf_y, psf_x).
+        """
+        psf_fluxes = self.measure_psf_flux(pix_scale)
+
+        flux_arrays = []
+        n_sources = None
+        for filter_name in self.filters:
+            if filter_name not in target_fluxes:
+                raise KeyError(f"Missing target fluxes for filter: {filter_name}")
+
+            flux_array = np.atleast_1d(np.asarray(target_fluxes[filter_name], dtype=float))
+            if n_sources is None:
+                n_sources = len(flux_array)
+            elif len(flux_array) != n_sources:
+                raise ValueError("All target_fluxes arrays must have the same length.")
+
+            flux_arrays.append(flux_array)
+
+        scaled_psfs = []
+        for source_idx in range(n_sources):
+            source_scaled_psfs = []
+            for filter_idx, filter_name in enumerate(self.filters):
+                scaling_factor = flux_arrays[filter_idx][source_idx] / psf_fluxes[filter_idx]
+                source_scaled_psf = self.psf[filter_idx] * scaling_factor
+                source_scaled_psfs.append(source_scaled_psf)
+            scaled_psfs.append(source_scaled_psfs)
+
+        # Convert scaled PSF flux
+
+        self.scaled_psfs = np.asarray(scaled_psfs)
+        return self.scaled_psfs
+
+    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False, plot_each_source=False, filter_name=None):
         """
         Inject sources into the image.
 
@@ -310,10 +590,7 @@ class SourceInjector:
         """
         image_dir = Path.cwd() / 'images' / 'cutouts'
         injected_dir = Path.cwd() / 'images' / 'injected'
-
-        if overwrite:
-            for file in injected_dir.glob('*.fits'):
-                file.unlink()
+        injected_dir.mkdir(parents=True, exist_ok=True)
 
         # Open the science image
         with fits.open(image_dir / image_name) as hdul:
@@ -321,15 +598,56 @@ class SourceInjector:
             header = hdul[0].header
             wcs = WCS(header)
 
+        x_positions = np.atleast_1d(np.asarray(x_positions, dtype=int))
+        y_positions = np.atleast_1d(np.asarray(y_positions, dtype=int))
+        Muv_array = np.atleast_1d(np.asarray(Muv_array))
+        z_array = np.atleast_1d(np.asarray(z_array))
+
+        n_sources = len(x_positions)
+        if len(y_positions) != n_sources or len(Muv_array) != n_sources or len(z_array) != n_sources:
+            raise ValueError(
+                "x_positions, y_positions, Muv_array, and z_array must all have the same length."
+            )
+
+        filter_idx = None
+        resolved_filter_name = filter_name
+        for i, current_filter_name in enumerate(self.filters):
+            if resolved_filter_name == current_filter_name:
+                filter_idx = i
+                break
+            if resolved_filter_name is None and f"{current_filter_name}_cutout" in image_name:
+                filter_idx = i
+                resolved_filter_name = current_filter_name
+                break
+
+        if filter_idx is None:
+            raise ValueError(f"Could not determine filter from image name: {image_name}")
+
+        scaled_psfs = np.asarray(scaled_psfs)
+        if scaled_psfs.ndim == 4:
+            if scaled_psfs.shape[0] != n_sources:
+                raise ValueError(
+                    "For per-source PSFs, scaled_psfs must have shape "
+                    "(n_sources, n_filters, psf_y, psf_x)."
+                )
+        elif scaled_psfs.ndim != 3:
+            raise ValueError(
+                "scaled_psfs must have shape (n_filters, psf_y, psf_x) or "
+                "(n_sources, n_filters, psf_y, psf_x)."
+            )
+
         image_height, image_width = image.shape
-        n_psfs = len(scaled_psfs)
 
         # Create blank overlays to hold the injections
         overlay = np.zeros_like(image)
 
-        # Iterate over each PSF
-        for i in range(n_psfs):
-            psf = scaled_psfs[i]
+        # Inject each source using the PSF that matches this image's filter.
+        for i in range(n_sources):
+            if scaled_psfs.ndim == 4:
+                psf = scaled_psfs[i, filter_idx]
+            else:
+                psf = scaled_psfs[filter_idx]
+
             x = x_positions[i]
             y = y_positions[i]
             Muv = Muv_array[i]
@@ -382,10 +700,10 @@ class SourceInjector:
                     y_center - cutout_size // 2 : y_center + cutout_size // 2,
                     x_center - cutout_size // 2 : x_center + cutout_size // 2,
                 ]
-                cutout_weight = weight_image[
-                    y_center - cutout_size // 2 : y_center + cutout_size // 2,
-                    x_center - cutout_size // 2 : x_center + cutout_size // 2,  
-                ]                
+                # cutout_weight = weight_image[
+                #     y_center - cutout_size // 2 : y_center + cutout_size // 2,
+                #     x_center - cutout_size // 2 : x_center + cutout_size // 2,  
+                # ]                
 
                 #* SCI
                 plt.figure(figsize=(6, 6))
@@ -422,50 +740,50 @@ class SourceInjector:
 
 
 
-    def generate_bagpipes_galaxies(self, z_array, ):
+    # def generate_bagpipes_galaxies(self, z_array, ):
 
-        exp = {}                          # Tau model star formation history component
-        exp["age"] = 0.4                   # Gyr
-        exp["tau"] = 0.75                 # Gyr
-        exp["massformed"] = 9.            # log_10(M*/M_solar)
-        exp["metallicity"] = 0.2          # Z/Z_oldsolar
+    #     exp = {}                          # Tau model star formation history component
+    #     exp["age"] = 0.4                   # Gyr
+    #     exp["tau"] = 0.75                 # Gyr
+    #     exp["massformed"] = 9.            # log_10(M*/M_solar)
+    #     exp["metallicity"] = 0.2          # Z/Z_oldsolar
 
-        burst = {}                                   # A burst component
-        burst["age"] = 0.05                           # Fix age to 0.1 Gyr
-        burst["metallicity"] = 0.1          # Vary metallicity from 0 to 2.5 Solar
-        burst["massformed"] = 6.5 
+    #     burst = {}                                   # A burst component
+    #     burst["age"] = 0.05                           # Fix age to 0.1 Gyr
+    #     burst["metallicity"] = 0.1          # Vary metallicity from 0 to 2.5 Solar
+    #     burst["massformed"] = 6.5 
 
-        dust = {}                         # Dust component
-        dust["type"] = "Calzetti"         # Define the shape of the attenuation curve
-        dust["Av"] = 0.4                 # magnitudes
+    #     dust = {}                         # Dust component
+    #     dust["type"] = "Calzetti"         # Define the shape of the attenuation curve
+    #     dust["Av"] = 0.4                 # magnitudes
 
-        model_components = {}                   # The model components dictionary
-        model_components["redshift"] = 5.51      # Observed redshift  
-        # model_components["burst"] = burst
-        model_components["exponential"] = exp   
-        model_components["dust"] = dust
+    #     model_components = {}                   # The model components dictionary
+    #     model_components["redshift"] = 5.51      # Observed redshift  
+    #     # model_components["burst"] = burst
+    #     model_components["exponential"] = exp   
+    #     model_components["dust"] = dust
 
-        filt_list = np.loadtxt('filter_list.txt', dtype="str")
-        model = pipes.model_galaxy(model_components, filt_list=filt_list)
+    #     filt_list = np.loadtxt('filter_list.txt', dtype="str")
+    #     model = pipes.model_galaxy(model_components, filt_list=filt_list)
 
-        # fig = model.plot()
-        # fig = model.sfh.plot()
+    #     # fig = model.plot()
+    #     # fig = model.sfh.plot()
 
-        print(dir(model))
+    #     print(dir(model))
 
-        spec_post = model.spectrum_full
-        wavs = model.wavelengths
-        print(wavs)
+    #     spec_post = model.spectrum_full
+    #     wavs = model.wavelengths
+    #     print(wavs)
 
-        # convert to microJy using the conversion from Adam
-        # this is just Fnu = Flamda*lambda**2/c all in units of A
-        conversion = (wavs**2)/(10**-29*2.9979*10**18)
-        microJy = spec_post*conversion
+    #     # convert to microJy using the conversion from Adam
+    #     # this is just Fnu = Flamda*lambda**2/c all in units of A
+    #     conversion = (wavs**2)/(10**-29*2.9979*10**18)
+    #     microJy = spec_post*conversion
 
-        plt.plot(wavs, microJy, label='Bagpipes SED')
-        plt.xlim(700, 3000)
-        plt.ylim(0, 0.00025)
-        plt.show()
+    #     plt.plot(wavs, microJy, label='Bagpipes SED')
+    #     plt.xlim(700, 3000)
+    #     plt.ylim(0, 0.00025)
+    #     plt.show()
 
 
 
@@ -481,7 +799,7 @@ if __name__ == '__main__':
 
     # luminosity_function = LuminosityFunction(lf_config)
     # Muv_sample = luminosity_function.sample_luminosities()
-    # #Muv_sample = np.linspace(-22, -20, 5)
+    # Muv_sample = np.linspace(-22, -20, 5)
 
     # source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
     # z, beta = source_injector.draw_parameters()
@@ -524,14 +842,105 @@ if __name__ == '__main__':
     injection_config = config['source_injection']
     image_size = injection_config['image_size_arcmin']
 
+    field_config = config['field']
+    field_name = field_config['name']
+
     luminosity_function = LuminosityFunction(lf_config)
     Muv_sample = luminosity_function.sample_luminosities()
-
     source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
-    source_injector.generate_bagpipes_galaxies()
+    #! Making SEDs and model photometry with my own application of IGM attenuation with synthesizer.
+
+    z, beta = source_injector.draw_parameters()
 
 
+    wave_obs, flux_obs = source_injector.generate_seds(z, beta)
+    scaled_fluxes = source_injector.scale_seds_to_muv(wave_obs, flux_obs, Muv_sample, z)
 
+    model_fluxes = source_injector.calculate_fluxes(wave_obs, scaled_fluxes, average=False)
+    filter_centre, filter_fwhm = source_injector.get_filter_centre_and_fwhm()
 
+    # Unpack the model fluxes for the first source
+    model_fluxes = {filter_name: flux[0] for filter_name, flux in model_fluxes.items()}
+    # print('Model fluxes:', model_fluxes)
 
+    # Plot the SED
+    # plt.plot(wave_obs, scaled_fluxes[0])
+    # plt.scatter(filter_centre, model_fluxes.values(), color='red')
 
+    # Plot rescaled PSF fluxes
+    source_injector.get_psf(field_name)
+    psf_fluxes = source_injector.scale_PSFs_to_model_fluxes(model_fluxes, pix_scale=0.2)
+    # print('Rescaled PSF fluxes:', psf_fluxes)
+    # plt.scatter(filter_centre, psf_fluxes, color='green', marker='x', label='Rescaled PSF fluxes')
+    # plt.yscale('log')
+    # plt.xlim(4000, 35000)
+    # plt.ylim(5e-32, 2e-29)
+    # plt.savefig('inoue14_test.pdf')
+    # plt.close()
+    # plt.show()
+
+    #! Generating PSF files
+    # source_injector.get_psf(field_name)
+
+    #! Injection of the various PSFs
+    x, y = source_injector.generate_random_positions(image_size, pix_scale=0.2)
+    print(x,y)
+    print(z)
+    print(Muv_sample)
+    print(len(z), len(beta), len(Muv_sample), len(x)), print(len(y))
+
+    # # Get all images in cutout dir
+    # images = list((Path.cwd() / 'images' / 'cutouts').glob('*.fits'))
+
+    # # Sort according to filter names in the filename, to ensure we inject the correct PSF into each image
+    # images.sort(key=lambda img: next((i for i, filter_name in enumerate(source_injector.filters) if filter_name in img.name), -1))
+    # print('Images to inject into:', [image.name for image in images])
+
+    # for image in images:
+    #     print('Injecting into:', image.name)
+    #     wcs = source_injector.inject_sources(image.name, x, y, Muv_sample, z, source_injector.psf, overwrite=True, plot_each_source=True)
+
+    #! Brown dwarfs
+    templates = source_injector.load_ucd_templates()
+    # Plot all templates
+    # for template_type, data in templates.items():
+    #     wavelengths = data[:, 0]
+    #     fluxes = data[:, 1]
+    #     plt.plot(wavelengths, fluxes, label=template_type)
+    # plt.xlim(1000, 30000)
+    # plt.yscale('log')
+    # plt.xlabel('Wavelength (Angstrom)')
+    # plt.ylabel('Flux (arbitrary units)')
+    # plt.show()
+
+    ucd_mags = source_injector.sample_ucd_mags()
+    print(len(ucd_mags))
+    ucd_types = source_injector.draw_ucd_types()
+
+    wlens, scaled_ucds = source_injector.scale_ucds_to_mags(ucd_mags, ucd_types, pix_scale=0.2)
+
+    print(len(wlens), len(scaled_ucds))
+
+    # Plot the scaled UCD SEDs
+    # ax = plt.gca()
+    # for i, scaled_sed in enumerate(scaled_ucds):
+    #     ax.plot(wlens[i], scaled_sed)
+    # ax.set_xlim(1000, 30000)
+    # ax.set_yscale('log')
+    # ax.set_xlabel('Wavelength (Angstrom)')
+    # ax.set_ylabel(r'$f_\nu$')
+
+    # def flux_to_mab(flux):
+    #     flux = np.asarray(flux)
+    #     safe_flux = np.where(flux > 0, flux, np.nan)
+    #     return -2.5 * np.log10(safe_flux) - 48.6
+
+    # def mab_to_flux(mab):
+    #     mab = np.asarray(mab)
+    #     return 10 ** (-0.4 * (mab + 48.6))
+
+    # secax = ax.secondary_yaxis('right', functions=(flux_to_mab, mab_to_flux))
+    # secax.set_ylabel(r'$m_{\rm AB}$')
+    # secax.set_yticks(np.arange(20, 30, 1))
+
+    # plt.show()

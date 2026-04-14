@@ -31,24 +31,27 @@ luminosity_function:
   beta: None
   M_star: -20.77
   phi_star: 10**(-3.24)
-  Muv_range: [-23.5, -19.5]  # Minimum and maximum mag values
+  Muv_range: [-24, -19] # Minimum and maximum mag values
   reference: "Bowler+15"
-  n_samples: 1000
+  n_samples: 150
   dMuv: 0.1
 
 source_injection:
   beta_mean: -2
   beta_std: 0.2
-  zmin: 5.5
-  zmax: 6.5
+  zmin: 5.0
+  zmax: 7.0
   dz: 0.05
-  filters: ['HSC-Z_DR3']
+  filters: ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
+  zeropoints: [27.0, 27.0, 27.0, 27.0, 27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0]
   image_size_arcmin: 10
-  n_images: 1000
+  n_images: 10000
   base_image: "HSC-Z_DR3.fits"
+  ucd_ref_filter: "HSC-Z_DR3" # Filter to use to determine magnitude of source
+  ucd_mAB_range: [22.0, 27.0] # Minimum and maximum mag values in the reference filter
+  ucd_types: ["M", "L", "T"] # Types of UCDs to inject.
 
 source_extraction:
-  batch_size: 50
   aperture_diameter_arcsec: 2.0
   overwrite: true
 

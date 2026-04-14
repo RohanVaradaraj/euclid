@@ -1,9 +1,0 @@
-{
-  "config_file": "/mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/config.yaml",
-  "name": "J",
-  "image": "xmm3_J.fits",
-  "weight": "xmm3_J_conf.fits",
-  "directory": "/mnt/hoy/VIDEO_FINAL/",
-  "se_aperture_diameter_arcsec": 2.0,
-  "se_overwrite": true
-}

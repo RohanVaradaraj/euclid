@@ -1,9 +1,0 @@
-{
-  "config_file": "/mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/config.yaml",
-  "name": "CFHT-iy",
-  "image": "CFHT_iy.fits",
-  "weight": "CFHT_iy_wht.fits",
-  "directory": "here",
-  "se_aperture_diameter_arcsec": 2.0,
-  "se_overwrite": true
-}

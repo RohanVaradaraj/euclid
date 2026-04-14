@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 
 """
-Queue worker: one images.lis row -> cutout -> inject -> source extraction.
+Queue worker: one multi-band image set -> shared cutouts -> injection -> truth catalogue.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import traceback
 from pathlib import Path
 
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.table import Table
 from astropy.wcs import WCS
-from astropy.coordinates import SkyCoord
 
 from luminosity_function import LuminosityFunction
-from source_injector import SourceInjector
 from source_extractor import SourceExtractor
-from utils import load_config, filter_files
+from source_injector import SourceInjector
+from utils import load_config
 
 
 def _resolve_image_directory(field_name: str, directory: str) -> Path:
+    """
+    Resolve the image directory based on the provided field name and images.lis directory entry.
+    """
     data_root = Path.cwd().parents[3] / 'data'
     if directory == 'here':
         return data_root / field_name
@@ -37,41 +39,85 @@ def _resolve_image_directory(field_name: str, directory: str) -> Path:
     return (data_root / field_name / directory).resolve()
 
 
+def _open_image_and_wcs(image_dir: Path, image_name: str):
+    with fits.open(image_dir / image_name) as hdu:
+        data = hdu[0].data
+        header = hdu[0].header.copy()
+        wcs = WCS(header)
+
+    return data, header, wcs
+
+
+def _choose_shared_cutout_coord(
+    row: dict,
+    field_name: str,
+    image_size_arcmin: float,
+    pix_scale: float,
+):
+    image_dir = _resolve_image_directory(field_name, row['directory'])
+    data, _, wcs = _open_image_and_wcs(image_dir, row['image'])
+
+    image_size_pix = int(round(image_size_arcmin * 60.0 / pix_scale))
+    x_margin = image_size_pix // 2 + 100
+    y_margin = image_size_pix // 2 + 200
+
+    if data.shape[1] <= 2 * x_margin or data.shape[0] <= 2 * y_margin:
+        raise ValueError(
+            f"Image {row['image']} is too small for a {image_size_arcmin} arcmin cutout."
+        )
+
+    x = np.random.randint(x_margin, data.shape[1] - x_margin)
+    y = np.random.randint(y_margin, data.shape[0] - y_margin)
+    coord = SkyCoord.from_pixel(x, y, wcs)
+
+    return coord, int(x), int(y)
+
+
+def _normalise_image_stem(image_name: str) -> str:
+    return image_name.replace('.fits', '')
+
+
+def _resolve_detection_filter_name(base_image_name: str, configured_filters):
+    base_stem = _normalise_image_stem(Path(base_image_name).name)
+    for filter_name in configured_filters:
+        if base_stem == filter_name or base_stem.startswith(f'{filter_name}_'):
+            return filter_name
+    raise ValueError(
+        f"Could not match source_injection.base_image={base_image_name} to configured filters {configured_filters}"
+    )
+
+
 def _make_single_cutout(
     image_dir: Path,
     image_name: str,
     weight_name: str,
     image_size_arcmin: float,
     pix_scale: float,
+    coord: SkyCoord,
 ):
     cutout_path = Path.cwd() / 'images' / 'cutouts'
     cutout_path.mkdir(parents=True, exist_ok=True)
     weight_path = cutout_path / 'weights'
     weight_path.mkdir(parents=True, exist_ok=True)
 
-    with fits.open(image_dir / image_name) as hdu:
-        data = hdu[0].data
-        header = hdu[0].header
-        wcs = WCS(header)
+    data, header, wcs = _open_image_and_wcs(image_dir, image_name)
 
     with fits.open(image_dir / weight_name) as hdu_w:
         weight = hdu_w[0].data
-        wcs_weight = WCS(hdu_w[0].header)
+        weight_header = hdu_w[0].header.copy()
+        wcs_weight = WCS(weight_header)
 
-    image_size_pix = image_size_arcmin * 60.0 / pix_scale
+    image_size_pix = int(round(image_size_arcmin * 60.0 / pix_scale))
 
-    x = np.random.randint(image_size_pix / 2 + 100, data.shape[1] - (image_size_pix / 2 + 100))
-    y = np.random.randint(image_size_pix / 2 + 200, data.shape[0] - (image_size_pix / 2 + 100))
-
-    coord = SkyCoord.from_pixel(x, y, wcs)
-
-    cutout = Cutout2D(data, coord, (image_size_pix, image_size_pix), wcs=wcs)
-    weight_cutout = Cutout2D(weight, coord, (image_size_pix, image_size_pix), wcs=wcs_weight)
+    cutout = Cutout2D(data, coord, (image_size_pix, image_size_pix), wcs=wcs, mode='strict')
+    weight_cutout = Cutout2D(weight, coord, (image_size_pix, image_size_pix), wcs=wcs_weight, mode='strict')
 
     cutout_header = cutout.wcs.to_header()
     cutout_header['EXPTIME'] = header.get('EXPTIME', 1.0)
     cutout_header['GAIN'] = header.get('GAIN', 1.0)
     cutout_header['SATURATE'] = header.get('SATURATE', 1.0)
+    cutout_header['CUTRA'] = float(coord.ra.deg)
+    cutout_header['CUTDEC'] = float(coord.dec.deg)
 
     for bad_key in ['LONPOLE', 'LATPOLE', 'MJDREF']:
         if bad_key in cutout_header:
@@ -85,109 +131,245 @@ def _make_single_cutout(
         cutout_header.remove('PC1_1')
         cutout_header.remove('PC2_2')
 
+    x_parent, y_parent = wcs.world_to_pixel(coord)
+    x_parent = float(x_parent)
+    y_parent = float(y_parent)
     stem = image_name.replace('.fits', '')
-    cutout_name = f'{stem}_cutout_{int(x)}_{int(y)}_{int(image_size_pix)}_pix_{int(image_size_arcmin)}_arcmin.fits'
+    cutout_name = (
+        f'{stem}_cutout_{int(round(x_parent))}_{int(round(y_parent))}_'
+        f'{int(image_size_pix)}_pix_{int(image_size_arcmin)}_arcmin.fits'
+    )
     weight_cutout_name = cutout_name.replace('.fits', '_wht.fits')
 
     fits.PrimaryHDU(cutout.data, header=cutout_header).writeto(cutout_path / cutout_name, overwrite=True)
     fits.PrimaryHDU(weight_cutout.data, header=cutout_header).writeto(weight_path / weight_cutout_name, overwrite=True)
 
-    return cutout_name, weight_cutout_name
+    return cutout_name, weight_cutout_name, cutout.wcs
 
 
-def _cleanup_batch_image_products(cutout_name: str, weight_cutout_name: str):
+def _cleanup_set_image_products(cutout_info):
     cutout_dir = Path.cwd() / 'images' / 'cutouts'
     injected_dir = Path.cwd() / 'images' / 'injected'
+    weight_dir = cutout_dir / 'weights'
 
-    for fp in [
-        cutout_dir / cutout_name,
-        cutout_dir / 'weights' / weight_cutout_name,
-        injected_dir / cutout_name,
-    ]:
-        if fp.exists():
-            fp.unlink()
+    for row in cutout_info:
+        for fp in [
+            cutout_dir / row['cutout_name'],
+            weight_dir / row['weight_cutout_name'],
+            injected_dir / row['cutout_name'],
+        ]:
+            if fp.exists():
+                fp.unlink()
+
+
+def _build_truth_catalog(
+    x_positions,
+    y_positions,
+    wcs,
+    source_types,
+    Muv_sample,
+    z,
+    beta,
+    filter_fluxes,
+    filters,
+):
+    ra, dec = wcs.all_pix2world(x_positions, y_positions, 0)
+    columns = [x_positions, y_positions, ra, dec, source_types, Muv_sample, z, beta]
+    names = ['x', 'y', 'RA', 'DEC', 'type', 'Muv', 'z', 'beta_slope']
+
+    for filter_name in filters:
+        columns.append(np.asarray(filter_fluxes[filter_name]))
+        names.append(f'model_flux_{filter_name}')
+
+    return Table(columns, names=names)
 
 
 def run_task(task: dict):
     config = load_config(task['config_file'])
-
     lf_config = config['luminosity_function']
     injection_config = dict(config['source_injection'])
     field_name = config['field']['name']
     pix_scale = float(config['field']['pix_scale'])
+    processing_cfg = config.get('processing', {})
+    source_extraction_cfg = config.get('source_extraction', {})
 
-    image_name = task['image']
-    weight_name = task['weight']
-    directory = task['directory']
-    source_name = task['name']
+    batch_rows = list(task['rows'])
+    if len(batch_rows) == 0:
+        raise ValueError('Task contained no images to process.')
 
-    image_dir = _resolve_image_directory(field_name, directory)
+    row_by_name = {str(row['name']): row for row in batch_rows}
+    all_configured_filters = list(injection_config['filters'])
+    all_configured_zeropoints = list(injection_config['zeropoints'])
+    configured_filters = [flt for flt in all_configured_filters if flt in row_by_name]
+    if not configured_filters:
+        raise ValueError('No overlap between configured filters and task rows.')
 
-    # If the image Name is available in filter files, use it as detection/filter key.
-    known_filters = filter_files()
-    if source_name in known_filters:
-        injection_config['filters'] = [source_name]
+    batch_rows = [row_by_name[flt] for flt in configured_filters]
+    injection_config['filters'] = configured_filters
+    injection_config['zeropoints'] = [
+        all_configured_zeropoints[all_configured_filters.index(flt)]
+        for flt in configured_filters
+    ]
+    detection_filter_name = _resolve_detection_filter_name(
+        injection_config['base_image'],
+        configured_filters,
+    )
 
     image_size_arcmin = float(injection_config['image_size_arcmin'])
-
-    cutout_name, weight_cutout_name = _make_single_cutout(
-        image_dir=image_dir,
-        image_name=image_name,
-        weight_name=weight_name,
-        image_size_arcmin=image_size_arcmin,
-        pix_scale=pix_scale,
+    shared_coord, shared_x, shared_y = _choose_shared_cutout_coord(
+        batch_rows[0],
+        field_name,
+        image_size_arcmin,
+        pix_scale,
     )
+
+    cutout_info = []
+    reference_wcs = None
+    for row in batch_rows:
+        image_dir = _resolve_image_directory(field_name, row['directory'])
+        cutout_name, weight_cutout_name, cutout_wcs = _make_single_cutout(
+            image_dir=image_dir,
+            image_name=row['image'],
+            weight_name=row['weight'],
+            image_size_arcmin=image_size_arcmin,
+            pix_scale=pix_scale,
+            coord=shared_coord,
+        )
+        if reference_wcs is None:
+            reference_wcs = cutout_wcs
+        cutout_info.append(
+            {
+                'filter_name': row['name'],
+                'cutout_name': cutout_name,
+                'weight_cutout_name': weight_cutout_name,
+            }
+        )
 
     luminosity_function = LuminosityFunction(lf_config)
     Muv_sample = luminosity_function.sample_luminosities(uniform=True)
+    ucd_cfg = config.get('ultra_cool_dwarfs', {})
+    n_ucd_per_class = int(ucd_cfg.get('n_samples', len(Muv_sample)))
+    ucd_seed_samples = np.arange(n_ucd_per_class)
 
     source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
     z, beta = source_injector.draw_parameters()
 
     wavelengths, fluxes = source_injector.generate_seds(z, beta)
     scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
-    filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
+    lbg_filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes, average=False)
 
-    x, y = source_injector.generate_random_positions(image_size_arcmin, pix_scale)
+    ucd_injector = SourceInjector(samples=ucd_seed_samples, params=injection_config)
+    ucd_injector.load_ucd_templates()
+    ucd_mags = ucd_injector.sample_ucd_mags()
+    ucd_types_by_class = ucd_injector.draw_ucd_types()
+    ucd_wavelengths, ucd_scaled_seds = ucd_injector.scale_ucds_to_mags(
+        ucd_mags,
+        ucd_types_by_class,
+        pix_scale,
+    )
+    ucd_filter_fluxes = ucd_injector.calculate_ucd_fluxes(
+        ucd_wavelengths,
+        ucd_scaled_seds,
+        average=False,
+    )
 
-    source_injector.get_psf()
-    scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z, pix_scale)
-    wcs = source_injector.inject_sources(cutout_name, x, y, Muv_sample, z, scaled_psfs)
+    ucd_template_types = np.asarray([
+        template_type
+        for ucd_type in ucd_injector.ucd_types
+        for template_type in ucd_types_by_class[ucd_type]
+    ])
+    n_ucd_total = len(ucd_template_types)
+    ucd_placeholder = np.full(n_ucd_total, -99.0)
 
-    ra, dec = wcs.all_pix2world(x, y, 0)
+    filter_fluxes = {
+        filter_name: np.concatenate(
+            [
+                np.asarray(lbg_filter_fluxes[filter_name], dtype=float),
+                np.asarray(ucd_filter_fluxes[filter_name], dtype=float),
+            ]
+        )
+        for filter_name in configured_filters
+    }
 
-    flux_colname = injection_config['filters'][0]
-    t = Table(
-        [x, y, ra, dec, Muv_sample, z, beta, filter_fluxes[flux_colname]],
-        names=('x', 'y', 'RA', 'DEC', 'Muv', 'z', 'beta_slope', f'flux_{flux_colname}'),
+    x_lbg, y_lbg = source_injector.generate_random_positions(image_size_arcmin, pix_scale)
+    ucd_position_injector = SourceInjector(samples=np.arange(n_ucd_total), params=injection_config)
+    x_ucd, y_ucd = ucd_position_injector.generate_random_positions(image_size_arcmin, pix_scale)
+    x_positions = np.concatenate([x_lbg, x_ucd])
+    y_positions = np.concatenate([y_lbg, y_ucd])
+
+    source_types = np.asarray(
+        np.concatenate([
+            np.full(len(Muv_sample), 'LBG', dtype='U3'),
+            ucd_template_types.astype(str),
+        ]),
+        dtype='U8',
+    )
+    catalog_Muv = np.concatenate([np.asarray(Muv_sample, dtype=float), ucd_placeholder])
+    catalog_z = np.concatenate([np.asarray(z, dtype=float), ucd_placeholder])
+    catalog_beta = np.concatenate([np.asarray(beta, dtype=float), ucd_placeholder])
+
+    source_injector.get_psf(field_name)
+    scaled_psfs = source_injector.scale_PSFs_to_model_fluxes(filter_fluxes, pix_scale)
+
+    for row in cutout_info:
+        source_injector.inject_sources(
+            row['cutout_name'],
+            x_positions,
+            y_positions,
+            catalog_Muv,
+            catalog_z,
+            scaled_psfs,
+            filter_name=row['filter_name'],
+        )
+
+    detection_row = next(row for row in cutout_info if row['filter_name'] == detection_filter_name)
+    measurement_image_names = [row['cutout_name'] for row in cutout_info]
+    source_extractor = SourceExtractor(measurement_image_names)
+    source_extractor.run_dual_mode_for_set(
+        detection_image_name=detection_row['cutout_name'],
+        measurement_image_names=measurement_image_names,
+        apDiameterAS=float(source_extraction_cfg.get('aperture_diameter_arcsec', 2.0)),
+        overwrite=bool(source_extraction_cfg.get('overwrite', True)),
+    )
+
+    truth_table = _build_truth_catalog(
+        x_positions=x_positions,
+        y_positions=y_positions,
+        wcs=reference_wcs,
+        source_types=source_types,
+        Muv_sample=catalog_Muv,
+        z=catalog_z,
+        beta=catalog_beta,
+        filter_fluxes=filter_fluxes,
+        filters=configured_filters,
     )
 
     input_cat_dir = Path.cwd() / 'catalogues' / 'input'
     input_cat_dir.mkdir(parents=True, exist_ok=True)
-    table_name = cutout_name.replace('.fits', '_input_values.fits')
-    t.write(str(input_cat_dir / table_name), overwrite=True)
+    table_name = f"{task['set_id']}_truth_catalog.fits"
+    truth_table.write(str(input_cat_dir / table_name), overwrite=True)
 
-    se = SourceExtractor([cutout_name])
-    shell_file = se.run_se(
-        filter_name=source_name,
-        image_name=cutout_name,
-        apDiameterAS=float(task.get('se_aperture_diameter_arcsec', 2.0)),
-        overwrite=bool(task.get('se_overwrite', True)),
-    )
+    summary = {
+        'set_id': task['set_id'],
+        'shared_cutout_center_ra_deg': float(shared_coord.ra.deg),
+        'shared_cutout_center_dec_deg': float(shared_coord.dec.deg),
+        'reference_image_x': shared_x,
+        'reference_image_y': shared_y,
+        'detection_cutout': detection_row['cutout_name'],
+        'n_filters': len(configured_filters),
+        'n_sources': len(x_positions),
+        'n_lbg_sources': len(Muv_sample),
+        'n_ucd_sources': n_ucd_total,
+        'truth_catalog': table_name,
+        'cutouts': cutout_info,
+    }
 
-    if shell_file is None:
-        raise RuntimeError(f'No SExtractor shell file generated for {cutout_name}')
+    output_dir = Path.cwd() / 'catalogues' / 'input'
+    with open(output_dir / f"{task['set_id']}_summary.json", 'w') as f:
+        json.dump(summary, f, indent=2)
 
-    rc = os.system(f'bash {shell_file}')
-    if rc != 0:
-        raise RuntimeError(f'SExtractor failed for {cutout_name}, return code {rc}')
-
-    output_cat = Path.cwd() / 'catalogues' / 'output' / cutout_name.replace('.fits', '_cat.fits')
-    if not output_cat.exists():
-        raise RuntimeError(f'Expected output catalogue missing: {output_cat}')
-
-    if bool(config.get('processing', {}).get('cleanup_batch_images', True)):
-        _cleanup_batch_image_products(cutout_name, weight_cutout_name)
+    if bool(processing_cfg.get('cleanup_batch_images', True)):
+        _cleanup_set_image_products(cutout_info)
 
 
 def main():
