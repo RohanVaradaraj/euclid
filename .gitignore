@@ -48,6 +48,7 @@
 /src/full_injection_recovery/shell_scripts
 /src/full_injection_recovery/*.fits
 /src/full_injection_recovery/*.bin
+/src/full_injection_recovery/*run_worker*
 
 # Ignore bagpipes outputs
 /src/sed_fitting/pipes/*
