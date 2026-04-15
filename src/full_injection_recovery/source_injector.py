@@ -6,25 +6,20 @@ Creates source injection class.
 Created: Wednesday 4th December 2024.
 """
 
-import numpy as np
 from scipy.interpolate import interp1d
 from astropy.cosmology import FlatLambdaCDM
 from astropy import units as u
-from utils import load_config, filter_files
 import numpy as np
+from utils import filter_files
 import matplotlib.pyplot as plt
 from scipy.constants import physical_constants
 from pathlib import Path
 from scipy.integrate import simpson
 from photutils.aperture import CircularAperture
 from astropy.io import fits
-from astropy.wcs import WCS
-from luminosity_function import LuminosityFunction
 # import bagpipes as pipes
 from synthesizer.emission_models.attenuation import Asada25
 from unyt import angstrom
-
-import numpy as np
 
 class SourceInjector:
     def __init__(self, samples, params):
@@ -77,6 +72,7 @@ class SourceInjector:
 
         # Cosmology
         self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+        self._psf_flux_cache = {}
 
     
     def load_ucd_templates(self, template_dir=Path.home() / 'lephare' / 'lephare_dev' / 'sed' / 'STAR' / 'DWARFSTARS'):
@@ -466,6 +462,9 @@ class SourceInjector:
 
 
     def measure_psf_flux(self, pix_scale, plot=False):
+        cache_key = (float(pix_scale), bool(plot))
+        if cache_key in self._psf_flux_cache:
+            return self._psf_flux_cache[cache_key]
 
         fluxes = []
 
@@ -485,7 +484,9 @@ class SourceInjector:
                 aperture.plot(color='red')
                 plt.show()
 
-        return np.array(fluxes)
+        fluxes = np.array(fluxes)
+        self._psf_flux_cache[cache_key] = fluxes
+        return fluxes
 
     
     
@@ -561,21 +562,25 @@ class SourceInjector:
 
             flux_arrays.append(flux_array)
 
-        scaled_psfs = []
-        for source_idx in range(n_sources):
-            source_scaled_psfs = []
-            for filter_idx, filter_name in enumerate(self.filters):
-                scaling_factor = flux_arrays[filter_idx][source_idx] / psf_fluxes[filter_idx]
-                source_scaled_psf = self.psf[filter_idx] * scaling_factor
-                source_scaled_psfs.append(source_scaled_psf)
-            scaled_psfs.append(source_scaled_psfs)
-
-        # Convert scaled PSF flux
-
-        self.scaled_psfs = np.asarray(scaled_psfs)
+        flux_matrix = np.stack(flux_arrays, axis=1)
+        scaling_factors = flux_matrix / psf_fluxes[np.newaxis, :]
+        self.scaled_psfs = self.psf[np.newaxis, :, :, :] * scaling_factors[:, :, np.newaxis, np.newaxis]
         return self.scaled_psfs
 
-    def inject_sources(self, image_name, x_positions, y_positions, Muv_array, z_array, scaled_psfs, overwrite=False, plot_each_source=False, filter_name=None):
+    def inject_sources(
+        self,
+        image_name,
+        x_positions,
+        y_positions,
+        Muv_array,
+        z_array,
+        scaled_psfs,
+        overwrite=False,
+        plot_each_source=False,
+        filter_name=None,
+        image=None,
+        header=None,
+    ):
         """
         Inject sources into the image.
 
@@ -588,15 +593,17 @@ class SourceInjector:
         :param overwrite: Whether to overwrite existing files.
         :return: wcs of new imahe. Saves the injected image to disk.
         """
-        image_dir = Path.cwd() / 'images' / 'cutouts'
         injected_dir = Path.cwd() / 'images' / 'injected'
         injected_dir.mkdir(parents=True, exist_ok=True)
 
-        # Open the science image
-        with fits.open(image_dir / image_name) as hdul:
-            image = hdul[0].data
-            header = hdul[0].header
-            wcs = WCS(header)
+        if image is None or header is None:
+            image_dir = Path.cwd() / 'images' / 'cutouts'
+            with fits.open(image_dir / image_name) as hdul:
+                image = np.array(hdul[0].data, copy=True)
+                header = hdul[0].header.copy()
+        else:
+            image = np.array(image, copy=True)
+            header = header.copy()
 
         x_positions = np.atleast_1d(np.asarray(x_positions, dtype=int))
         y_positions = np.atleast_1d(np.asarray(y_positions, dtype=int))
@@ -637,25 +644,20 @@ class SourceInjector:
             )
 
         image_height, image_width = image.shape
-
-        # Create blank overlays to hold the injections
-        overlay = np.zeros_like(image)
+        psf_stack = scaled_psfs[:, filter_idx] if scaled_psfs.ndim == 4 else np.broadcast_to(
+            scaled_psfs[filter_idx],
+            (n_sources, *scaled_psfs[filter_idx].shape),
+        )
 
         # Inject each source using the PSF that matches this image's filter.
         for i in range(n_sources):
-            if scaled_psfs.ndim == 4:
-                psf = scaled_psfs[i, filter_idx]
-            else:
-                psf = scaled_psfs[filter_idx]
+            psf = psf_stack[i]
 
             x = x_positions[i]
             y = y_positions[i]
-            Muv = Muv_array[i]
-            z = z_array[i]
 
             # Get PSF size
             psf_height, psf_width = psf.shape
-            psf_half_height, psf_half_width = psf_height // 2, psf_width // 2
 
             # Ensure injection is within bounds, and calculate slices for both PSF and image
             x_start, x_end = max(0, x - psf_width // 2), min(image_width, x + psf_width // 2)
@@ -668,11 +670,6 @@ class SourceInjector:
             psf_y_start = max(0, psf_height // 2 - y)
             psf_y_end = psf_y_start + (y_end - y_start)
 
-            x_min = x - psf_half_width
-            x_max = x + psf_half_width + 1
-            y_min = y - psf_half_height
-            y_max = y + psf_half_height + 1
-
             if plot_each_source:
                 # Print useful information for checking plots
                 print('Image number:' , i+1)
@@ -684,11 +681,8 @@ class SourceInjector:
                 print('Image sum:', image_sum)
             
 
-            # Add the PSF to the overlay for the science image
-            overlay[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
-
-        # Add the overlays to the original images
-        image += overlay
+            # Inject directly into the image to avoid an extra full-size overlay allocation.
+            image[y_start:y_end, x_start:x_end] += psf[psf_y_start:psf_y_end, psf_x_start:psf_x_end]
 
         #! Plot the injected sources
         if plot_each_source:
@@ -735,209 +729,8 @@ class SourceInjector:
         # Save the injected image
         hdu_image = fits.PrimaryHDU(image, header=header)
         hdu_image.writeto(injected_dir / image_name, overwrite=True)
-        
-        return wcs
 
-
-
-    # def generate_bagpipes_galaxies(self, z_array, ):
-
-    #     exp = {}                          # Tau model star formation history component
-    #     exp["age"] = 0.4                   # Gyr
-    #     exp["tau"] = 0.75                 # Gyr
-    #     exp["massformed"] = 9.            # log_10(M*/M_solar)
-    #     exp["metallicity"] = 0.2          # Z/Z_oldsolar
-
-    #     burst = {}                                   # A burst component
-    #     burst["age"] = 0.05                           # Fix age to 0.1 Gyr
-    #     burst["metallicity"] = 0.1          # Vary metallicity from 0 to 2.5 Solar
-    #     burst["massformed"] = 6.5 
-
-    #     dust = {}                         # Dust component
-    #     dust["type"] = "Calzetti"         # Define the shape of the attenuation curve
-    #     dust["Av"] = 0.4                 # magnitudes
-
-    #     model_components = {}                   # The model components dictionary
-    #     model_components["redshift"] = 5.51      # Observed redshift  
-    #     # model_components["burst"] = burst
-    #     model_components["exponential"] = exp   
-    #     model_components["dust"] = dust
-
-    #     filt_list = np.loadtxt('filter_list.txt', dtype="str")
-    #     model = pipes.model_galaxy(model_components, filt_list=filt_list)
-
-    #     # fig = model.plot()
-    #     # fig = model.sfh.plot()
-
-    #     print(dir(model))
-
-    #     spec_post = model.spectrum_full
-    #     wavs = model.wavelengths
-    #     print(wavs)
-
-    #     # convert to microJy using the conversion from Adam
-    #     # this is just Fnu = Flamda*lambda**2/c all in units of A
-    #     conversion = (wavs**2)/(10**-29*2.9979*10**18)
-    #     microJy = spec_post*conversion
-
-    #     plt.plot(wavs, microJy, label='Bagpipes SED')
-    #     plt.xlim(700, 3000)
-    #     plt.ylim(0, 0.00025)
-    #     plt.show()
-
-
-
-
-
-#! Testing
-if __name__ == '__main__':
-
-    # config = load_config("config.yaml")
-    # lf_config = config['luminosity_function']
-    # injection_config = config['source_injection']
-    # image_size = injection_config['image_size_arcmin']
-
-    # luminosity_function = LuminosityFunction(lf_config)
-    # Muv_sample = luminosity_function.sample_luminosities()
-    # Muv_sample = np.linspace(-22, -20, 5)
-
-    # source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
-    # z, beta = source_injector.draw_parameters()
-    # #plt.hist(z, bins=100)
-    # #plt.hist(beta, bins=100)
-    # #plt.show()
-
-    # wavelengths, fluxes = source_injector.generate_seds(z, beta)
-    # scaled_fluxes = source_injector.scale_seds_to_muv(wavelengths, fluxes, Muv_sample, z)
-    # filter_fluxes = source_injector.calculate_fluxes(wavelengths, scaled_fluxes)
-
-    # #! Plotting synthetic SEDs and fluxes
-    # # x_Y = np.full(len(Muv_sample), 10214)
-    # # x_J = np.full(len(Muv_sample), 12544)
-    # # plt.plot(wavelengths, scaled_fluxes.T)
-    # # plt.scatter(x_Y, filter_fluxes['Y'], color='red')
-    # # plt.scatter(x_J, filter_fluxes['J'], color='red')
-    # # plt.yscale('log')
-    # # plt.ylim(3e-32, 1e-29)
-    # # plt.xlim(3000, 40000)
-    # # plt.show()
-
-    # #! Plotting injected sources
-    # x, y = source_injector.generate_random_positions(image_size)
-
-    # #! Get PSF fluxes corresponding to input Muv
-    # source_injector.get_psf()
-    # scaled_psfs = source_injector.scale_psf_to_Muv(filter_fluxes, Muv_sample, z)
-
-    # #! Inject sources
-    # image_name = 'UVISTA_YJ_DR6_cutout_3745_21800_4000_pix_10_arcmin.fits'
-    # wcs = source_injector.inject_sources(image_name, x, y, Muv_sample, z, scaled_psfs, overwrite=True, plot_each_source=True)
-    
-    # #! Convert x,y to RA, Dec
-    # ra, dec = wcs.all_pix2world(x, y, 0)
-
-    #? TESTING BAGPIPES
-    config = load_config("config.yaml")
-    lf_config = config['luminosity_function']
-    injection_config = config['source_injection']
-    image_size = injection_config['image_size_arcmin']
-
-    field_config = config['field']
-    field_name = field_config['name']
-
-    luminosity_function = LuminosityFunction(lf_config)
-    Muv_sample = luminosity_function.sample_luminosities()
-    source_injector = SourceInjector(samples=Muv_sample, params=injection_config)
-    #! Making SEDs and model photometry with my own application of IGM attenuation with synthesizer.
-
-    z, beta = source_injector.draw_parameters()
-
-
-    wave_obs, flux_obs = source_injector.generate_seds(z, beta)
-    scaled_fluxes = source_injector.scale_seds_to_muv(wave_obs, flux_obs, Muv_sample, z)
-
-    model_fluxes = source_injector.calculate_fluxes(wave_obs, scaled_fluxes, average=False)
-    filter_centre, filter_fwhm = source_injector.get_filter_centre_and_fwhm()
-
-    # Unpack the model fluxes for the first source
-    model_fluxes = {filter_name: flux[0] for filter_name, flux in model_fluxes.items()}
-    # print('Model fluxes:', model_fluxes)
-
-    # Plot the SED
-    # plt.plot(wave_obs, scaled_fluxes[0])
-    # plt.scatter(filter_centre, model_fluxes.values(), color='red')
-
-    # Plot rescaled PSF fluxes
-    source_injector.get_psf(field_name)
-    psf_fluxes = source_injector.scale_PSFs_to_model_fluxes(model_fluxes, pix_scale=0.2)
-    # print('Rescaled PSF fluxes:', psf_fluxes)
-    # plt.scatter(filter_centre, psf_fluxes, color='green', marker='x', label='Rescaled PSF fluxes')
-    # plt.yscale('log')
-    # plt.xlim(4000, 35000)
-    # plt.ylim(5e-32, 2e-29)
-    # plt.savefig('inoue14_test.pdf')
-    # plt.close()
-    # plt.show()
-
-    #! Generating PSF files
-    # source_injector.get_psf(field_name)
-
-    #! Injection of the various PSFs
-    x, y = source_injector.generate_random_positions(image_size, pix_scale=0.2)
-    print(x,y)
-    print(z)
-    print(Muv_sample)
-    print(len(z), len(beta), len(Muv_sample), len(x)), print(len(y))
-
-    # # Get all images in cutout dir
-    # images = list((Path.cwd() / 'images' / 'cutouts').glob('*.fits'))
-
-    # # Sort according to filter names in the filename, to ensure we inject the correct PSF into each image
-    # images.sort(key=lambda img: next((i for i, filter_name in enumerate(source_injector.filters) if filter_name in img.name), -1))
-    # print('Images to inject into:', [image.name for image in images])
-
-    # for image in images:
-    #     print('Injecting into:', image.name)
-    #     wcs = source_injector.inject_sources(image.name, x, y, Muv_sample, z, source_injector.psf, overwrite=True, plot_each_source=True)
-
-    #! Brown dwarfs
-    templates = source_injector.load_ucd_templates()
-    # Plot all templates
-    # for template_type, data in templates.items():
-    #     wavelengths = data[:, 0]
-    #     fluxes = data[:, 1]
-    #     plt.plot(wavelengths, fluxes, label=template_type)
-    # plt.xlim(1000, 30000)
-    # plt.yscale('log')
-    # plt.xlabel('Wavelength (Angstrom)')
-    # plt.ylabel('Flux (arbitrary units)')
-    # plt.show()
-
-    ucd_mags = source_injector.sample_ucd_mags()
-    print(len(ucd_mags))
-    ucd_types = source_injector.draw_ucd_types()
-
-    wlens, scaled_ucds = source_injector.scale_ucds_to_mags(ucd_mags, ucd_types, pix_scale=0.2)
-
-    print(len(wlens), len(scaled_ucds))
-
-    # Plot the scaled UCD SEDs
-    # ax = plt.gca()
-    # for i, scaled_sed in enumerate(scaled_ucds):
-    #     ax.plot(wlens[i], scaled_sed)
-    # ax.set_xlim(1000, 30000)
-    # ax.set_yscale('log')
-    # ax.set_xlabel('Wavelength (Angstrom)')
-    # ax.set_ylabel(r'$f_\nu$')
-
-    # def flux_to_mab(flux):
-    #     flux = np.asarray(flux)
-    #     safe_flux = np.where(flux > 0, flux, np.nan)
-    #     return -2.5 * np.log10(safe_flux) - 48.6
-
-    # def mab_to_flux(mab):
-    #     mab = np.asarray(mab)
-    #     return 10 ** (-0.4 * (mab + 48.6))
+        return None
 
     # secax = ax.secondary_yaxis('right', functions=(flux_to_mab, mab_to_flux))
     # secax.set_ylabel(r'$m_{\rm AB}$')

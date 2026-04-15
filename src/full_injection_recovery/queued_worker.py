@@ -7,6 +7,7 @@ Queue worker: one multi-band image set -> shared cutouts -> injection -> truth c
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import traceback
 from pathlib import Path
@@ -14,7 +15,6 @@ from pathlib import Path
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from astropy.nddata import Cutout2D
 from astropy.table import Table
 from astropy.wcs import WCS
 
@@ -40,7 +40,7 @@ def _resolve_image_directory(field_name: str, directory: str) -> Path:
 
 
 def _open_image_and_wcs(image_dir: Path, image_name: str):
-    with fits.open(image_dir / image_name) as hdu:
+    with fits.open(image_dir / image_name, memmap=True) as hdu:
         data = hdu[0].data
         header = hdu[0].header.copy()
         wcs = WCS(header)
@@ -87,35 +87,11 @@ def _resolve_detection_filter_name(base_image_name: str, configured_filters):
     )
 
 
-def _make_single_cutout(
-    image_dir: Path,
-    image_name: str,
-    weight_name: str,
-    image_size_arcmin: float,
-    pix_scale: float,
-    coord: SkyCoord,
-):
-    cutout_path = Path.cwd() / 'images' / 'cutouts'
-    cutout_path.mkdir(parents=True, exist_ok=True)
-    weight_path = cutout_path / 'weights'
-    weight_path.mkdir(parents=True, exist_ok=True)
-
-    data, header, wcs = _open_image_and_wcs(image_dir, image_name)
-
-    with fits.open(image_dir / weight_name) as hdu_w:
-        weight = hdu_w[0].data
-        weight_header = hdu_w[0].header.copy()
-        wcs_weight = WCS(weight_header)
-
-    image_size_pix = int(round(image_size_arcmin * 60.0 / pix_scale))
-
-    cutout = Cutout2D(data, coord, (image_size_pix, image_size_pix), wcs=wcs, mode='strict')
-    weight_cutout = Cutout2D(weight, coord, (image_size_pix, image_size_pix), wcs=wcs_weight, mode='strict')
-
-    cutout_header = cutout.wcs.to_header()
-    cutout_header['EXPTIME'] = header.get('EXPTIME', 1.0)
-    cutout_header['GAIN'] = header.get('GAIN', 1.0)
-    cutout_header['SATURATE'] = header.get('SATURATE', 1.0)
+def _build_cutout_header(parent_header, cutout_wcs: WCS, coord: SkyCoord):
+    cutout_header = cutout_wcs.to_header()
+    cutout_header['EXPTIME'] = parent_header.get('EXPTIME', 1.0)
+    cutout_header['GAIN'] = parent_header.get('GAIN', 1.0)
+    cutout_header['SATURATE'] = parent_header.get('SATURATE', 1.0)
     cutout_header['CUTRA'] = float(coord.ra.deg)
     cutout_header['CUTDEC'] = float(coord.dec.deg)
 
@@ -131,35 +107,80 @@ def _make_single_cutout(
         cutout_header.remove('PC1_1')
         cutout_header.remove('PC2_2')
 
+    return cutout_header
+
+
+def _make_single_cutout(
+    image_dir: Path,
+    image_name: str,
+    weight_name: str,
+    image_size_arcmin: float,
+    pix_scale: float,
+    coord: SkyCoord,
+):
+    weight_path = Path.cwd() / 'images' / 'cutouts' / 'weights'
+    weight_path.mkdir(parents=True, exist_ok=True)
+
+    data, header, wcs = _open_image_and_wcs(image_dir, image_name)
+
+    image_size_pix = int(round(image_size_arcmin * 60.0 / pix_scale))
     x_parent, y_parent = wcs.world_to_pixel(coord)
-    x_parent = float(x_parent)
-    y_parent = float(y_parent)
+    x_parent = int(round(float(x_parent)))
+    y_parent = int(round(float(y_parent)))
+    half_size = image_size_pix // 2
+    x_start = x_parent - half_size
+    y_start = y_parent - half_size
+    x_end = x_start + image_size_pix
+    y_end = y_start + image_size_pix
+    if x_start < 0 or y_start < 0 or x_end > data.shape[1] or y_end > data.shape[0]:
+        raise ValueError(
+            f"Cutout for {image_name} at ({x_parent}, {y_parent}) with size {image_size_pix} exceeds image bounds."
+        )
+
+    cutout_data = np.array(data[y_start:y_end, x_start:x_end], copy=True)
+    cutout_wcs = wcs.slice((slice(y_start, y_end), slice(x_start, x_end)))
+    cutout_header = _build_cutout_header(header, cutout_wcs, coord)
+
+    with fits.open(image_dir / weight_name, memmap=True) as hdu_w:
+        weight_data = hdu_w[0].data[y_start:y_end, x_start:x_end]
+        weight_cutout = np.array(weight_data, copy=True)
+
     stem = image_name.replace('.fits', '')
     cutout_name = (
-        f'{stem}_cutout_{int(round(x_parent))}_{int(round(y_parent))}_'
+        f'{stem}_cutout_{x_parent}_{y_parent}_'
         f'{int(image_size_pix)}_pix_{int(image_size_arcmin)}_arcmin.fits'
     )
     weight_cutout_name = cutout_name.replace('.fits', '_wht.fits')
 
-    fits.PrimaryHDU(cutout.data, header=cutout_header).writeto(cutout_path / cutout_name, overwrite=True)
-    fits.PrimaryHDU(weight_cutout.data, header=cutout_header).writeto(weight_path / weight_cutout_name, overwrite=True)
+    fits.PrimaryHDU(weight_cutout, header=cutout_header).writeto(weight_path / weight_cutout_name, overwrite=True)
 
-    return cutout_name, weight_cutout_name, cutout.wcs
+    return {
+        'cutout_name': cutout_name,
+        'weight_cutout_name': weight_cutout_name,
+        'cutout_wcs': cutout_wcs,
+        'cutout_data': cutout_data,
+        'cutout_header': cutout_header.copy(),
+    }
 
 
-def _cleanup_set_image_products(cutout_info):
-    cutout_dir = Path.cwd() / 'images' / 'cutouts'
-    injected_dir = Path.cwd() / 'images' / 'injected'
-    weight_dir = cutout_dir / 'weights'
-
-    for row in cutout_info:
-        for fp in [
-            cutout_dir / row['cutout_name'],
-            weight_dir / row['weight_cutout_name'],
-            injected_dir / row['cutout_name'],
-        ]:
-            if fp.exists():
-                fp.unlink()
+def _build_cutout_for_row(row, field_name, image_size_arcmin, pix_scale, coord):
+    image_dir = _resolve_image_directory(field_name, row['directory'])
+    cutout_product = _make_single_cutout(
+        image_dir=image_dir,
+        image_name=row['image'],
+        weight_name=row['weight'],
+        image_size_arcmin=image_size_arcmin,
+        pix_scale=pix_scale,
+        coord=coord,
+    )
+    return {
+        'filter_name': row['name'],
+        'cutout_name': cutout_product['cutout_name'],
+        'weight_cutout_name': cutout_product['weight_cutout_name'],
+        'cutout_data': cutout_product['cutout_data'],
+        'cutout_header': cutout_product['cutout_header'],
+        'cutout_wcs': cutout_product['cutout_wcs'],
+    }
 
 
 def _build_truth_catalog(
@@ -192,6 +213,7 @@ def run_task(task: dict):
     pix_scale = float(config['field']['pix_scale'])
     processing_cfg = config.get('processing', {})
     source_extraction_cfg = config.get('source_extraction', {})
+    cutout_workers = max(1, int(processing_cfg.get('cutout_workers', 1)))
 
     batch_rows = list(task['rows'])
     if len(batch_rows) == 0:
@@ -223,27 +245,39 @@ def run_task(task: dict):
         pix_scale,
     )
 
-    cutout_info = []
-    reference_wcs = None
-    for row in batch_rows:
-        image_dir = _resolve_image_directory(field_name, row['directory'])
-        cutout_name, weight_cutout_name, cutout_wcs = _make_single_cutout(
-            image_dir=image_dir,
-            image_name=row['image'],
-            weight_name=row['weight'],
-            image_size_arcmin=image_size_arcmin,
-            pix_scale=pix_scale,
-            coord=shared_coord,
-        )
-        if reference_wcs is None:
-            reference_wcs = cutout_wcs
-        cutout_info.append(
-            {
-                'filter_name': row['name'],
-                'cutout_name': cutout_name,
-                'weight_cutout_name': weight_cutout_name,
-            }
-        )
+    if cutout_workers == 1:
+        cutout_results = [
+            _build_cutout_for_row(row, field_name, image_size_arcmin, pix_scale, shared_coord)
+            for row in batch_rows
+        ]
+    else:
+        max_workers = min(cutout_workers, len(batch_rows))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            cutout_results = list(
+                pool.map(
+                    lambda row: _build_cutout_for_row(
+                        row,
+                        field_name,
+                        image_size_arcmin,
+                        pix_scale,
+                        shared_coord,
+                    ),
+                    batch_rows,
+                )
+            )
+
+    cutout_info = [
+        {
+            'filter_name': row['filter_name'],
+            'cutout_name': row['cutout_name'],
+            'weight_cutout_name': row['weight_cutout_name'],
+            'cutout_data': row['cutout_data'],
+            'cutout_header': row['cutout_header'],
+        }
+        for row in cutout_results
+    ]
+    detection_result = next(row for row in cutout_results if row['filter_name'] == detection_filter_name)
+    reference_wcs = detection_result['cutout_wcs']
 
     luminosity_function = LuminosityFunction(lf_config)
     Muv_sample = luminosity_function.sample_luminosities(uniform=True)
@@ -313,12 +347,14 @@ def run_task(task: dict):
 
     for row in cutout_info:
         source_injector.inject_sources(
-            row['cutout_name'],
-            x_positions,
-            y_positions,
-            catalog_Muv,
-            catalog_z,
-            scaled_psfs,
+            image_name=row['cutout_name'],
+            x_positions=x_positions,
+            y_positions=y_positions,
+            Muv_array=catalog_Muv,
+            z_array=catalog_z,
+            scaled_psfs=scaled_psfs,
+            image=row['cutout_data'],
+            header=row['cutout_header'],
             filter_name=row['filter_name'],
         )
 
@@ -329,6 +365,7 @@ def run_task(task: dict):
         detection_image_name=detection_row['cutout_name'],
         measurement_image_names=measurement_image_names,
         apDiameterAS=float(source_extraction_cfg.get('aperture_diameter_arcsec', 2.0)),
+        pix_scale_arcsec=pix_scale,
         overwrite=bool(source_extraction_cfg.get('overwrite', True)),
     )
 
@@ -361,16 +398,19 @@ def run_task(task: dict):
         'n_lbg_sources': len(Muv_sample),
         'n_ucd_sources': n_ucd_total,
         'truth_catalog': table_name,
-        'cutouts': cutout_info,
+        'cutouts': [
+            {
+                'filter_name': row['filter_name'],
+                'cutout_name': row['cutout_name'],
+                'weight_cutout_name': row['weight_cutout_name'],
+            }
+            for row in cutout_info
+        ],
     }
 
     output_dir = Path.cwd() / 'catalogues' / 'input'
     with open(output_dir / f"{task['set_id']}_summary.json", 'w') as f:
         json.dump(summary, f, indent=2)
-
-    if bool(processing_cfg.get('cleanup_batch_images', True)):
-        _cleanup_set_image_products(cutout_info)
-
 
 def main():
     parser = argparse.ArgumentParser()

@@ -16,6 +16,8 @@ from pathlib import Path
 import glob
 import json
 import os
+import stat
+import subprocess
 import time
 import numpy as np
 from astropy.table import Table
@@ -78,7 +80,7 @@ def _write_worker_shell(script_path: Path, task_file: Path, done_file: Path):
         f.write(f'cd {Path.cwd()}\n')
         f.write(cmd + '\n')
 
-    os.system(f'chmod u+x {script_path}')
+    script_path.chmod(script_path.stat().st_mode | stat.S_IXUSR)
 
 
 def _cleanup_transient_images():
@@ -109,6 +111,23 @@ def _cleanup_runtime_state():
         for fp in directory.glob('*'):
             if fp.is_file():
                 fp.unlink()
+
+
+def _cleanup_set_image_products(cutout_info):
+    cutout_dir = Path.cwd() / 'images' / 'cutouts'
+    injected_dir = Path.cwd() / 'images' / 'injected'
+    weight_dir = cutout_dir / 'weights'
+
+    for row in cutout_info:
+        for fp in [
+            cutout_dir / row['cutout_name'],
+            weight_dir / row['weight_cutout_name'],
+            injected_dir / row['cutout_name'],
+        ]:
+            try:
+                fp.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def _match_truth_to_output(truth_table: Table, output_table: Table, match_tolerance_pixels: float) -> np.ndarray:
@@ -171,13 +190,28 @@ def _append_matched_filter_columns(
         matched_table[f'{column_name}_{suffix}'] = fill_values
 
 
-def _match_and_cleanup_output_catalogues(match_tolerance_pixels: float):
+def _match_and_cleanup_output_catalogues(
+    match_tolerance_pixels: float,
+    cleanup_batch_images: bool = True,
+    set_ids: list[str] | None = None,
+):
     input_dir = Path.cwd() / 'catalogues' / 'input'
     output_dir = Path.cwd() / 'catalogues' / 'output'
     matched_dir = Path.cwd() / 'catalogues' / 'matched'
     matched_dir.mkdir(parents=True, exist_ok=True)
 
-    for summary_file in sorted(input_dir.glob('set_*_summary.json')):
+    if set_ids is None:
+        summary_files = sorted(input_dir.glob('set_*_summary.json'))
+    else:
+        summary_files = [
+            input_dir / f'{set_id}_summary.json'
+            for set_id in set_ids
+        ]
+
+    for summary_file in summary_files:
+        if not summary_file.is_file():
+            continue
+
         with open(summary_file, 'r') as f:
             summary = json.load(f)
 
@@ -220,6 +254,9 @@ def _match_and_cleanup_output_catalogues(match_tolerance_pixels: float):
 
         for output_catalog in output_catalogues_to_delete:
             output_catalog.unlink()
+
+        if cleanup_batch_images:
+            _cleanup_set_image_products(cutouts)
 
         truth_catalog.unlink()
         summary_file.unlink()
@@ -304,10 +341,11 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
 
         done_files = []
         fail_files = []
-        wave_shell_files = []
+        wave_set_ids = []
 
         for set_idx in batch_indices:
             set_id = f'set_{set_idx + 1:05d}'
+            wave_set_ids.append(set_id)
             task_id = _safe_job_name(set_id)
             task_file = task_dir / f'{task_id}.json'
             done_file = done_dir / f'{task_id}.done'
@@ -334,11 +372,13 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
 
             _write_worker_shell(shell_file, task_file, done_file)
             submit_shell = Path('shell_scripts') / shell_file.name
-            os.system(f"addqueue -c {task_id} -m {queue_memory_gb} -q {queue} ./{submit_shell}")
+            subprocess.run(
+                ['addqueue', '-c', task_id, '-m', str(queue_memory_gb), '-q', queue, f'./{submit_shell}'],
+                check=True,
+            )
 
             done_files.append(done_file)
             fail_files.append(fail_file)
-            wave_shell_files.append(shell_file)
 
         print(f'Waiting for wave {bidx} jobs to complete...')
         while True:
@@ -357,10 +397,11 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
             time.sleep(check_interval)
 
         print(f'Wave {bidx} complete.')
-        _match_and_cleanup_output_catalogues(match_tolerance_pixels)
-        for shell_file in wave_shell_files:
-            if shell_file.exists():
-                shell_file.unlink()
+        _match_and_cleanup_output_catalogues(
+            match_tolerance_pixels,
+            cleanup_batch_images=cleanup_batch_images,
+            set_ids=wave_set_ids,
+        )
 
 
 

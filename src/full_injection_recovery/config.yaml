@@ -1,29 +1,3 @@
-#! z=7
-# luminosity_function:
-#   type: "DPL"
-#   alpha: -2.08
-#   beta: -4.81
-#   M_star: -21.01
-#   phi_star: 10**(-3.74)
-#   Muv_range: [-23, -20.]  # Minimum and maximum mag values
-#   reference: "Harikane+24"
-#   n_samples: 1000
-#   dMuv: 0.1
-
-# source_injection:
-#   beta_mean: -2
-#   beta_std: 0.2
-#   zmin: 6.5
-#   zmax: 7.5
-#   dz: 0.05
-#   filters: ['Y', 'J']
-#   image_size_arcmin: 10
-#   n_images: 1000
-#   base_image: "UVISTA_YJ_DR6.fits"
-
-# source_extraction:
-#   batch_size: 50
-
 #! z=6
 luminosity_function:
   type: "Schechter"
@@ -61,8 +35,9 @@ field:
 
 processing:
   batch_size: 50
+  cutout_workers: 1
   queue: "cmb"
-  queue_memory_gb: 2
+  queue_memory_gb: 2 # 2 seems to be good balance between speed and handling I/O
   check_interval: 15
   cleanup_batch_images: true
   overwrite_output_catalogues: false
