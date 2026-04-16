@@ -136,7 +136,8 @@ if telescope == 'euclid':
                 image = hdu[0].data
                 hdr = hdu[0].header
 
-            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
+            #hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_HSC_kernel.fits')
             kernel = hdu[0].data
 
             print('Opened image. Now convolving...')
@@ -178,12 +179,27 @@ if telescope == 'euclid':
                 image = hdu[0].data
                 hdr = hdu[0].header
 
-            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
+            #hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_VISTA_kernel.fits')
+            hdu = fits.open(Path.cwd().parents[1] / 'data' /'psf' / 'COSMOS' / 'kernel' / f'{filter_name}_to_HSC_kernel.fits')
             kernel = hdu[0].data
 
             print('Opened weight image. Now convolving...')
 
+            # Start a clock
+            start = time.time()
+            start_time = datetime.now()
+            print('Convolution started at: ', start_time.strftime('%Y-%m-%d %H:%M:%S'))
+
             psf_homo = convolve(image, kernel)
+
+            # Print the time the convolution started and finished, and how long it took.
+            end = time.time()
+            end_time = datetime.now()
+            duration = end - start
+            duration_hours = duration / 3600
+
+            print('Convolution finished at: ', end_time.strftime('%Y-%m-%d %H:%M:%S'))
+            print(f'Total convolution time: {duration_hours:.2f} hours')
 
             hdu = fits.PrimaryHDU(psf_homo, header=hdr)
             hdu.writeto(save_dir / f'Euclid_{filter_name}_psfhom_WHT_v2.fits', overwrite=True)

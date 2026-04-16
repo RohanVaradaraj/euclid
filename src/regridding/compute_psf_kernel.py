@@ -63,13 +63,13 @@ for field in fields:
         # Get reference VISTA PSF
         vista_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'ref_psf' #! Read in VISTA PSF from here, and convert .psf to .fits
         # vista_psf_dir.mkdir(parents=True, exist_ok=True)
-        vista_psf = vista_psf_dir / 'Y_psf.fits'
+        vista_psf = vista_psf_dir / 'HSC-Z_DR3_psf.fits'
 
-        y_psf = vista_psf_dir / 'Y.psf'
-        y_psf_fits = vista_psf_dir / 'Y_psf.fits'
+        y_psf = vista_psf_dir / 'HSC-Z_DR3.psf'
+        y_psf_fits = vista_psf_dir / 'HSC-Z_DR3_psf.fits'
 
         if not y_psf_fits.exists():
-            print('Extracting VISTA PSF')
+            print('Extracting HSC PSF from ', y_psf)
 
             hdu = fits.open(y_psf)
             data = hdu[1].data[0][0]
@@ -108,7 +108,8 @@ for field in fields:
             euclid_psf = euclid_psf_dir / f'{filter_name}_psf.fits'
 
             # output_name = output_dir / f'{filter_name}_to_VISTA_kernel_{dr}.fits'
-            output_name = output_dir / f'{filter_name}_to_VISTA_kernel.fits'
+            #output_name = output_dir / f'{filter_name}_to_VISTA_kernel.fits'
+            output_name = output_dir / f'{filter_name}_to_HSC_kernel.fits'
             # If field is cosmos, pixel scale is 0.15
             if field == 'COSMOS':
                 os.system(f'addpixscl {str(euclid_psf)} 0.15')
