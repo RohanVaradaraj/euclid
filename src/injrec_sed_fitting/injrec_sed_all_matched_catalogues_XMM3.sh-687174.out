@@ -1,0 +1,28 @@
+=========================================================
+Job submitted date = Thu 16 Apr 13:03:22 BST 2026
+1 nodes ( 1 processes per node )
+1 hosts used: comp63
+Job output begins
+-----------------
+
+Reading stacked matched catalogue: /mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/catalogues/XMM3/all_matched_catalogues_XMM3.fits
+Using full_injection_recovery config: /mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/config.yaml
+Resolved subfield XMM3 -> field XMM
+5 sigma detection filter: HSC-Z_DR3
+2 sigma non-detection filters: ['HSC-G_DR3', 'HSC-R_DR3']
+Loaded stacked catalogue with 2760000 rows
+Sources passing 5 sigma detection in HSC-Z_DR3: 1741189
+Sources passing 2 sigma non-detection in HSC-G_DR3: 1307223
+Sources passing 2 sigma non-detection in HSC-R_DR3: 660696
+Added measured cgs flux/error columns for filters: ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
+Writing injrec SED-fitting outputs under /mnt/vardy/vardygroupshare/rohan/euclid/src/injrec_sed_fitting/catalogues/XMM3/all_matched_catalogues_XMM3
+Sources passing all SED-selection cuts: 569847 / 2760000
+/mnt/vardy/vardygroupshare/rohan/euclid/src/injrec_sed_fitting/./shell_scripts/injrec_sed_all_matched_catalogues_XMM3.sh: line 3: 1185343 Killed                  python3 /mnt/vardy/vardygroupshare/rohan/euclid/src/injrec_sed_fitting/run_injrec_sed_fitting.py --stacked-catalogue /mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/catalogues/XMM3/all_matched_catalogues_XMM3.fits --full-injrec-config /mnt/vardy/vardygroupshare/rohan/euclid/src/full_injection_recovery/config.yaml
+slurmstepd: error: Detected 1 oom_kill event in StepId=687174.0. Some of the step tasks have been OOM Killed.
+srun: error: comp63: task 0: Out Of Memory
+---------------
+Job output ends
+=========================================================
+PBS job: finished date = Thu 16 Apr 13:06:56 BST 2026
+Total run time : 0 Hours 3 Minutes 18 Seconds
+=========================================================

@@ -19,7 +19,10 @@ from astropy.io import ascii
 from astropy.table import Column, Table
 import numpy as np
 from pathlib import Path
+import shlex
 import shutil
+import stat
+import subprocess
 import yaml
 
 from sed_fitting_codes import (
@@ -35,6 +38,7 @@ PACKAGE_ROOT = Path(__file__).resolve().parent
 LEPHARE_INPUT_DIR = Path.home().parents[1] / "hoy" / "temporaryFilesROHAN" / "lephare" / "inputs" / "euclid"
 LEPHARE_CONFIG_DIR = Path.home() / "lephare" / "lephare_dev" / "config"
 LEPHARE_TEST_DIR = Path.home() / "lephare" / "lephare_dev" / "test"
+SHELL_SCRIPT_DIR = PACKAGE_ROOT / "shell_scripts"
 
 STELLAR_TYPE_MAP = {
     1: "M4",
@@ -154,6 +158,22 @@ def add_or_replace_column(table: Table, name: str, values):
         table[name] = values
     else:
         table.add_column(Column(values, name=name))
+
+
+def add_measured_flux_cgs_columns(table: Table, filters: list[str], zeropoints: dict[str, float]):
+    for filter_name in filters:
+        if filter_name not in zeropoints:
+            raise KeyError(f"Missing zeropoint for filter {filter_name}")
+
+        suffix = safe_suffix(filter_name)
+        flux_scale = zeropoint_flux_scale(zeropoints[filter_name])
+        measured_flux = np.asarray(table[flux_column(filter_name)], dtype=float) * flux_scale
+        measured_fluxerr = np.asarray(table[fluxerr_column(filter_name)], dtype=float) * flux_scale
+
+        add_or_replace_column(table, f"measured_flux_cgs_{suffix}", measured_flux)
+        add_or_replace_column(table, f"measured_fluxerr_cgs_{suffix}", measured_fluxerr)
+
+    return table
 
 
 def prepare_catalogue(table: Table, detection_filter: str, non_detection_filters: list[str], detection_sigma: float, non_detection_sigma: float):
@@ -385,7 +405,7 @@ def default_output_root(stacked_catalogue: Path) -> Path:
     return PACKAGE_ROOT / "catalogues" / subfield_name / stacked_catalogue.stem
 
 
-def main():
+def build_argument_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stacked-catalogue", type=Path, required=True)
     parser.add_argument(
@@ -399,7 +419,90 @@ def main():
     parser.add_argument("--detection-sigma", type=float, default=5.0)
     parser.add_argument("--non-detection-sigma", type=float, default=2.0)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--submit-to-queue", action="store_true")
+    parser.add_argument("--queue", default="cmb")
+    parser.add_argument("--queue-memory-gb", type=int, default=8)
+    parser.add_argument("--job-name", default=None)
+    return parser
+
+
+def _safe_job_name(text: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in ["_", "-"] else "_" for ch in str(text))
+
+
+def _build_local_command(args) -> list[str]:
+    command = [
+        "python3",
+        str((PACKAGE_ROOT / "run_injrec_sed_fitting.py").resolve()),
+        "--stacked-catalogue",
+        str(args.stacked_catalogue.resolve()),
+        "--full-injrec-config",
+        str(args.full_injrec_config.resolve()),
+    ]
+
+    if args.output_root is not None:
+        command.extend(["--output-root", str(args.output_root.resolve())])
+    if args.detection_filter is not None:
+        command.extend(["--detection-filter", str(args.detection_filter)])
+    if args.non_detection_filters:
+        command.append("--non-detection-filters")
+        command.extend(str(item) for item in args.non_detection_filters)
+    if float(args.detection_sigma) != 5.0:
+        command.extend(["--detection-sigma", str(args.detection_sigma)])
+    if float(args.non_detection_sigma) != 2.0:
+        command.extend(["--non-detection-sigma", str(args.non_detection_sigma)])
+    if args.overwrite:
+        command.append("--overwrite")
+
+    return command
+
+
+def submit_to_queue(args):
+    SHELL_SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+    output_root = args.output_root or default_output_root(args.stacked_catalogue)
+    inferred_name = args.job_name or f"injrec_sed_{args.stacked_catalogue.stem}"
+    job_name = _safe_job_name(inferred_name)
+    shell_path = SHELL_SCRIPT_DIR / f"{job_name}.sh"
+    command = _build_local_command(args)
+    command_str = " ".join(shlex.quote(part) for part in command)
+
+    with open(shell_path, "w") as handle:
+        handle.write("#!/bin/bash\n")
+        handle.write(f"cd {shlex.quote(str(PACKAGE_ROOT))}\n")
+        handle.write(command_str + "\n")
+
+    shell_path.chmod(shell_path.stat().st_mode | stat.S_IXUSR)
+
+    print(f"Queue shell script written to {shell_path}")
+    print(f"Queue job output will be managed by addqueue")
+    print(f"Queued run will write outputs under {output_root}")
+
+    subprocess.run(
+        [
+            "addqueue",
+            "-c",
+            job_name,
+            "-m",
+            str(args.queue_memory_gb),
+            "-q",
+            str(args.queue),
+            f"./{shell_path.relative_to(PACKAGE_ROOT)}",
+        ],
+        cwd=PACKAGE_ROOT,
+        check=True,
+    )
+    print(
+        f"Submitted queue job {job_name} to queue={args.queue} with memory={args.queue_memory_gb} GB"
+    )
+
+
+def main():
+    parser = build_argument_parser()
     args = parser.parse_args()
+
+    if args.submit_to_queue:
+        submit_to_queue(args)
+        return
 
     if not args.full_injrec_config.is_file():
         raise FileNotFoundError(
@@ -439,6 +542,7 @@ def main():
         detection_sigma=args.detection_sigma,
         non_detection_sigma=args.non_detection_sigma,
     )
+    add_measured_flux_cgs_columns(prepared, all_filters, zeropoints)
     det_col = f"pass_{int(args.detection_sigma)}sig_det_{safe_suffix(detection_filter)}"
     print(f"Sources passing {args.detection_sigma:g} sigma detection in {detection_filter}: {np.count_nonzero(prepared[det_col])}")
     for filter_name in non_detection_filters:
@@ -447,6 +551,7 @@ def main():
             f"Sources passing {args.non_detection_sigma:g} sigma non-detection in {filter_name}: "
             f"{np.count_nonzero(prepared[nondet_col])}"
         )
+    print(f"Added measured cgs flux/error columns for filters: {all_filters}")
 
     output_root = args.output_root or default_output_root(args.stacked_catalogue)
     if output_root.exists() and args.overwrite:

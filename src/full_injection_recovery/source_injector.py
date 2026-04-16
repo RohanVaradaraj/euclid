@@ -433,6 +433,7 @@ class SourceInjector:
         for filter_name in self.filters:
             psf_path = Path.cwd().parents[1] / 'data' / 'psf' / field_name / 'ref_psf' / f'{filter_name}_psf.fits'
             if not psf_path.is_file():
+                psf_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Open the .psf file
                 original_psf_path = base_dir / field_name / 'results' / f'{filter_name}.psf'
@@ -470,19 +471,10 @@ class SourceInjector:
 
         for psf in self.psf:
 
-            # Place 1.8 arcsec diameter aperture at centre of image
-            aperture = CircularAperture((psf.shape[1] / 2, psf.shape[0] / 2), r=1.0 / pix_scale)
-
-            # Measure the flux in the aperture
-            flux, _ = aperture.do_photometry(psf)
+            # Get total flux by summing full psf
+            flux = np.nansum(psf)
 
             fluxes.append(flux[0])
-
-            # Draw aperture on PSF
-            if plot:
-                plt.imshow(self.psf, origin='lower')
-                aperture.plot(color='red')
-                plt.show()
 
         fluxes = np.array(fluxes)
         self._psf_flux_cache[cache_key] = fluxes

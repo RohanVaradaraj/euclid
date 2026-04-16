@@ -19,7 +19,7 @@ source_injection:
   filters: ['HSC-G_DR3', 'HSC-R_DR3', 'HSC-I_DR3', 'HSC-NB0816_DR3', 'HSC-Z_DR3', 'HSC-NB0921_DR3', 'HSC-Y_DR3', 'Y', 'J', 'H', 'Ks']
   zeropoints: [27.0, 27.0, 27.0, 27.0, 27.0, 27.0, 27.0, 30.0, 30.0, 30.0, 30.0]
   image_size_arcmin: 10
-  n_images: 10000
+  n_images: 5000
   base_image: "HSC-Z_DR3.fits"
   ucd_ref_filter: "HSC-Z_DR3" # Filter to use to determine magnitude of source
   ucd_mAB_range: [22.0, 27.0] # Minimum and maximum mag values in the reference filter
@@ -30,8 +30,8 @@ source_extraction:
   overwrite: true
 
 field:
-  name: "XMM3"
-  pix_scale: 0.2
+  name: "COSMOS"
+  pix_scale: 0.15
 
 processing:
   batch_size: 50

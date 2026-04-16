@@ -118,6 +118,16 @@ def _cleanup_runtime_state():
                 fp.unlink()
 
 
+def _cleanup_wave_shell_wrappers():
+    shell_dir = Path.cwd() / 'shell_scripts'
+    if not shell_dir.is_dir():
+        return
+
+    for fp in shell_dir.glob('run_worker_set_*'):
+        if fp.is_file():
+            fp.unlink()
+
+
 def _cleanup_set_image_products(cutout_info):
     cutout_dir = Path.cwd() / 'images' / 'cutouts'
     injected_dir = Path.cwd() / 'images' / 'injected'
@@ -410,6 +420,7 @@ def RunFullInjectionRecoveryPipeline(overwrite=True, config_file='config.yaml'):
             cleanup_batch_images=cleanup_batch_images,
             set_ids=wave_set_ids,
         )
+        _cleanup_wave_shell_wrappers()
 
 
 

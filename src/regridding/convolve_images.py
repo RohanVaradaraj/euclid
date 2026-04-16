@@ -34,7 +34,7 @@ if field_name == 'CDFS':
     save_dir = Path.cwd().parents[3] / 'data'
 
 
-filter_names = ['YE_DR1', 'JE_DR1', 'HE_DR1', 'VIS_DR1'] #? Euclid filters to convolve
+filter_names = ['YE_DR1'] #, 'JE_DR1', 'HE_DR1', 'VIS_DR1'] #? Euclid filters to convolve
 # filter_names = ['f115w', 'f150w', 'f277w', 'f444w']
 
 # cdfs_filter_dict = {'YE': 'Y', 'JE': 'J', 'HE': 'H', 'VIS': 'VIS'}

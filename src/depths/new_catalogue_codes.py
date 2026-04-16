@@ -1902,8 +1902,7 @@ def flux_errors(inputTableFile, fieldName, dataDir = '/mnt/vardy/vardygroupshare
 ## In both microJy and cgs
     if depthType != 'input':
     	x = tb[xyName[0]]
-    	y = tb[xyName[1]]
-    
+        y = tb[xyName[1]]
 # I need to loop through the filters
     for fi, filterName in enumerate(availableFilters):
         
