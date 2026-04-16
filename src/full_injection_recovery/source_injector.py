@@ -474,7 +474,7 @@ class SourceInjector:
             # Get total flux by summing full psf
             flux = np.nansum(psf)
 
-            fluxes.append(flux[0])
+            fluxes.append(flux)
 
         fluxes = np.array(fluxes)
         self._psf_flux_cache[cache_key] = fluxes
