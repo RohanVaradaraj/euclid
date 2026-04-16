@@ -19,12 +19,12 @@ plt.rcParams['figure.dpi'] = 100
 #! Switches and setup
 instrument = 'euclid'
 
-fields = ['CDFS1', 'CDFS2', 'CDFS3']
+fields = ['COSMOS']
 
-filter_names_euclid = ['YE', 'JE', 'HE', 'VIS']
+filter_names_euclid = ['YE_DR1', 'JE_DR1', 'HE_DR1', 'VIS_DR1']
 #filter_names_jwst = ['F115W', 'F150W', 'F277W', 'F444W']
 
-dr = 'Q1' # DR1
+dr = 'DR1' # DR1
 
 def findPlotLimits(data: np.ndarray) -> tuple:
 
@@ -62,8 +62,24 @@ for field in fields:
 
         # Get reference VISTA PSF
         vista_psf_dir = Path.cwd().parents[1] / 'data' / 'psf' / f'{field}' / 'ref_psf' #! Read in VISTA PSF from here, and convert .psf to .fits
-        vista_psf_dir.mkdir(parents=True, exist_ok=True)
+        # vista_psf_dir.mkdir(parents=True, exist_ok=True)
         vista_psf = vista_psf_dir / 'Y_psf.fits'
+
+        y_psf = vista_psf_dir / 'Y.psf'
+        y_psf_fits = vista_psf_dir / 'Y_psf.fits'
+
+        if not y_psf_fits.exists():
+            print('Extracting VISTA PSF')
+
+            hdu = fits.open(y_psf)
+            data = hdu[1].data[0][0]
+            header = hdu[1].header
+
+            yz_slice = np.array(data[0, :, :])
+
+            hdu = fits.PrimaryHDU(yz_slice, header=header)
+            hdu.writeto(y_psf_fits, overwrite=True)
+            print('Wrote to', y_psf_fits)
 
         for filter_name in filter_names:
 
@@ -72,6 +88,7 @@ for field in fields:
             #! If the Euclid PSF slice doesn't exist, extract it from the .psf file and save as a fits file with the same header. If it does exist, just read in the fits file.
             if not Path.exists(euclid_psf_dir / f'{filter_name}_psf.fits'):
 
+                print('Reading ', euclid_psf_dir / f'{filter_name}.psf', ' and converting to .fits')
                 hdu = fits.open(euclid_psf_dir / f'{filter_name}.psf')
                 data = hdu[1].data[0][0]
                 header = hdu[1].header
@@ -90,8 +107,8 @@ for field in fields:
 
             euclid_psf = euclid_psf_dir / f'{filter_name}_psf.fits'
 
-            output_name = output_dir / f'{filter_name}_to_VISTA_kernel_{dr}.fits'
-
+            # output_name = output_dir / f'{filter_name}_to_VISTA_kernel_{dr}.fits'
+            output_name = output_dir / f'{filter_name}_to_VISTA_kernel.fits'
             # If field is cosmos, pixel scale is 0.15
             if field == 'COSMOS':
                 os.system(f'addpixscl {str(euclid_psf)} 0.15')

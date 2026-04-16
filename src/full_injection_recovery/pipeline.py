@@ -29,6 +29,11 @@ def _safe_job_name(text: str) -> str:
     return ''.join(ch if ch.isalnum() or ch in ['_', '-'] else '_' for ch in text)
 
 
+def _matched_catalogue_dir(config: dict) -> Path:
+    field_name = str(config['field']['name'])
+    return Path.cwd() / 'catalogues' / 'matched' / field_name
+
+
 def _resolve_images_lis_path(config: dict) -> Path:
     field_name = config['field']['name']
     processing_cfg = config.get('processing', {})
@@ -191,13 +196,14 @@ def _append_matched_filter_columns(
 
 
 def _match_and_cleanup_output_catalogues(
+    config: dict,
     match_tolerance_pixels: float,
     cleanup_batch_images: bool = True,
     set_ids: list[str] | None = None,
 ):
     input_dir = Path.cwd() / 'catalogues' / 'input'
     output_dir = Path.cwd() / 'catalogues' / 'output'
-    matched_dir = Path.cwd() / 'catalogues' / 'matched'
+    matched_dir = _matched_catalogue_dir(config)
     matched_dir.mkdir(parents=True, exist_ok=True)
 
     if set_ids is None:
@@ -262,8 +268,8 @@ def _match_and_cleanup_output_catalogues(
         summary_file.unlink()
 
 
-def RunFullInjectionRecoveryPipeline(overwrite=True):
-    config = load_config('config.yaml')
+def RunFullInjectionRecoveryPipeline(overwrite=True, config_file='config.yaml'):
+    config = load_config(config_file)
     se_cfg = config.get('source_extraction', {})
     injection_cfg = config.get('source_injection', {})
     processing_cfg = config.get('processing', {})
@@ -296,10 +302,11 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
         raise RuntimeError('source_injection.n_images must be a positive integer.')
 
     output_cat_dir = Path.cwd() / 'catalogues' / 'output'
-    matched_cat_dir = Path.cwd() / 'catalogues' / 'matched'
+    matched_cat_dir = _matched_catalogue_dir(config)
     if overwrite and bool(processing_cfg.get('overwrite_output_catalogues', False)):
         for file in glob.glob(str(output_cat_dir / '*.fits')):
             os.remove(file)
+        matched_cat_dir.mkdir(parents=True, exist_ok=True)
         for file in glob.glob(str(matched_cat_dir / '*.fits')):
             os.remove(file)
 
@@ -360,7 +367,7 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
             with open(task_file, 'w') as f:
                 json.dump(
                     {
-                        'config_file': str(Path.cwd() / 'config.yaml'),
+                        'config_file': str(Path(config_file).resolve()),
                         'set_id': set_id,
                         'rows': rows_payload,
                         'se_aperture_diameter_arcsec': float(se_cfg.get('aperture_diameter_arcsec', 2.0)),
@@ -398,6 +405,7 @@ def RunFullInjectionRecoveryPipeline(overwrite=True):
 
         print(f'Wave {bidx} complete.')
         _match_and_cleanup_output_catalogues(
+            config,
             match_tolerance_pixels,
             cleanup_batch_images=cleanup_batch_images,
             set_ids=wave_set_ids,
